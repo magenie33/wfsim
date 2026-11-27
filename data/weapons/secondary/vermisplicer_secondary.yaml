@@ -46,6 +46,8 @@ reload_seconds: 2.1
 # see notes: no_co_catalog_row
 co_behavior: additive_with_base_damage
 
+beam_ramp_floor: 1
+
 attack:
   # see notes: cone_half_angle_from
   spread:
@@ -64,6 +66,11 @@ attack:
   punch_through_m: 1.0
   # NO CHAIN AND NO SPHERE: the tendrils latch rather than chain.
   beam:
+    ramp:
+      rise_seconds: 0.6
+      cooldown_delay_seconds: 0.8
+      cooldown_divisor: 2
+      per_target: true
     # The default grip's reach; an assembly replaces it with its own grip's.
     range_m: 31
     damage_radius_m: 0.0

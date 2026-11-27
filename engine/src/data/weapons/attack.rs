@@ -556,6 +556,9 @@ pub struct AttackSpec {
     /// declaration, which is what that machinery was built for.
     #[serde(default)]
     pub meter: Option<MeterSpec>,
+    /// Native client beam attenuation parameters (rise, delay, cooldown divisor, per-target).
+    #[serde(default)]
+    pub beam_ramp: Option<crate::model::BeamRampSpec>,
     /// Continuous-beam geometry (Torid Incarnon). Shape, not a damage part.
     #[serde(default)]
     pub beam: Option<Box<BeamSpec>>,

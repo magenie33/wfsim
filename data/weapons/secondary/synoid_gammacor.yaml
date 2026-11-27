@@ -39,6 +39,11 @@ attack:
     min_deg: 0.0
     max_deg: 0.0
   trigger: held
+  beam_ramp:
+    rise_seconds: 0.6
+    cooldown_delay_seconds: 0.8
+    cooldown_divisor: 2
+    per_target: true
   shot_type: hit_scan
   fire_rate: 12
   multishot: 1.0

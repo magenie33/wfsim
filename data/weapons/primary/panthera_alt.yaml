@@ -11,12 +11,19 @@ introduced: "15.10"
 # see notes: inherited_co_catalog_gives
 co_behavior: additive_with_base_damage
 
+beam_ramp_floor: 0.1
+
 attack:
   # see notes: cone_half_angle_from_2
   spread:
     min_deg: 0.0
     max_deg: 0.0
   trigger: held
+  beam_ramp:
+    rise_seconds: 0.8
+    cooldown_delay_seconds: 0
+    cooldown_divisor: 1
+    per_target: false
   shot_type: hit_scan
   fire_rate: 2
   multishot: 1.0

@@ -54,6 +54,13 @@ as Magnetic source normalization, including alternate and Incarnon forms.
 Equipped headshot bonuses remain separate. An unbound native value displays
 an unavailable coefficient rather than zero.
 
+Continuous weapons additionally display their parsed beam mechanics on the
+weapon panel: client ramp floor and rise time (noting per-target vs shared
+clocks), live fire-rate-dependent first-tick share, idle delay and cooldown
+decay duration, ammo cost per tick, main beam range, impact radius when
+non-zero (with multishot rules), chain hops/range/falloff, auto-acquired extra
+beams, and fixed central-beam multishot scaling.
+
 ## Core decisions
 
 Home and non-weapon routes initialize no hidden weapon editor. Simulator and

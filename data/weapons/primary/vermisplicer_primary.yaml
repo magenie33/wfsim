@@ -68,6 +68,11 @@ attack:
   # Nukor's shape. "Only 1 enemy hit by the primary beam will create the chain
   # beams", so the beam's own target seeds it.
   beam:
+    ramp:
+      rise_seconds: 0.6
+      cooldown_delay_seconds: 0.8
+      cooldown_divisor: 2
+      per_target: true
     # The default grip's reach; an assembly replaces it with its own grip's.
     range_m: 30
     damage_radius_m: 0.0

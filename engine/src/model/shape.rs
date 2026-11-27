@@ -891,3 +891,6 @@ impl ComboHit {
 /// sentence gives ("for most weapons"), and a weapon that disagrees says so in
 /// its own file (`beam_ramp_floor`).
 pub const BEAM_RAMP_FLOOR: f64 = 0.20;
+pub const BEAM_RAMP_SECONDS: f64 = 0.6;
+pub const BEAM_DECAY_DELAY: f64 = 0.8;
+pub const BEAM_DECAY_SECONDS: f64 = 2.0;

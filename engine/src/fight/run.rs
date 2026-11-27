@@ -1036,7 +1036,12 @@ pub fn run_once_traced(
         // Fallback beam ramp when a continuous weapon opts out of per-target
         // attenuation; ordinary beams overwrite this per recipient in `flight`.
         let beam_ramp = if active.continuous {
-            me.beam.tick(t, 1.0 / live_rate.max(1e-9), active.beam_ramp_floor, active.beam.and_then(|b| b.ramp))
+            me.beam.tick(
+                t,
+                1.0 / live_rate.max(1e-9),
+                active.beam_ramp_floor,
+                active.beam_ramp.or_else(|| active.beam.and_then(|b| b.ramp)),
+            )
         } else {
             1.0
         };

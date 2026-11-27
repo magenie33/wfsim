@@ -45,6 +45,8 @@ pseudo_reload:
 # the strength of a row that names the other weapon.
 co_behavior: additive_with_base_damage
 
+beam_ramp_floor: 1
+
 attack:
   # see notes: cone_half_angle_from
   spread:
@@ -53,6 +55,11 @@ attack:
   # Read the same way as the Furis's — see that file for why `held` rather
   # than per-pull, and for what changes if that is wrong.
   trigger: held
+  beam_ramp:
+    rise_seconds: 1
+    cooldown_delay_seconds: 0
+    cooldown_divisor: 1
+    per_target: false
   shot_type: hit_scan
   fire_rate: 12.0
   multishot: 1.0

@@ -46,12 +46,19 @@ pseudo_reload:
 # see notes: no_co_catalog_row
 co_behavior: additive_with_base_damage
 
+beam_ramp_floor: 1
+
 attack:
   # see notes: cone_half_angle_from
   spread:
     min_deg: 0.0
     max_deg: 0.0
   trigger: held
+  beam_ramp:
+    rise_seconds: 0
+    cooldown_delay_seconds: 0
+    cooldown_divisor: 0
+    per_target: false
   shot_type: projectile
   projectile_speed_mps: 40
   fire_rate: 2

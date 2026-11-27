@@ -66,6 +66,11 @@ attack:
   # THE BEAM AND ITS SPHERE. "The area of effect radius can be increased with
   # Firestorm" and "The radial damage is not affected by multishot". NO chain.
   beam:
+    ramp:
+      rise_seconds: 0.6
+      cooldown_delay_seconds: 0.8
+      cooldown_divisor: 2
+      per_target: true
     # The default grip's reach; an assembly replaces it with its own grip's.
     range_m: 30
     damage_radius_m: 3.0

@@ -1464,20 +1464,159 @@ fn form_section(
             stats.insert(at + i, r);
         }
     }
-    // A continuous beam's impact SPHERE. Firestorm enlarges it, and without
-    // this row the mod reads as equipped-but-doing-nothing on this form.
-    // The note carries the honest part: the sphere adds no damage to a
-    // target the beam already struck, so it is worth nothing single-target
-    // and a great deal in a crowd, where every enemy it catches starts its
-    // own chain.
+    // Continuous weapons expose their parsed ramp, decay, ammo-per-tick, reach,
+    // impact radius and chain rules directly on the weapon panel.
+    if base.has_central_beam && base.base_multishot > 1.0 {
+        if let Some(ms_row) = stats.iter_mut().find(|r| r["key"] == "multishot") {
+            ms_row["note"] = json!("Includes 1 fixed central beam that does not scale with multishot mods: 1 + (base − 1) × (1 + MS).");
+        }
+    }
+    let beam_range_shown = base.continuous && base.range_m.is_finite();
+    if base.continuous {
+        let parsed_ramp = base.beam_ramp.or_else(|| base.beam.and_then(|b| b.ramp));
+        let rise = parsed_ramp.map_or(wfsim_engine::model::BEAM_RAMP_SECONDS, |r| r.rise_seconds);
+        let delay = parsed_ramp.map_or(wfsim_engine::model::BEAM_DECAY_DELAY, |r| r.cooldown_delay_seconds);
+        let decay = parsed_ramp.map_or(
+            wfsim_engine::model::BEAM_DECAY_SECONDS,
+            |r| r.rise_seconds * r.cooldown_divisor,
+        );
+        let per_target = parsed_ramp.is_some_and(|r| r.per_target);
+        if base.beam_ramp_floor >= 1.0 - 1e-9 || rise <= 0.0 {
+            stats.push(json!({
+                "key": "beam_ramp",
+                "label": "Beam Ramp",
+                "base": "—",
+                "final": "100%",
+                "note": "No ramp attenuation: full 100% damage from the first tick.",
+                "sources": [],
+            }));
+        } else {
+            stats.push(json!({
+                "key": "beam_ramp",
+                "label": "Beam Ramp",
+                "base": "—",
+                "final": format!("{}% → 100% ({})", display_number(base.beam_ramp_floor * 100.0), secs(rise)),
+                "note": if per_target {
+                    "Per-target clock: each enemy starts from the client floor; scales both direct hits and status DoT base."
+                } else {
+                    "Shared beam clock: scales both direct hits and status DoT base."
+                },
+                "sources": [],
+            }));
+            let first_tick = |rate: f64| {
+                let p = ((1.0 / rate.max(1e-9)) / rise).min(1.0);
+                base.beam_ramp_floor + (1.0 - base.beam_ramp_floor) * p
+            };
+            stats.push(json!({
+                "key": "beam_first_tick",
+                "label": "First Tick",
+                "base": pc(first_tick(base.base_fire_rate)),
+                "final": pc(first_tick(panel.fire_rate)),
+                "note": "First tick advances ramp by 1 / Fire Rate before sampling; higher fire rate fires sooner at a lower first-tick share.",
+                "sources": sources("fire_rate", None),
+            }));
+            stats.push(json!({
+                "key": "beam_ramp_decay",
+                "label": "Ramp Decay",
+                "base": "—",
+                "final": format!("{} → {}", secs(delay), secs(decay)),
+                "note": if parsed_ramp.is_some() {
+                    "Idle delay before decay → time to fall back to the floor (parsed from game data; native cooldown divisor)."
+                } else {
+                    "Idle delay before decay → time to fall back to the floor (engine default)."
+                },
+                "sources": [],
+            }));
+        }
+        stats.push(json!({
+            "key": "ammo_cost",
+            "label": "Ammo per Tick",
+            "base": "—",
+            "final": display_number(base.ammo_cost),
+            "note": if base.gauge_form.is_some() {
+                "Charges consumed per damage tick from the Incarnon pool."
+            } else {
+                "Magazine ammo consumed per damage tick (fire rate is ticks per second)."
+            },
+            "sources": [],
+        }));
+        if beam_range_shown {
+            let mut range_srcs: Vec<Value> = Vec::new();
+            for stat in [
+                wfsim_engine::model::IndirectStat::BeamRangePercent,
+                wfsim_engine::model::IndirectStat::BeamRange,
+            ] {
+                let tag = format!("{stat:?}");
+                for (k, name, v, note) in src {
+                    if *k == "indirect" && note.as_deref() == Some(tag.as_str()) {
+                        range_srcs.push(json!({ "mod": name, "value": stat.format(*v) }));
+                    }
+                }
+            }
+            let mut row = json!({
+                "key": "beam_range",
+                "label": "Beam Range",
+                "base": format!("{} m", display_number(base.range_m)),
+                "final": format!("{} m", display_number(panel.range_m)),
+                "sources": range_srcs,
+            });
+            if panel.beam.is_some_and(|b| b.chain_hops > 0) {
+                row["note"] = json!("Main beam reach; beam-range mods do not extend chain jump distance.");
+            }
+            stats.push(row);
+        }
+    }
     if let (Some(bb), Some(bp)) = (base.beam, panel.beam) {
-        stats.push(json!({ "key": "radius", "label": "Beam Radius",
-            "base": format!("{} m", num(bb.damage_radius_m)),
-            "final": format!("{} m", num(bp.damage_radius_m)),
-            "note": format!(
-                "no single-target damage (a struck target is hit once); in a crowd every enemy it catches starts its own chain ({} hops, {} m, x{} per hop)",
-                bp.chain_hops, num(bp.chain_range_m), num(bp.chain_damage_per_hop)),
-            "sources": sources("radius", None) }));
+        if bb.damage_radius_m > 0.0 || bp.damage_radius_m > 0.0 {
+            let note = match (bp.chain_hops > 0, bp.radius_takes_multishot) {
+                (true, false) => "No extra hit on the directly struck target; enemies caught in this radius do not take multishot, and each starts its own chain without multishot.",
+                (false, false) => "No extra hit on the directly struck target; enemies caught only by this radius do not take multishot.",
+                (_, true) => "No extra hit on the directly struck target; enemies caught in this radius take multishot.",
+            };
+            stats.push(json!({
+                "key": "radius",
+                "label": "Beam Radius",
+                "base": format!("{} m", display_number(bb.damage_radius_m)),
+                "final": format!("{} m", display_number(bp.damage_radius_m)),
+                "note": note,
+                "sources": sources("radius", None),
+            }));
+        }
+        if bp.chain_hops > 0 {
+            let chain_val = if bp.chain_compounds {
+                format!("{} × {} m (×{}^n)", bp.chain_hops, display_number(bp.chain_range_m), display_number(bp.chain_damage_per_hop))
+            } else {
+                format!("{} × {} m (×{})", bp.chain_hops, display_number(bp.chain_range_m), display_number(bp.chain_damage_per_hop))
+            };
+            let note = if bp.chain_fanout {
+                "Fans out from the final direct contact to nearby targets rather than hopping serially."
+            } else if bp.damage_radius_m > 0.0 && !bp.radius_takes_multishot && bp.chain_compounds {
+                "Compounding damage per hop. Chains from direct hits take multishot; chains seeded from the impact radius do not."
+            } else if bp.chain_compounds {
+                "Serial chain with compounding damage falloff per hop; chains from direct hits take multishot."
+            } else {
+                "Serial chain where each hop deals a fixed share of main beam damage; chains from direct hits take multishot."
+            };
+            stats.push(json!({
+                "key": "beam_chain",
+                "label": "Beam Chain",
+                "base": "—",
+                "final": chain_val,
+                "note": note,
+                "sources": [],
+            }));
+        }
+        if bp.beams_count > 1 {
+            let acquire_range = bp.beams_range_m + (panel.range_m - bp.range_m);
+            stats.push(json!({
+                "key": "beam_acquire",
+                "label": "Auto-Target Beams",
+                "base": "—",
+                "final": format!("{} ({} m, {}°)", bp.beams_count, display_number(acquire_range), display_number(bp.beams_acquire_deg)),
+                "note": "Total simultaneous beams including the aimed target; extra beams auto-acquire nearby enemies.",
+                "sources": [],
+            }));
+        }
     }
     if let (Some(bb), Some(bp)) = (base.melee_radius, panel.melee_radius) {
         for (key, label, before, after, range) in [
@@ -1566,13 +1705,14 @@ fn form_section(
     // as much scrutiny as a 52%. ORIGINAL of EVOLVED: `raw_bd` is the
     // pre-evolution base and the fraction is original/evolved, so the
     // denominator is what the panel prints as this attack's base damage.
+    let co_base = base.base_vector.total() * panel.co_base_fraction();
     let co_rule = if behavior == "inert" {
         "inert · base = n/a · parts = none".to_string()
     } else {
         format!(
             "{behavior} · base = {:.0}% ({:.0} of {:.0}) · parts = {parts}",
             panel.co_base_fraction() * 100.0,
-            raw_bd,
+            co_base,
             base.base_vector.total()
         )
     };
@@ -1610,7 +1750,15 @@ fn form_section(
     stats.push(json!({ "key": "co", "label": "Condition Overload",
         "base": "—",
         "final": if has_source {
-            format!("{} per status type on target", fpct(panel.co_per_type))
+            if excluded {
+                format!(
+                    "{} per status type on target ({} effective)",
+                    fpct(panel.co_per_type),
+                    fpct(panel.co_per_type * panel.co_base_fraction())
+                )
+            } else {
+                format!("{} per status type on target", fpct(panel.co_per_type))
+            }
         } else {
             "no source equipped".to_string()
         },
@@ -1741,6 +1889,15 @@ fn form_section(
         // a Primed Shred on a Torid would have posted +2.2 m against an
         // engine that spends 0.
         if *stat == wfsim_engine::model::IndirectStat::PunchThrough {
+            continue;
+        }
+        if beam_range_shown
+            && matches!(
+                *stat,
+                wfsim_engine::model::IndirectStat::BeamRange
+                    | wfsim_engine::model::IndirectStat::BeamRangePercent
+            )
+        {
             continue;
         }
         indirect_rows.push(
@@ -2153,11 +2310,12 @@ fn form_section(
                 "excluded".to_string()
             },
             "rule": if fb.takes_condition_overload {
+                let field_co_base = fb.base_vector.total() * panel.co_base_fraction();
                 format!(
                     "{behavior} · base = {:.0}% ({:.0} of {:.0}) · this part = takes CO",
                     panel.co_base_fraction() * 100.0,
-                    raw_bd,
-                    base.base_vector.total()
+                    field_co_base,
+                    fb.base_vector.total()
                 )
             } else {
                 format!("{behavior} · base = n/a · this part = excluded")
@@ -2443,6 +2601,96 @@ mod source_row_tests {
         let inc = row(&p, "Incarnon Form", "Punch Through");
         assert_eq!(inc["final"], json!("+0m"));
         assert!(inc["note"].is_string(), "{inc}");
+    }
+
+    #[test]
+    fn torid_and_beam_panels_expose_parsed_beam_mechanics_and_exact_co_bases() {
+        let torid = panel_json(&json!({
+            "weapon": "torid",
+            "mods": ["primed_firestorm", "galvanized_aptitude"],
+            "evolutions": ["torid_evo1_incarnon_form", "torid_final_fusillade"],
+            "evolutions_as_given": true,
+        }));
+        let inc_form = torid["forms"].as_array().unwrap().iter()
+            .find(|f| f["label"] == json!("Incarnon Form")).unwrap();
+        assert_eq!(inc_form["stats"][0]["key"], json!("weakness_bonus"));
+        assert_eq!(row(&torid, "Incarnon Form", "Beam Ramp")["final"], json!("20% → 100% (0.6s)"));
+        assert_eq!(row(&torid, "Incarnon Form", "First Tick")["final"], json!("36.7%"));
+        assert_eq!(row(&torid, "Incarnon Form", "Ramp Decay")["final"], json!("0.8s → 1.2s"));
+        assert_eq!(row(&torid, "Incarnon Form", "Ammo per Tick")["final"], json!("1"));
+        assert_eq!(row(&torid, "Incarnon Form", "Beam Range")["final"], json!("37 m"));
+        let radius = row(&torid, "Incarnon Form", "Beam Radius");
+        assert_eq!(radius["base"], json!("2.3 m"));
+        assert_eq!(radius["final"], json!("3.312 m"));
+        assert!(radius["note"].as_str().unwrap().contains("do not take multishot"), "{radius}");
+        let chain = row(&torid, "Incarnon Form", "Beam Chain");
+        assert_eq!(chain["final"], json!("5 × 7 m (×0.75^n)"));
+        assert!(chain["note"].as_str().unwrap().contains("impact radius do not"), "{chain}");
+
+        let part_co = |form_label: &str, part_id: &str| {
+            let f = torid["forms"].as_array().unwrap().iter()
+                .find(|f| f["label"] == json!(form_label)).unwrap();
+            let pt = f["parts"].as_array().unwrap().iter()
+                .find(|p| p["id"] == json!(part_id)).unwrap();
+            pt["stats"].as_array().unwrap().iter().find(|r| r["key"] == json!("co")).unwrap().clone()
+        };
+        let inc_co = part_co("Incarnon Form", "direct");
+        assert_eq!(inc_co["rule"], json!("additive · base = 50% (51 of 102) · parts = direct"));
+        assert_eq!(inc_co["final"], json!("+80% per status type on target (+40% effective)"));
+        assert_eq!(
+            part_co("Base Form", "direct")["rule"],
+            json!("multiplying · base = 100% (151 of 151) · parts = direct + field")
+        );
+        assert_eq!(
+            part_co("Base Form", "field")["rule"],
+            json!("multiplying · base = 100% (91 of 91) · this part = takes CO")
+        );
+
+        let nukor = panel_json(&json!({ "weapon": "kuva_nukor", "mods": ["ruinous_extension"] }));
+        assert!(rows(&nukor, "Base Form").into_iter().all(|r| r["label"] != json!("Beam Radius")));
+        let nukor_range = row(&nukor, "Base Form", "Beam Range");
+        assert_eq!(nukor_range["base"], json!("29 m"));
+        assert_eq!(nukor_range["final"], json!("37 m"));
+        assert_eq!(row(&nukor, "Base Form", "Beam Chain")["final"], json!("2 × 9 m (×0.5)"));
+        assert_eq!(row(&nukor, "Base Form", "Ramp Decay")["final"], json!("0.8s → 1.2s"));
+        assert!(nukor["forms"][0]["indirect"].as_array().unwrap().is_empty(), "{nukor}");
+
+        let phantasma = panel_json(&json!({ "weapon": "phantasma_prime", "mods": [] }));
+        assert_eq!(row(&phantasma, "Base Form", "Beam Ramp")["final"], json!("2% → 100% (0.6s)"));
+        assert_eq!(row(&phantasma, "Base Form", "First Tick")["final"], json!("15.6%"));
+        assert_eq!(row(&phantasma, "Base Form", "Ramp Decay")["final"], json!("0.8s → 1.2s"));
+        assert_eq!(row(&phantasma, "Base Form", "Ammo per Tick")["final"], json!("0.5"));
+        assert!(row(&phantasma, "Base Form", "Multishot")["note"].as_str().unwrap().contains("central beam"));
+
+        let furis = panel_json(&json!({
+            "weapon": "furis",
+            "mods": [],
+            "evolutions": ["furis_evo1_incarnon_form"],
+            "evolutions_as_given": true,
+        }));
+        assert_eq!(row(&furis, "Incarnon Form", "Beam Ramp")["final"], json!("100%"));
+        assert!(rows(&furis, "Incarnon Form").into_iter().all(|r| r["label"] != json!("Ramp Decay")));
+
+        let boar = panel_json(&json!({
+            "weapon": "boar_prime",
+            "mods": [],
+            "evolutions": ["boar_prime_evo1_incarnon_form"],
+            "evolutions_as_given": true,
+        }));
+        assert_eq!(row(&boar, "Incarnon Form", "Auto-Target Beams")["final"], json!("3 (20 m, 10°)"));
+
+        let mayhem = panel_json(&json!({
+            "weapon": "torid",
+            "mods": ["galvanized_aptitude"],
+            "evolutions": ["torid_evo1_incarnon_form", "torid_plentiful_mayhem"],
+            "evolutions_as_given": true,
+        }));
+        let mayhem_co = mayhem["forms"].as_array().unwrap().iter()
+            .find(|f| f["label"] == json!("Incarnon Form")).unwrap()["parts"]
+            .as_array().unwrap().iter().find(|p| p["id"] == json!("direct")).unwrap()["stats"]
+            .as_array().unwrap().iter().find(|r| r["key"] == json!("co")).unwrap();
+        assert_eq!(mayhem_co["rule"], json!("additive · base = 62% (51 of 82) · parts = direct"));
+        assert!(mayhem_co["final"].as_str().unwrap().contains("effective"), "{mayhem_co}");
     }
 }
 

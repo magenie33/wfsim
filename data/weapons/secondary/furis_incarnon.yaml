@@ -67,6 +67,8 @@ pseudo_reload:
 # the CO term, which the row itself prints.
 co_behavior: additive_with_base_damage
 
+beam_ramp_floor: 1
+
 attack:
   # see notes: cone_half_angle_from
   spread:
@@ -79,6 +81,11 @@ attack:
   # read the same way here. If it turns out to be per-trigger-pull, the
   # cadence model changes and this line is where to change it.
   trigger: held
+  beam_ramp:
+    rise_seconds: 1
+    cooldown_delay_seconds: 0
+    cooldown_divisor: 1
+    per_target: false
   shot_type: hit_scan
   fire_rate: 12.0              # TICKS per second while held
   multishot: 1.0

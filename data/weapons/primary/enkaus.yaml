@@ -39,12 +39,19 @@ reload_seconds: 2.2
 # see notes: condition_overload_no_row_4
 co_behavior: additive_with_base_damage
 
+beam_ramp_floor: 0.4
+
 attack:
   # see notes: cone_half_angle_from_2
   spread:
     min_deg: 1.0
     max_deg: 1.0
   trigger: held
+  beam_ramp:
+    rise_seconds: 0.6
+    cooldown_delay_seconds: 0.8
+    cooldown_divisor: 2
+    per_target: true
   shot_type: hit_scan
   fire_rate: 12
   multishot: 1.0

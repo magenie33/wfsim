@@ -35,7 +35,7 @@ co_behavior: additive_with_base_damage
 # WHERE THE RAMP STARTS. "Damage ramps up from 30% to 100% over 0.6 seconds when
 # firing. After firing stops for 0.8 seconds, the damage decays back to 30% over
 # 2 seconds" — the same floor the Kuva Nukor carries.
-beam_ramp_floor: 0.30
+beam_ramp_floor: 0.2
 
 attack:
   # see notes: cone_half_angle_from
@@ -43,6 +43,11 @@ attack:
     min_deg: 0.0
     max_deg: 0.0
   trigger: held                 # continuous: `fire_rate` is TICKS per second
+  beam_ramp:
+    rise_seconds: 0.6
+    cooldown_delay_seconds: 0.8
+    cooldown_divisor: 2
+    per_target: true
   shot_type: hit_scan
   fire_rate: 10
   multishot: 1.0

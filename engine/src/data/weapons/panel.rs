@@ -660,6 +660,7 @@ fn panel_for_spec(s: &WeaponSpec, metadata: &'static WeaponSpec, frenzy_active: 
         // is stated once rather than copied into a second file that is free
         // to drift from it.
         beam_ramp_floor: s.beam_ramp_floor.unwrap_or(crate::model::BEAM_RAMP_FLOOR),
+        beam_ramp: s.attack.beam_ramp.or_else(|| s.attack.beam.as_ref().and_then(|b| b.ramp)),
         applies_microwave: s.applies_microwave,
         battery: s.battery,
         forced_procs: s.attack.forced_procs.iter().map(|t| damage_type(t)).collect(),

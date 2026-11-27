@@ -1936,33 +1936,25 @@ exactly (status chance pinned at 1.0 so the proc counts are not sample means).
 Phage: `6 + 1`) declare `has_central_beam: true`. Multishot mods and live relative
 multishot grants scale the outer beams only: `1 + (base - 1) × (1 + MS)`.
 
-**Damage RAMP.** *"Initial damage starts at a lower percentage, and ramps up to
-100% of its damage over 0.6 seconds of hitting a target. 0.8 seconds after the
-weapon stops hitting a target, the damage decays back to its initial point over
-2 seconds. For most weapons, this lower percentage is 20%."* Held fire advances
-the ramp one tick-period at a time per target; a gap longer than the 0.8 s grace
-decays it, and each new target or respawn starts cold at `beam_ramp_floor`.
-The per-weapon exceptions the page lists (Phantasma 15%, Convectrix 60/80%,
-Phage 70%, Embolist 30%) are weapon data: an entry that ramps from elsewhere
-states its own `beam_ramp_floor`, which is per ENTRY and not inherited.
+**Damage RAMP.** Native `WeaponBeamImpactBehavior` (`0xe6c570`, `0x1788204..0x17882ad`)
+initializes a fresh target's countdown to `1 / fire_rate` and advances elapsed
+attenuation time before checking due time and reading the factor. Each tick
+therefore samples `progress = min(1, elapsed / rise_seconds)` after adding its
+tick period `1 / fire_rate`, so higher fire rate emits an earlier first tick at
+a lower first-tick share (`floor + (1 - floor) * min(1, 1 / (fire_rate * rise))`).
+Idle gaps past `cooldown_delay_seconds` decay elapsed time by
+`rise_seconds * cooldown_divisor`.
 
-The ramp multiplies BOTH the direct hit and the status DoT `ModifiedBase`
-(MEASUREMENTS **M133**: Phantasma Prime +90% Heat ticks 14 on the first tick at
-15% ramp and 669–690 at 10 stacks over the ramp window, against 86 and 856 at
-full ramp).
+Every held beam binds its client attenuation floor, rise time, cooldown delay,
+cooldown divisor, and `AttenuateContinuousDamagePerTarget` flag (`beam_ramp_floor`
+and `attack.beam_ramp` / `attack.beam.ramp`). The ramp multiplies BOTH the
+direct hit and the status DoT `ModifiedBase` (MEASUREMENTS **M133**: Phantasma
+Prime client floor `0.02` at `12/s` gives `15.61%` on tick 1 -> `14.05`,
+matching measured `14`, and 669–690 at 10 Heat stacks over the ramp window).
 
-**Source:** wiki Continuous_Weapon + Multishot; measured **M133**. **Status:** verified.
+**Source:** client binary (`20261125T074623Z`, `20261125T052906Z`); measured **M133**. **Status:** verified.
 
 #### A beam's GEOMETRY — sphere and chain (Torid Incarnon)
-
-An `attack.beam.ramp` binds native rise time, idle delay and cooldown divisor.
-The native state is elapsed ramp time: `c = max(c - dt / divisor, 0)`,
-`progress = c / rise_seconds`. Normalized decay therefore divides by
-`rise_seconds * cooldown_divisor`. Unbound beams retain the two-second
-normalized convention. In 3D, a source declaration of
-`AttenuateContinuousDamagePerTarget` selects independent target clocks
-for damage from primary beams and their links. First-tick initialization
-and native reacquisition scheduling remain uncalibrated.
 
 Shape, not a damage part. It lives in `attack.beam` and is deliberately **not**
 a `radial:`, because in this engine that word means *a second damage instance*

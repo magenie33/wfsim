@@ -877,6 +877,7 @@ fn a_beam_merges_its_multishot_into_one_instance() {
     let mk = |continuous, multishot: f64| FightParams {
         damage: DamageVector::new().with(DamageType::Toxin, 50.0),
         continuous,
+        fire_rate: 8.0,
         multishot,
         base_multishot: 1.0,
         crit_multiplier: 1.0,
@@ -1015,28 +1016,24 @@ fn a_beam_ramps_from_a_fifth_to_full_over_point_six_seconds() {
     let mut ramp = BeamRamp::default();
     let frame_seconds = 0.1; // 10 ticks/s
     let mults: Vec<f64> = (0..8).map(|i| ramp.tick(i as f64 * frame_seconds, frame_seconds, crate::model::BEAM_RAMP_FLOOR, None)).collect();
-    assert!((mults[0] - 0.20).abs() < 1e-9, "first tick {}", mults[0]);
-    // Each held tick adds 0.1/0.6 of the way from 20% to 100%.
-    assert!((mults[1] - (0.2 + 0.8 / 6.0)).abs() < 1e-9, "second {}", mults[1]);
-    assert!((mults[6] - 1.0).abs() < 1e-9, "7th tick should be full: {}", mults[6]);
-    assert!((mults[7] - 1.0).abs() < 1e-9);
+    // Native pre-advance: the first tick arrives after 1 / fire_rate (0.1 s -> 1/6 of 0.6 s).
+    assert!((mults[0] - (0.2 + 0.8 / 6.0)).abs() < 1e-9, "first tick {}", mults[0]);
+    assert!((mults[1] - (0.2 + 0.8 * 2.0 / 6.0)).abs() < 1e-9, "second {}", mults[1]);
+    assert!((mults[5] - 1.0).abs() < 1e-9, "6th tick should be full: {}", mults[5]);
+    assert!((mults[6] - 1.0).abs() < 1e-9);
 
-    // Stopping decays it: "0.8 seconds after the weapon stops hitting a
-    // target, the damage decays back to its initial point over 2 seconds."
-    // Idle time is the gap MINUS the tick that would have been due, so a
-    // 1.9 s gap is 1.8 s idle, 1.0 s of it past the delay = half the ramp.
+    // Stopping decays it, then the reacquired tick advances by its own period.
     let mut r2 = BeamRamp::default();
     for i in 0..8 {
         r2.tick(i as f64 * frame_seconds, frame_seconds, crate::model::BEAM_RAMP_FLOOR, None);
     }
     let after = r2.tick(0.7 + 1.9, frame_seconds, crate::model::BEAM_RAMP_FLOOR, None);
-    assert!((after - (0.2 + 0.8 * 0.5)).abs() < 1e-9, "after a gap {after}");
-    // And a long enough gap returns it all the way to the floor.
+    assert!((after - (0.2 + 0.8 * (0.5 + 1.0 / 6.0))).abs() < 1e-9, "after a gap {after}");
     let mut r3 = BeamRamp::default();
     for i in 0..8 {
         r3.tick(i as f64 * frame_seconds, frame_seconds, crate::model::BEAM_RAMP_FLOOR, None);
     }
-    assert!((r3.tick(0.7 + 3.0, frame_seconds, crate::model::BEAM_RAMP_FLOOR, None) - 0.20).abs() < 1e-9);
+    assert!((r3.tick(0.7 + 3.0, frame_seconds, crate::model::BEAM_RAMP_FLOOR, None) - (0.2 + 0.8 / 6.0)).abs() < 1e-9);
 }
 
 #[test]
@@ -1123,8 +1120,12 @@ fn m133_beam_ramp_scales_dot_seeds_and_resets_per_target() {
         is_weak_point: false,
         crit_bonus: false,
     }];
-    // Single first tick at 15% ramp: (90 * 0.15 + 1) * 0.5 * 1.9 = 13.775.
-    p.fire_rate = 0.5;
+    // Single first tick at Phantasma Prime's real 12/s fire rate and 0.02 client floor:
+    // mult_1 = 0.02 + 0.98 * ((1/12) / 0.6) = 0.156111... -> 90 * mult_1 = 14.05 (M133: 14).
+    p.fire_rate = 12.0;
+    p.magazine_size = 0.5;
+    p.ammo_cost = 0.5;
+    p.reload_seconds = 5.0;
     p.duration_seconds = 1.5;
     let rec = record(&p, 1, 0.0, 2.0, 200, 0);
     let first_dot = rec
@@ -1139,14 +1140,17 @@ fn m133_beam_ramp_scales_dot_seeds_and_resets_per_target() {
             _ => None,
         })
         .expect("first-tick Heat DoT");
-    let expected = (90.0 * 0.15 + 1.0) * 0.5 * 1.9;
+    let first_mult = 0.02 + 0.98 * ((1.0 / 12.0) / 0.6);
+    let expected = (90.0 * first_mult + 1.0) * 0.5 * 1.9;
     assert!((first_dot - expected).abs() < 1e-4, "first-tick Heat DoT {first_dot} != {expected}");
 
     // Per-target ramp reset for continuous weapons without an attack.beam block:
     // kill the first target after full ramp (>0.6 s), then verify the respawn's
-    // first direct hit drops back to the 15% ramp floor.
+    // first direct hit drops back to the initial 12/s pre-advanced tick (~15.6%).
     let mut respawn = p.clone();
     respawn.fire_rate = 12.0;
+    respawn.magazine_size = 11.0;
+    respawn.reload_seconds = 0.5;
     respawn.duration_seconds = 1.2;
     respawn.forced_procs.clear();
     // Direct hit at full ramp is 90 * 1.9 = 171; ~8 ticks (~0.67 s) exceed 1000 HP.
@@ -1268,7 +1272,11 @@ fn planar_beam_ramps_track_chain_targets_independently() {
             _ => None,
         })
         .expect("body 1 chain hit on same tick as body 0 respawn");
-    assert!(b0 < 25.0, "respawned body 0 should drop to 20% floor, got {b0}");
+    let expected_b0 = (0.2 + 0.8 / 6.0) * 100.0;
+    assert!(
+        (b0 - expected_b0).abs() < 1e-4,
+        "respawned body 0 should reset to first-tick ramp ({expected_b0}), got {b0}"
+    );
     assert!((b1 - 50.0).abs() < 1.0, "body 1 should stay at full 100% ramp (50), got {b1}");
 }
 

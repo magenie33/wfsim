@@ -7,9 +7,7 @@
 /// kills, ability casts — and is not this. A weapon that killed something takes
 /// half, whatever else is equipped.
 pub(super) const WEAPON_AFFINITY_SHARE: f64 = 0.5;
-pub(super) const BEAM_RAMP_SECONDS: f64 = 0.6;
-pub(super) const BEAM_DECAY_DELAY: f64 = 0.8;
-pub(super) const BEAM_DECAY_SECONDS: f64 = 2.0;
+pub(super) use crate::model::{BEAM_DECAY_DELAY, BEAM_DECAY_SECONDS, BEAM_RAMP_SECONDS};
 
 /// Progress along a continuous weapon's damage ramp: 0 = the 20% floor, 1 =
 /// full damage. Advanced by holding fire on a target and decayed by stopping.
@@ -71,9 +69,10 @@ impl TargetRamp {
 
 #[wfsim_gas_macro::metered]
 impl BeamRamp {
-    /// The multiplier for a tick at `now`, then advance the ramp by one tick's
-    /// worth of held fire. The tick landing NOW is scaled by the progress it
-    /// arrives with, so the first tick of a burst deals the floor.
+    /// Advance the ramp by one tick's elapsed time before reading the factor,
+    /// matching DE's native beam impact update (`0x1788204..0x17882ad`): contact
+    /// initializes the first tick countdown to `1 / fire_rate` and accumulates
+    /// elapsed time before evaluating attenuation.
     pub(super) fn tick(&mut self, now: f64, tick_seconds: f64, floor: f64, source: Option<crate::model::BeamRampSpec>) -> f64 {
         let rise = source.map_or(BEAM_RAMP_SECONDS, |s| s.rise_seconds);
         let delay = source.map_or(BEAM_DECAY_DELAY, |s| s.cooldown_delay_seconds);
@@ -81,12 +80,19 @@ impl BeamRamp {
         if let Some(prev) = self.last_tick {
             let idle = now - prev - tick_seconds;
             if idle > delay {
-                self.progress =
-                    (self.progress - (idle - delay) / decay).max(0.0);
+                self.progress = if decay > 0.0 {
+                    (self.progress - (idle - delay) / decay).max(0.0)
+                } else {
+                    0.0
+                };
             }
         }
+        self.progress = if rise > 0.0 {
+            (self.progress + tick_seconds / rise).min(1.0)
+        } else {
+            1.0
+        };
         let mult = floor + (1.0 - floor) * self.progress;
-        self.progress = (self.progress + tick_seconds / rise).min(1.0);
         self.last_tick = Some(now);
         mult
     }
@@ -102,10 +108,12 @@ mod tests {
             rise_seconds: 0.6, cooldown_delay_seconds: 0.8, cooldown_divisor: 2.0, per_target: true,
         });
         let mut ramp = TargetRamp::default();
-        assert_eq!(ramp.hit(1, 0., 0.1, 0.2, source), 0.2);
-        assert_eq!(ramp.hit(1, 0., 0.1, 0.2, source), 0.2);
-        assert!((ramp.hit(1, 0.1, 0.1, 0.2, source) - (0.2 + 0.8 / 6.)).abs() < 1e-12);
-        assert_eq!(ramp.hit(2, 0.2, 0.1, 0.2, source), 0.2);
+        let first = 0.2 + 0.8 / 6.0;
+        let second = 0.2 + 0.8 * 2.0 / 6.0;
+        assert!((ramp.hit(1, 0., 0.1, 0.2, source) - first).abs() < 1e-12);
+        assert!((ramp.hit(1, 0., 0.1, 0.2, source) - first).abs() < 1e-12);
+        assert!((ramp.hit(1, 0.1, 0.1, 0.2, source) - second).abs() < 1e-12);
+        assert!((ramp.hit(2, 0.2, 0.1, 0.2, source) - first).abs() < 1e-12);
     }
 
     #[test]
@@ -115,10 +123,27 @@ mod tests {
         });
         let mut native = BeamRamp { progress: 1.0, last_tick: Some(0.0) };
         let mut ordinary = native;
-        // 0.1 next-tick spacing + 0.8 delay + 0.6 of decay: half the native state.
-        assert!((native.tick(1.5, 0.1, 0.2, source) - 0.6).abs() < 1e-12);
-        assert!((ordinary.tick(1.5, 0.1, 0.2, None) - 0.76).abs() < 1e-12);
+        // 0.1 next-tick spacing + 0.8 delay + 0.6 of decay leaves 0.5 progress,
+        // then the tick's own 0.1 s advances progress by 1/6 before sampling.
+        assert!((native.tick(1.5, 0.1, 0.2, source) - (0.2 + 0.8 * (0.5 + 1.0 / 6.0))).abs() < 1e-12);
+        assert!((ordinary.tick(1.5, 0.1, 0.2, None) - (0.2 + 0.8 * (0.7 + 1.0 / 6.0))).abs() < 1e-12);
         let mut empty = BeamRamp { progress: 1.0, last_tick: Some(0.0) };
-        assert!((empty.tick(2.1, 0.1, 0.2, source) - 0.2).abs() < 1e-12);
+        assert!((empty.tick(2.1, 0.1, 0.2, source) - (0.2 + 0.8 / 6.0)).abs() < 1e-12);
+    }
+
+    #[test]
+    fn faster_fire_rate_lowers_first_tick_and_matches_phantasma_m133() {
+        let torid = Some(crate::model::BeamRampSpec {
+            rise_seconds: 0.6, cooldown_delay_seconds: 0.8, cooldown_divisor: 2.0, per_target: true,
+        });
+        let slow = BeamRamp::default().tick(0.0, 1.0 / 6.4, 0.2, torid);
+        let base = BeamRamp::default().tick(0.0, 1.0 / 8.0, 0.2, torid);
+        let fast = BeamRamp::default().tick(0.0, 1.0 / 15.2, 0.2, torid);
+        assert!(slow > base && base > fast, "slow={slow} base={base} fast={fast}");
+        assert!((base - (0.2 + 0.8 * (0.125 / 0.6))).abs() < 1e-12);
+
+        // Phantasma Prime client floor 0.02 at 12 ticks/s -> 0.15611 * 90 = 14.05 (M133: 14).
+        let pp = BeamRamp::default().tick(0.0, 1.0 / 12.0, 0.02, torid);
+        assert!((pp * 90.0 - 14.05).abs() < 0.01, "pp first tick {}", pp * 90.0);
     }
 }

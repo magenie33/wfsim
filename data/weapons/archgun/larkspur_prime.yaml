@@ -127,6 +127,11 @@ attack:
   # the Larkspur Prime at half its damage. The arena is on the ground, so every
   # number here is the atmospheric one.
   beam:
+    ramp:
+      rise_seconds: 0.6
+      cooldown_delay_seconds: 0.8
+      cooldown_divisor: 2
+      per_target: true
     # 40 m is the ATMOSPHERE column; the Archwing one is 160 (wiki). This said
     # 20 and was read by nothing, while the weapon's own unmodelled note said
     # 40 — the two disagreed in the same file until the range was modelled and

@@ -670,9 +670,10 @@ pub struct FightParams {
     /// A syndicate augment's radial (Gilded Truth grants Truth) — armed by
     /// AFFINITY this weapon earns, fired on its own cooldown.
     pub syndicate_radial: Option<crate::data::syndicates::SyndicateDef>,
-    /// Where a continuous weapon's damage ramp STARTS, as a fraction of full.
-    /// 0.20 "for most weapons" (wiki); Phantasma Prime is 0.15.
+    /// Where a continuous weapon's damage ramp starts, as a fraction of full.
     pub beam_ramp_floor: f64,
+    /// Native client beam attenuation timing and per-target selector.
+    pub beam_ramp: Option<crate::model::BeamRampSpec>,
     /// Does this weapon apply MICROWAVE? See [`DebuffState::microwave`].
     pub applies_microwave: bool,
     /// See `data::weapons::WeaponSpec::independent_procs` — status effects this

@@ -1070,6 +1070,8 @@ pub struct WeaponBase {
     pub kill_streak_summon: Option<crate::model::KillStreakSummonSpec>,
     /// Where this weapon's beam ramp starts (0.20 unless it says otherwise).
     pub beam_ramp_floor: f64,
+    /// Native client beam attenuation timing and per-target selector.
+    pub beam_ramp: Option<BeamRampSpec>,
     /// Does this weapon apply MICROWAVE? See `fight::DebuffState::microwave`.
     pub applies_microwave: bool,
     /// See `data::weapons::WeaponSpec::independent_procs`. No mod adds or

@@ -50,7 +50,7 @@ co_behavior: additive_with_base_damage
 # It is a real 5-point difference on every tick before the ramp tops out, and
 # on an 11-round magazine at 0.5 ammo a tick — 22 ticks, 1.8 seconds — a
 # weapon spends a third of every magazine climbing.
-beam_ramp_floor: 0.15
+beam_ramp_floor: 0.02
 
 attack:
   # see notes: cone_half_angle_from
@@ -58,6 +58,11 @@ attack:
     min_deg: 0.0
     max_deg: 0.0
   trigger: held                # continuous: `fire_rate` is TICKS per second
+  beam_ramp:
+    rise_seconds: 0.6
+    cooldown_delay_seconds: 0.8
+    cooldown_divisor: 2
+    per_target: true
   shot_type: hit_scan
   fire_rate: 12.0              # tied for the highest fire rate of all shotguns
   # SIX BEAMS, and the damage below is PER BEAM. The module says Multishot 6

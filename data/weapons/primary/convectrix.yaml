@@ -36,7 +36,7 @@ co_behavior: additive_with_base_damage
 # A CONTINUOUS WEAPON, and its ramp starts high: "Damage ramps up from 60%
 # (primary fire)/80% (alt-fire) to 100% over 0.6 seconds when firing" (wiki).
 # Held, so its two beams land on one body as ONE instance, the beam rule.
-beam_ramp_floor: 0.60
+beam_ramp_floor: 0.6
 
 attack:
   # see notes: cone_half_angle_from_2
@@ -44,6 +44,11 @@ attack:
     min_deg: 2.0
     max_deg: 2.0
   trigger: held                 # continuous: `fire_rate` is TICKS per second
+  beam_ramp:
+    rise_seconds: 0.6
+    cooldown_delay_seconds: 0.8
+    cooldown_divisor: 2
+    per_target: true
   shot_type: hit_scan
   fire_rate: 12
   multishot: 2.0
