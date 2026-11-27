@@ -1193,8 +1193,8 @@ def ship_mechanics(
             lbl_weapons = f"文中武器 ({len(seen_weapons)})" if lang == "zh" else f"Weapons Referenced ({len(seen_weapons)})"
             lbl_updated = f"更新日期：{art['updated']}" if lang == "zh" else f"Updated {art['updated']}"
             lbl_copy_url = "复制链接" if lang == "zh" else "Copy link"
-            lbl_copy_ai = "复制给 AI" if lang == "zh" else "Copy for AI"
-            lbl_copied_ai = "已复制 (含出处)" if lang == "zh" else "Copied (with source)"
+            lbl_copy_ai = "复制全文" if lang == "zh" else "Copy full text"
+            lbl_copied_ai = "已复制" if lang == "zh" else "Copied"
             lbl_copy_ref = "Wiki 引用" if lang == "zh" else "Wiki <ref>"
             lbl_copied = "已复制" if lang == "zh" else "Copied"
             ai_hdr = (
