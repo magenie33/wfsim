@@ -81,10 +81,11 @@
 .mech-toc a{color:var(--text-2);text-decoration:none}
 .mech-toc a:hover{color:var(--accent)}
 .mech-wlist{display:flex;flex-wrap:wrap;gap:5px}
-.mech-cite{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;background:var(--panel3);border:1px solid var(--line);border-radius:6px;padding:7px;color:var(--text-2);word-break:break-all;margin:0 0 8px}
 .mech-btn{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:6px;font:inherit;font-size:12px;background:var(--panel2);border:1px solid var(--line);color:var(--text);cursor:pointer}
 .mech-btn:hover{border-color:var(--accent);color:var(--accent)}
-.mech-btn-row{display:flex;flex-wrap:wrap;gap:6px}
+.mech-aside-links{display:flex;flex-wrap:wrap;gap:10px;font-size:12px;color:var(--muted);padding:0 4px}
+.mech-aside-links a,.mech-aside-links button{background:none;border:0;padding:0;font:inherit;color:var(--muted);text-decoration:none;cursor:pointer}
+.mech-aside-links a:hover,.mech-aside-links button:hover{color:var(--accent)}
 .mech-calc{margin:16px 0;padding:14px 16px;background:var(--panel3);border:1px solid var(--line);border-radius:8px}
 .mech-calc h3{margin:0 0 10px;font-size:14px}
 .mc-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:10px}
@@ -116,7 +117,8 @@
 .mech-toc-fold>summary::after{content:"▸";font-size:12px;transition:transform .12s}
 .mech-toc-fold[open]>summary::after{transform:rotate(90deg)}
 .mech-toc-fold[open]>summary{margin-bottom:8px}
-.mech-lang-btn{font-size:12px;text-decoration:none;white-space:nowrap}
+.mech-lang-sel{height:28px;padding:0 8px;font:inherit;font-size:12px;background:var(--plane);color:var(--text);border:1px solid var(--line);border-radius:8px;cursor:pointer}
+.mech-lang-sel:hover,.mech-lang-sel:focus{outline:none;border-color:var(--accent)}
 @media(max-width:900px){.mech-page .topbar-inner .menu-toggle{margin-left:auto}}
 </style>
 <script>(function(){try{var t=localStorage.getItem("wfsim-theme");if(t==="dark"||t==="light")document.documentElement.setAttribute("data-theme",t);}catch(e){}})();</script>
@@ -149,8 +151,19 @@
       </nav>
       <div class="tblinks">
         <a class="sup-link ghost-btn" href="/support" title="支持 WF模拟" aria-label="支持"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" d="M12 20.35l-1.32-1.2C6.03 14.92 3 12.17 3 8.79 3 6.03 5.16 3.87 7.92 3.87c1.56 0 3.06.72 4.04 1.86l.04.05.04-.05c.98-1.14 2.48-1.86 4.04-1.86C18.84 3.87 21 6.03 21 8.79c0 3.38-3.03 6.13-7.68 10.37l-1.32 1.19z"/></svg><span class="tbl">支持</span></a>
-        <a class="ghost-btn mech-lang-btn" href="/mechanics" lang="en">English</a>
-        <button type="button" id="theme-toggle" class="ghost-btn" title="切换浅色/深色主题" aria-label="切换浅色/深色主题">◐</button>
+        <div class="tbmore" id="tbmore">
+          <button type="button" id="tbmore-toggle" class="ghost-btn tbmore-btn" aria-expanded="false" aria-controls="tbmore-panel" aria-haspopup="true" title="设置" aria-label="设置"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M4 7h10m4 0h2M4 17h4m4 0h8M14 4.5v5M8 14.5v5"/></svg></button>
+          <div class="tbmore-panel" id="tbmore-panel">
+            <div class="tbmore-row">
+              <span class="tbl">语言</span>
+              <select id="lang-select" class="dd mech-lang-sel" aria-label="Language / 语言"><option value="en">English</option><option value="zh" selected>中文</option></select>
+            </div>
+            <div class="tbmore-row">
+              <span class="tbl">主题</span>
+              <button type="button" id="theme-toggle" class="ghost-btn" title="切换浅色/深色主题" aria-label="切换浅色/深色主题">◐</button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -161,22 +174,35 @@
 <footer class="footer">
   <div class="footer-inner">
     <span>WF模拟 是非官方粉丝项目，与 Digital Extremes 无关。</span>
-    · <a href="/weapons">军械库</a> · <a href="/mechanics/zh">机制</a> · <a href="/method/zh">方法</a> · <a href="/mechanics/zh.md">Markdown</a>
+    · <a href="/weapons">军械库</a> · <a href="/mechanics/zh">机制</a> · <a href="/method/zh">方法</a> · <a href="/mechanics" lang="en" data-set-lang="en">English</a> · <a href="/mechanics/zh.md">Markdown</a>
   </div>
 </footer>
 <script>(function(){
   var tb=document.getElementById("topbar"), mt=document.getElementById("menu-toggle");
   var cm=document.getElementById("community-menu"), ct=document.getElementById("community-toggle");
-  var th=document.getElementById("theme-toggle");
+  var tm=document.getElementById("tbmore"), tt=document.getElementById("tbmore-toggle");
+  var ls=document.getElementById("lang-select"), th=document.getElementById("theme-toggle");
+  var routes={en:"/mechanics",zh:"/mechanics/zh"};
   function setMenu(on){if(!tb||!mt)return;tb.classList.toggle("menu-open",on);mt.setAttribute("aria-expanded",String(on));}
   function setComm(on){if(!cm||!ct)return;cm.classList.toggle("open",on);ct.setAttribute("aria-expanded",String(on));}
-  if(mt)mt.addEventListener("click",function(ev){ev.stopPropagation();setComm(false);setMenu(!tb.classList.contains("menu-open"));});
-  if(ct)ct.addEventListener("click",function(ev){ev.stopPropagation();setComm(!cm.classList.contains("open"));});
+  function setMore(on){if(!tm||!tt)return;tm.classList.toggle("open",on);tt.setAttribute("aria-expanded",String(on));}
+  if(mt)mt.addEventListener("click",function(ev){ev.stopPropagation();setComm(false);setMore(false);setMenu(!tb.classList.contains("menu-open"));});
+  if(ct)ct.addEventListener("click",function(ev){ev.stopPropagation();setMore(false);setComm(!cm.classList.contains("open"));});
+  if(tt)tt.addEventListener("click",function(ev){ev.stopPropagation();setComm(false);setMore(!tm.classList.contains("open"));});
   document.addEventListener("click",function(ev){
     if(tb&&tb.classList.contains("menu-open")&&!tb.contains(ev.target))setMenu(false);
     if(cm&&cm.classList.contains("open")&&!cm.contains(ev.target))setComm(false);
+    if(tm&&tm.classList.contains("open")&&!tm.contains(ev.target))setMore(false);
   });
-  document.addEventListener("keydown",function(ev){if(ev.key==="Escape"){setMenu(false);setComm(false);}});
+  document.addEventListener("keydown",function(ev){if(ev.key==="Escape"){setMenu(false);setComm(false);setMore(false);}});
+  if(ls)ls.addEventListener("change",function(){
+    var v=ls.value==="zh"?"zh":"en";
+    try{localStorage.setItem("wfsim-lang",v);}catch(e){}
+    if(routes[v]&&routes[v]!==location.pathname)location.assign(routes[v]+location.hash);
+  });
+  document.querySelectorAll("[data-set-lang]").forEach(function(a){
+    a.addEventListener("click",function(){try{localStorage.setItem("wfsim-lang",a.getAttribute("data-set-lang"));}catch(e){}});
+  });
   if(th)th.addEventListener("click",function(){
     var cur=document.documentElement.getAttribute("data-theme");
     var dark=cur?cur==="dark":!(window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches);

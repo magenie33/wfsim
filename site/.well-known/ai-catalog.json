@@ -50,6 +50,28 @@
         "Torid Incarnon sphere and chain mechanics",
         "how does Warframe Magnetic break damage work"
       ]
+    },
+    {
+      "identifier": "urn:air:wfsim.app:doc:mechanics-beam-weapons",
+      "displayName": "Beam Weapons (Continuous) Mechanics & Damage Calculation",
+      "type": "text/markdown",
+      "url": "https://wfsim.app/mechanics/beam-weapons.md",
+      "representativeQueries": [
+        "how do Warframe beam weapons calculate ramp-up and first tick",
+        "Warframe beam multishot status DoT scaling",
+        "Torid Incarnon sphere and chain mechanics"
+      ]
+    },
+    {
+      "identifier": "urn:air:wfsim.app:doc:mechanics-magnetic-electricity",
+      "displayName": "Magnetic & Electricity Status Mechanics & Calculation (incl. Gas)",
+      "type": "text/markdown",
+      "url": "https://wfsim.app/mechanics/magnetic-electricity.md",
+      "representativeQueries": [
+        "how does Warframe Magnetic break damage work",
+        "why do different weapons deal different Magnetic break damage in Warframe",
+        "Warframe Electricity and Gas headshot double dip latest stack rule"
+      ]
     }
   ]
 }

@@ -1,7 +1,21 @@
+> 出处：WF模拟（WFSim）机制参考 | 原文：https://wfsim.app/mechanics/zh/beam-weapons | 更新：2026-11-27 | English：https://wfsim.app/mechanics/beam-weapons | 引用说明：https://wfsim.app/reuse
+
 # 【Warframe｜星际战甲】射线武器（持续型武器）计算机制全解析
 
 > **整理与署名**：WFSim（WF模拟）｜[wfsim.app](https://wfsim.app)  
 > **范围**：Warframe 持续型（射线）武器的伤害结算、预热曲线、多重合并与扩散机制；公式与算例均对照幻影装置游戏内实测校准，尚待进一步独立验证的边界细节已在对应小节标注。
+
+---
+
+## 核心公式与校准常量速查
+
+| 机制项 | 公式 / 常量 | 校准范围 |
+| --- | --- | --- |
+| **跳频与耗弹** | `每秒跳数 = 面板射速`；常规耗弹 `0.5 发/跳`（少数武器为 `1.0 发/跳`） | 全部持续型（Held）射线 |
+| **首跳预热倍率** | `R(1) = Floor + (1 - Floor) × min(1, 1 / (射速 × T_rise))`（常规 `Floor = 0.20`，`T_rise = 0.6 s`） | 第 1 跳出伤前先预推进 `1/射速`；`Floor = 1.0` 无预热 |
+| **停火保持与衰减** | 停火后保持 `0.8 s`，随后用 `2.0 s` 线性回落至 `Floor` | 衰减中途续火支持“半热重启” |
+| **多重合并与 DoT** | 单跳直伤 `× M`、触发 `× M`、暴击判定 `1×` → **持续异常总伤按 `M²` 缩放** | [幻离子](https://wfsim.app/weapons/Phantasma)/[噬菌者](https://wfsim.app/weapons/Phage)中心 1 束不吃多重：`1 + (B - 1) × (1 + MS)` |
+| **穿透门控** | 凡末端伤害半径 `radius > 0` 的射线，穿透深度均锁死为 `0` | 适用[伊格尼斯·亡魂](https://wfsim.app/weapons/Ignis_Wraith)、[托里德](https://wfsim.app/weapons/Torid)（灵化）、[凝目](https://wfsim.app/weapons/gaze_primary)等 |
 
 ---
 

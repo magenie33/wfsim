@@ -1,7 +1,21 @@
+> Source: WFSim Mechanics Reference | Canonical: https://wfsim.app/mechanics/beam-weapons | Updated: 2026-11-27 | 中文: https://wfsim.app/mechanics/zh/beam-weapons | Reuse: https://wfsim.app/reuse
+
 # [Warframe] Beam Weapons (Continuous) Mechanics & Damage Calculation Guide
 
 > **Author & Attribution**: WFSim | [wfsim.app](https://wfsim.app)  
 > **Scope**: Damage resolution, ramp-up timing, merged multishot, and spread mechanics of Warframe continuous (beam) weapons, calibrated against in-game Simulacrum measurements. Unresolved edge cases are noted in place.
+
+---
+
+## Key Formulas & Verified Constants
+
+| Quantity | Formula / Constant | Verified Scope |
+| --- | --- | --- |
+| **Tick Rate & Ammo** | `Ticks/sec = Fire Rate`; typical ammo cost `0.5 / tick` (`1.0 / tick` on select beams) | All `Held` continuous weapons |
+| **First-Tick Ramp Share** | `R(1) = Floor + (1 - Floor) × min(1, 1 / (Fire Rate × T_rise))` (`Floor` typically `0.20`, `T_rise = 0.6 s`) | Pre-advance before Tick 1; `Floor = 1.0` skips ramp |
+| **Cooldown Hold & Decay** | Hold `0.8 s` after ceasing fire, then decay linearly to `Floor` over `2.0 s` | Warm restart resumes from current level |
+| **Merged Multishot** | Direct hit `× M`, status procs/tick `× M`, crit roll `1×` → **DoT DPS scales as `M²`** | Outer-only scaling on multi-beam shotguns (`1 + (B - 1) × (1 + MS)`) |
+| **Punch Through Gate** | Any beam with terminal impact radius `radius > 0` clamps Punch Through depth to `0` | Applies to [Ignis Wraith](https://wfsim.app/weapons/Ignis_Wraith), [Torid](https://wfsim.app/weapons/Torid) Incarnon, [Gaze](https://wfsim.app/weapons/gaze_secondary), etc. |
 
 ---
 

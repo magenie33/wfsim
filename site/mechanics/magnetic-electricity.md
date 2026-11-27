@@ -1,7 +1,21 @@
+> Source: WFSim Mechanics Reference | Canonical: https://wfsim.app/mechanics/magnetic-electricity | Updated: 2026-11-27 | 中文: https://wfsim.app/mechanics/zh/magnetic-electricity | Reuse: https://wfsim.app/reuse
+
 # [Warframe] Magnetic & Electricity Status Mechanics & Calculation Guide
 
 > **Author & Attribution**: WFSim | [wfsim.app](https://wfsim.app)  
 > **Scope**: Calculation rules for Warframe **Magnetic** and **Electricity** status effects (plus **Gas**, which shares the same radial pool model), native weapon weakpoint tiers, and Simulacrum-calibrated numeric examples.
+
+---
+
+## Key Formulas & Verified Constants
+
+| Quantity | Formula / Constant | Verified Scope |
+| --- | --- | --- |
+| **Electricity Stack Seed** | `Seed_i = 0.5 × ModdedBaseDmg × Crit × BodyPart_i × Faction × (1 + ElecMod) × S` | Snapshotted per proc; 6 ticks over 6 s (3 m AoE) |
+| **Electricity / Gas Tick** | `Tick(t) = (∑ Seed_i) × Faction × L_latest × Mitigation(t)` | `L_latest` uses the **most recently applied** stack's hit part (e.g. `3.0×` head vs `1.0×` body) |
+| **Magnetic Disrupt (Pre-Break)** | `+100%` damage to Shields & Overguard at 1 stack, `+25%` per extra stack up to **`+325%` at 10 stacks** | Multiplicative against Shield & Overguard pools |
+| **Magnetic Break Stage 1** | `Q = trunc(MaxPool × 0.005 × N)`, `Norm = round(Q / (1 + max(W, 0) × V))`, `Packet1 = Norm × S × A` | `N ∈ [1, 10]`; humanoid proxy `(V=1, A=2)` → net `2 / (1 + W)` |
+| **Magnetic Break Stage 2** | Forced 1-stack Electricity (`Body`, resets `L_latest = 1.0`): `Tick = max(1, 0.5 × (1 + Packet1 × S)) × (1 + ElecMod)` | **`S²` double-dip** on `+Status Damage` across Stages 1 & 2 |
 
 ---
 
