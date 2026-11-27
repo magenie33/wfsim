@@ -19,7 +19,7 @@
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="stylesheet" href="/asset/style.ba6f3c1973b9.css">
+<link rel="stylesheet" href="/asset/style.0723dedcae45.css">
 <link rel="icon" type="image/svg+xml" href="/logo.svg">
 <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "Beam Weapons (Continuous) Mechanics & Damage Calculation", "description": "Fire-rate-dependent first-tick pre-advance, 5-stage per-target ramp-up lifecycle, quadratic M² status DoT multishot scaling, center-beam exceptions, terminal-radius Punch Through gate, and Torid Incarnon math.", "inLanguage": "en", "dateModified": "2026-11-27", "url": "https://wfsim.app/mechanics/beam-weapons", "author": {"@type": "Organization", "name": "WFSim", "url": "https://wfsim.app/"}, "publisher": {"@type": "Organization", "name": "WFSim", "url": "https://wfsim.app/"}, "about": {"@type": "VideoGame", "name": "Warframe"}}</script>
 <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Does a beam weapon's first tick always deal a fixed 20% damage in Warframe?", "acceptedAnswer": {"@type": "Answer", "text": "No. The ramp clock pre-advances by 1 / Fire Rate before Tick 1 resolves, so Tick 1 equals Floor + (1 - Floor) * min(1, 1 / (Fire Rate * Ramp Duration)). Phantasma Prime has a 2% base floor, which yields 15.6% on Tick 1 at 12 FR and 8.8% at 24 FR."}}, {"@type": "Question", "name": "Why does multishot scale beam status DoT quadratically?", "acceptedAnswer": {"@type": "Answer", "text": "On a single target, M beams merge into one tick whose status chance scales by M and whose base damage also scales by M. For Heat, Toxin, Electricity, Gas, and Slash procs, proc frequency (xM) times per-proc base (xM) yields M² scaling."}}, {"@type": "Question", "name": "Does Punch Through add chain origins on Torid Incarnon or Ignis Wraith?", "acceptedAnswer": {"@type": "Answer", "text": "No. Any beam with a terminal damage radius (radius > 0) clamps Punch Through depth to 0, overriding both innate and modded Punch Through. Only radius == 0 chaining beams such as Amprex, Tenet Glaxion, Tenet Cycron, Kuva Nukor, and Larkspur gain extra chain origins via Punch Through."}}]}</script>
@@ -112,24 +112,48 @@
 .mech-chip:hover{border-color:var(--accent);color:var(--accent)}
 .mech-subcat{margin-top:10px;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
 .mech-subcat>summary{cursor:pointer;font-size:12.5px;color:var(--text-2);font-weight:600}
-.mech-topnav{display:flex;align-items:center;gap:6px;margin-left:auto;flex-wrap:wrap}
-.mech-topnav a{padding:4px 9px;border-radius:6px;font-size:13px;color:var(--text-2);text-decoration:none}
-.mech-topnav a:hover,.mech-topnav a.cur{background:var(--panel2);color:var(--text)}
-.mech-topnav a.cur{font-weight:600}
+.mech-toc-fold>summary{cursor:pointer;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);list-style:none;display:flex;align-items:center;justify-content:space-between}
+.mech-toc-fold>summary::-webkit-details-marker{display:none}
+.mech-toc-fold>summary::after{content:"▸";font-size:12px;transition:transform .12s}
+.mech-toc-fold[open]>summary::after{transform:rotate(90deg)}
+.mech-toc-fold[open]>summary{margin-bottom:8px}
+.mech-lang-btn{font-size:12px;text-decoration:none;white-space:nowrap}
+@media(max-width:900px){.mech-page .topbar-inner .menu-toggle{margin-left:auto}}
 </style>
 <script>(function(){try{var t=localStorage.getItem("wfsim-theme");if(t==="dark"||t==="light")document.documentElement.setAttribute("data-theme",t);}catch(e){}})();</script>
 </head>
-<body>
-<header class="topbar">
+<body class="mech-page">
+<header class="topbar" id="topbar">
   <div class="topbar-inner">
     <a class="brand" href="/">WF<span>Sim</span></a>
-    <nav class="mech-topnav">
-      <a href="/weapons">Weapons</a>
-      <a href="/benchmark">Benchmark</a>
-      <a href="/mechanics" class="cur">Mechanics</a>
-      <a href="/method">Method</a>
-      <a href="/mechanics/zh/beam-weapons" lang="zh-Hans">中文</a>
-    </nav>
+    <button id="menu-toggle" class="ghost-btn menu-toggle" aria-expanded="false" aria-controls="topmenu" aria-label="Menu" title="Menu">☰</button>
+    <div id="topmenu" class="topmenu">
+      <nav class="topnav">
+        <a class="tnav" href="/weapons">Arsenal</a>
+        <a class="tnav" href="/benchmark">Benchmark</a>
+        <a class="tnav sel" href="/mechanics">Mechanics</a>
+        <a class="tnav" href="/utility/fissures">Utility</a>
+        <div class="tbmore tbgroup" id="community-menu">
+          <button id="community-toggle" class="tnav tbmore-btn tbgroup-btn" aria-expanded="false" aria-controls="community-panel" aria-haspopup="true">Community</button>
+          <div class="tbmore-panel" id="community-panel">
+            <a class="tbmenu-link" href="/compute">Help compute WFSim</a>
+            <a class="tbmenu-link" href="/contributors">Contributors</a>
+            <a class="tbmenu-link" href="/community/projects">Community Projects</a>
+            <span class="tbmenu-sep"></span>
+            <a class="tbmenu-link" href="/method">Method</a>
+            <a class="tbmenu-link" href="https://discord.gg/H4BMqvYFVg" target="_blank" rel="noopener">Discord</a>
+            <a class="tbmenu-link" href="https://qm.qq.com/q/uiXrMSTs8S" target="_blank" rel="noopener">QQ group</a>
+            <a class="tbmenu-link" href="/clan">Clan<span class="clan-name">WFSim#582</span></a>
+            <a class="tbmenu-link" href="https://github.com/magenie33/wfsim" target="_blank" rel="noopener">GitHub</a>
+          </div>
+        </div>
+      </nav>
+      <div class="tblinks">
+        <a class="sup-link ghost-btn" href="/support" title="Support WFSim" aria-label="Support"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" d="M12 20.35l-1.32-1.2C6.03 14.92 3 12.17 3 8.79 3 6.03 5.16 3.87 7.92 3.87c1.56 0 3.06.72 4.04 1.86l.04.05.04-.05c.98-1.14 2.48-1.86 4.04-1.86C18.84 3.87 21 6.03 21 8.79c0 3.38-3.03 6.13-7.68 10.37l-1.32 1.19z"/></svg><span class="tbl">Support</span></a>
+        <a class="ghost-btn mech-lang-btn" href="/mechanics/zh/beam-weapons" lang="zh-Hans">中文</a>
+        <button type="button" id="theme-toggle" class="ghost-btn" title="Toggle light / dark" aria-label="Toggle light / dark">◐</button>
+      </div>
+    </div>
   </div>
 </header>
 <main class="mech-wrap">
@@ -321,7 +345,7 @@ When the beam hits again, advance one tick before reading:
 })();</script>
 </article>
 <aside class="mech-aside">
-  <div class="mech-box"><h3>On This Page</h3><ul class="mech-toc"><li class="l2"><a href="#1-what-is-a-beam-weapon">1. What Is a &quot;Beam Weapon&quot;?</a></li><li class="l2"><a href="#2-damage-ramp-up-lifecycle-multi-enemy-resolution">2. Damage Ramp-Up Lifecycle &amp; Multi-Enemy Resolution</a></li><li class="l3"><a href="#stage-1-initial-contact-why-the-first-tick-scales-with-fire-rate-pre-advance">Stage 1: Initial Contact &amp; Why the First Tick Scales with Fire Rate (Pre-Advance)</a></li><li class="l3"><a href="#stage-2-linear-climb-permanent-status-dot-snapshotting">Stage 2: Linear Climb &amp; Permanent Status DoT Snapshotting</a></li><li class="l3"><a href="#stages-3-4-grace-period-hold-linear-cooldown-decay-and-warm-restart">Stages 3 &amp; 4: Grace-Period Hold, Linear Cooldown Decay, and &quot;Warm Restart&quot;</a></li><li class="l3"><a href="#stage-5-per-target-timers-multi-chain-deduplication-full-multi-enemy-timeline">Stage 5: Per-Target Timers, Multi-Chain Deduplication &amp; Full Multi-Enemy Timeline</a></li><li class="l3"><a href="#measured-ramp-up-floors-across-beam-weapons">Measured Ramp-Up Floors Across Beam Weapons</a></li><li class="l2"><a href="#3-the-other-5-core-beam-rules-with-worked-math">3. The Other 5 Core Beam Rules (with Worked Math)</a></li><li class="l3"><a href="#rule-1-fire-rate-ticks-sec-ammo-cost-usually-0-5-tick">Rule 1: Fire Rate = Ticks/sec, Ammo Cost Usually 0.5/Tick</a></li><li class="l3"><a href="#rule-2-merged-multishot-mechanics">Rule 2: Merged Multishot Mechanics</a></li><li class="l3"><a href="#rule-3-complete-single-tick-direct-status-dot-formulas">Rule 3: Complete Single-Tick Direct &amp; Status DoT Formulas</a></li><li class="l3"><a href="#rule-4-range-falloff-punch-through-gates-headshots">Rule 4: Range, Falloff, Punch Through Gates &amp; Headshots</a></li><li class="l3"><a href="#rule-5-chain-pathfinding-rules-verified">Rule 5: Chain Pathfinding Rules (Verified)</a></li><li class="l2"><a href="#4-complete-taxonomy-of-beam-weapons-6-mechanical-types">4. Complete Taxonomy of Beam Weapons (6 Mechanical Types)</a></li><li class="l3"><a href="#type-1-pure-single-target-direct-beams-including-wide-beams">Type 1: Pure Single-Target Direct Beams (Including Wide Beams)</a></li><li class="l3"><a href="#type-2-innate-multi-beam-merged-weapons">Type 2: Innate Multi-Beam Merged Weapons</a></li><li class="l3"><a href="#type-3-terminal-damage-sphere-beams">Type 3: Terminal Damage-Sphere Beams</a></li><li class="l3"><a href="#type-4-chaining-beams">Type 4: Chaining Beams</a></li><li class="l3"><a href="#type-5-hybrid-multi-origin-chaining-beams">Type 5: Hybrid Multi-Origin Chaining Beams</a></li><li class="l3"><a href="#type-6-kill-spawned-independent-secondary-beam-weapons">Type 6: Kill-Spawned Independent Secondary-Beam Weapons</a></li><li class="l2"><a href="#5-comprehensive-worked-weapon-examples">5. Comprehensive Worked Weapon Examples</a></li><li class="l3"><a href="#example-1-deep-dive-torid-both-forms-in-full-detail">Example 1 (Deep Dive): Torid — Both Forms in Full Detail</a></li><li class="l3"><a href="#example-2-phantasma-prime-2-floor-0-5-s-warm-reload-center-beam">Example 2: Phantasma Prime — 2% Floor, 0.5 s Warm-Reload &amp; Center Beam</a></li><li class="l3"><a href="#example-3-kuva-nukor-vs-amprex-fixed-vs-geometric-chains-punch-through">Example 3: Kuva Nukor vs. Amprex — Fixed vs. Geometric Chains &amp; Punch Through</a></li><li class="l3"><a href="#example-4-boar-prime-incarnon-vs-ocucor-auto-lock-multi-beams-vs-kill-tendrils">Example 4: Boar Prime (Incarnon) vs. Ocucor — Auto-Lock Multi-Beams vs. Kill Tendrils</a></li><li class="l3"><a href="#example-5-ignis-wraith-vs-vermisplicer-primary-secondary">Example 5: Ignis Wraith vs. Vermisplicer (Primary / Secondary)</a></li><li class="l2"><a href="#6-mainstream-beam-weapons-quick-reference-table">6. Mainstream Beam Weapons Quick-Reference Table</a></li><li class="l2"><a href="#7-common-misconceptions">7. Common Misconceptions</a></li><li class="l2"><a href="#full-beam-index">Full Weapon Index</a></li></ul></div>
+  <div class="mech-box"><details class="mech-toc-fold" open><summary>On This Page</summary><ul class="mech-toc"><li class="l2"><a href="#1-what-is-a-beam-weapon">1. What Is a &quot;Beam Weapon&quot;?</a></li><li class="l2"><a href="#2-damage-ramp-up-lifecycle-multi-enemy-resolution">2. Damage Ramp-Up Lifecycle &amp; Multi-Enemy Resolution</a></li><li class="l3"><a href="#stage-1-initial-contact-why-the-first-tick-scales-with-fire-rate-pre-advance">Stage 1: Initial Contact &amp; Why the First Tick Scales with Fire Rate (Pre-Advance)</a></li><li class="l3"><a href="#stage-2-linear-climb-permanent-status-dot-snapshotting">Stage 2: Linear Climb &amp; Permanent Status DoT Snapshotting</a></li><li class="l3"><a href="#stages-3-4-grace-period-hold-linear-cooldown-decay-and-warm-restart">Stages 3 &amp; 4: Grace-Period Hold, Linear Cooldown Decay, and &quot;Warm Restart&quot;</a></li><li class="l3"><a href="#stage-5-per-target-timers-multi-chain-deduplication-full-multi-enemy-timeline">Stage 5: Per-Target Timers, Multi-Chain Deduplication &amp; Full Multi-Enemy Timeline</a></li><li class="l3"><a href="#measured-ramp-up-floors-across-beam-weapons">Measured Ramp-Up Floors Across Beam Weapons</a></li><li class="l2"><a href="#3-the-other-5-core-beam-rules-with-worked-math">3. The Other 5 Core Beam Rules (with Worked Math)</a></li><li class="l3"><a href="#rule-1-fire-rate-ticks-sec-ammo-cost-usually-0-5-tick">Rule 1: Fire Rate = Ticks/sec, Ammo Cost Usually 0.5/Tick</a></li><li class="l3"><a href="#rule-2-merged-multishot-mechanics">Rule 2: Merged Multishot Mechanics</a></li><li class="l3"><a href="#rule-3-complete-single-tick-direct-status-dot-formulas">Rule 3: Complete Single-Tick Direct &amp; Status DoT Formulas</a></li><li class="l3"><a href="#rule-4-range-falloff-punch-through-gates-headshots">Rule 4: Range, Falloff, Punch Through Gates &amp; Headshots</a></li><li class="l3"><a href="#rule-5-chain-pathfinding-rules-verified">Rule 5: Chain Pathfinding Rules (Verified)</a></li><li class="l2"><a href="#4-complete-taxonomy-of-beam-weapons-6-mechanical-types">4. Complete Taxonomy of Beam Weapons (6 Mechanical Types)</a></li><li class="l3"><a href="#type-1-pure-single-target-direct-beams-including-wide-beams">Type 1: Pure Single-Target Direct Beams (Including Wide Beams)</a></li><li class="l3"><a href="#type-2-innate-multi-beam-merged-weapons">Type 2: Innate Multi-Beam Merged Weapons</a></li><li class="l3"><a href="#type-3-terminal-damage-sphere-beams">Type 3: Terminal Damage-Sphere Beams</a></li><li class="l3"><a href="#type-4-chaining-beams">Type 4: Chaining Beams</a></li><li class="l3"><a href="#type-5-hybrid-multi-origin-chaining-beams">Type 5: Hybrid Multi-Origin Chaining Beams</a></li><li class="l3"><a href="#type-6-kill-spawned-independent-secondary-beam-weapons">Type 6: Kill-Spawned Independent Secondary-Beam Weapons</a></li><li class="l2"><a href="#5-comprehensive-worked-weapon-examples">5. Comprehensive Worked Weapon Examples</a></li><li class="l3"><a href="#example-1-deep-dive-torid-both-forms-in-full-detail">Example 1 (Deep Dive): Torid — Both Forms in Full Detail</a></li><li class="l3"><a href="#example-2-phantasma-prime-2-floor-0-5-s-warm-reload-center-beam">Example 2: Phantasma Prime — 2% Floor, 0.5 s Warm-Reload &amp; Center Beam</a></li><li class="l3"><a href="#example-3-kuva-nukor-vs-amprex-fixed-vs-geometric-chains-punch-through">Example 3: Kuva Nukor vs. Amprex — Fixed vs. Geometric Chains &amp; Punch Through</a></li><li class="l3"><a href="#example-4-boar-prime-incarnon-vs-ocucor-auto-lock-multi-beams-vs-kill-tendrils">Example 4: Boar Prime (Incarnon) vs. Ocucor — Auto-Lock Multi-Beams vs. Kill Tendrils</a></li><li class="l3"><a href="#example-5-ignis-wraith-vs-vermisplicer-primary-secondary">Example 5: Ignis Wraith vs. Vermisplicer (Primary / Secondary)</a></li><li class="l2"><a href="#6-mainstream-beam-weapons-quick-reference-table">6. Mainstream Beam Weapons Quick-Reference Table</a></li><li class="l2"><a href="#7-common-misconceptions">7. Common Misconceptions</a></li><li class="l2"><a href="#full-beam-index">Full Weapon Index</a></li></ul></details></div>
   <div class="mech-box"><h3>Cite & Share</h3><div class="mech-cite">&lt;ref&gt;[https://wfsim.app/mechanics/beam-weapons WFSim Mechanics: Beam Weapons (Continuous) Mechanics &amp; Damage Calculation], updated 2026-11-27.&lt;/ref&gt;</div><div class="mech-btn-row"><button type="button" class="mech-btn" data-copy="https://wfsim.app/mechanics/beam-weapons">Copy link</button><button type="button" class="mech-btn" data-copy="&lt;ref&gt;[https://wfsim.app/mechanics/beam-weapons WFSim Mechanics: Beam Weapons (Continuous) Mechanics &amp; Damage Calculation], updated 2026-11-27.&lt;/ref&gt;">Copy Wiki <ref></button><button type="button" class="mech-btn" data-copy="[Beam Weapons (Continuous) Mechanics &amp; Damage Calculation](https://wfsim.app/mechanics/beam-weapons)">Copy MD link</button></div></div>
   <div class="mech-box"><h3>Weapons Referenced (52)</h3><div class="mech-wlist"><a href="/weapons/Phantasma"><img class="wicon" src="/img/Phantasma.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">Phantasma</a><a href="/weapons/Phage"><img class="wicon" src="/img/Phage.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">Phage</a><a href="/weapons/Torid"><img class="wicon" src="/img/Torid.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">Torid</a><a href="/weapons/Phantasma_Prime"><img class="wicon" src="/img/PhantasmaPrime.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">Phantasma Prime</a><a href="/weapons/Tenet_Glaxion"><img class="wicon" src="/img/CrpBEGlaxion.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">Tenet Glaxion</a><a href="/weapons/Tazicor"><img class="wicon" src="/img/Tazicor.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">Tazicor</a><a href="/weapons/Panthera"><img class="wicon" src="/img/Panthera.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">Panthera</a><a href="/weapons/Furis"><img class="wicon" src="/img/Furis.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">Furis</a><a href="/weapons/MK1-Furis"><img class="wicon" src="/img/MK1-Furis.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">MK1-Furis</a><a href="/weapons/vermisplicer_secondary"><img class="wicon" src="/img/Vermisplicer.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">Vermisplicer</a><a href="/weapons/Onos"><img class="wicon" src="/img/EntratiWristGun.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">Onos</a><a href="/weapons/Panthera_Prime"><img class="wicon" src="/img/PantheraPrime.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">Panthera Prime</a><a href="/weapons/Boar"><img class="wicon" src="/img/Boar.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">Boar</a><a href="/weapons/Amprex"><img class="wicon" src="/img/Amprex.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">Amprex</a><a href="/weapons/Kuva_Nukor"><img class="wicon" src="/img/KuvaNukor.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">Kuva Nukor</a><a href="/weapons/Nukor"><img class="wicon" src="/img/Nukor.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">Nukor</a><a href="/weapons/Spectra"><img class="wicon" src="/img/Spectra.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">Spectra</a><a href="/weapons/Tenet_Cycron"><img class="wicon" src="/img/CrpBECycron.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">Tenet Cycron</a><a href="/weapons/Ignis"><img class="wicon" src="/img/Ignis.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">Ignis</a><a href="/weapons/Ocucor"><img class="wicon" src="/img/Ocucor.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">Ocucor</a><a href="/weapons/Athodai"><img class="wicon" src="/img/TnJetTurbinePistolWeapon.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">Athodai</a><a href="/weapons/Larkspur"><img class="wicon" src="/img/ShieldFrameArchGun.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">Larkspur</a><a href="/weapons/Verglas"><img class="wicon" src="/img/SentinelFreezeRayRifle.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">Verglas</a><a href="/weapons/Basmu"><img class="wicon" src="/img/SentRifleNewWarGun.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">Basmu</a><a href="/weapons/Embolist"><img class="wicon" src="/img/Embolist.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">Embolist</a><a href="/weapons/Enkaus"><img class="wicon" src="/img/TnInkRifleWeapon.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">Enkaus</a><a href="/weapons/Tenet_Quanta"><img class="wicon" src="/img/TenetQuanta.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">Tenet Quanta</a><a href="/weapons/Convectrix"><img class="wicon" src="/img/Convectrix.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">Convectrix</a></div></div>
 </aside>
@@ -353,8 +377,31 @@ When the beam hits again, advance one tick before reading:
 <footer class="footer">
   <div class="footer-inner">
     <span>WFSim is an unofficial fan project, not affiliated with or endorsed by Digital Extremes.</span>
-    · <a href="/weapons">Weapons</a> · <a href="/mechanics">Mechanics</a> · <a href="/method">Method</a> · <a href="/mechanics/beam-weapons.md">Markdown</a>
+    · <a href="/weapons">Arsenal</a> · <a href="/mechanics">Mechanics</a> · <a href="/method">Method</a> · <a href="/mechanics/beam-weapons.md">Markdown</a>
   </div>
 </footer>
+<script>(function(){
+  var tb=document.getElementById("topbar"), mt=document.getElementById("menu-toggle");
+  var cm=document.getElementById("community-menu"), ct=document.getElementById("community-toggle");
+  var th=document.getElementById("theme-toggle");
+  function setMenu(on){if(!tb||!mt)return;tb.classList.toggle("menu-open",on);mt.setAttribute("aria-expanded",String(on));}
+  function setComm(on){if(!cm||!ct)return;cm.classList.toggle("open",on);ct.setAttribute("aria-expanded",String(on));}
+  if(mt)mt.addEventListener("click",function(ev){ev.stopPropagation();setComm(false);setMenu(!tb.classList.contains("menu-open"));});
+  if(ct)ct.addEventListener("click",function(ev){ev.stopPropagation();setComm(!cm.classList.contains("open"));});
+  document.addEventListener("click",function(ev){
+    if(tb&&tb.classList.contains("menu-open")&&!tb.contains(ev.target))setMenu(false);
+    if(cm&&cm.classList.contains("open")&&!cm.contains(ev.target))setComm(false);
+  });
+  document.addEventListener("keydown",function(ev){if(ev.key==="Escape"){setMenu(false);setComm(false);}});
+  if(th)th.addEventListener("click",function(){
+    var cur=document.documentElement.getAttribute("data-theme");
+    var dark=cur?cur==="dark":!(window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches);
+    var next=dark?"light":"dark";
+    document.documentElement.setAttribute("data-theme",next);
+    try{localStorage.setItem("wfsim-theme",next);}catch(e){}
+  });
+  var toc=document.querySelector(".mech-toc-fold");
+  if(toc&&window.matchMedia&&window.matchMedia("(max-width:880px)").matches)toc.open=false;
+})();</script>
 </body>
 </html>

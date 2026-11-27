@@ -19,7 +19,7 @@
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="stylesheet" href="/asset/style.ba6f3c1973b9.css">
+<link rel="stylesheet" href="/asset/style.0723dedcae45.css">
 <link rel="icon" type="image/svg+xml" href="/logo.svg">
 <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "射线武器（持续型武器）计算机制全解析", "description": "射线首跳随射速动态变化公式、5 阶段多敌人独立预热状态机、多重合并 M² 持续异常缩放、 中心主射线特例、末端半径穿透门控与托里德双形态全景手算。", "inLanguage": "zh-Hans", "dateModified": "2026-11-27", "url": "https://wfsim.app/mechanics/zh/beam-weapons", "author": {"@type": "Organization", "name": "WFSim", "url": "https://wfsim.app/"}, "publisher": {"@type": "Organization", "name": "WFSim", "url": "https://wfsim.app/"}, "about": {"@type": "VideoGame", "name": "Warframe"}}</script>
 <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "射线武器第 1 跳伤害是固定 20% 吗？", "acceptedAnswer": {"@type": "Answer", "text": "不是。首跳结算前预热时钟会先推进 1/射速 秒，首跳倍率等于 基础下限 + (1 - 基础下限) × min(1, 1 / (射速 × 预热总时长))。 例如幻离子 Prime 基础下限为 2%，12 射速下首跳为 15.6%，24 射速下为 8.8%。"}}, {"@type": "Question", "name": "为什么射线武器的持续异常伤害对多重射击呈平方级（M²）增长？", "acceptedAnswer": {"@type": "Answer", "text": "命中同一目标的 M 条射线合并为单跳结算，单跳触发几率乘以 M，同时合并后的异常基底伤害也乘以 M。 触发层数与单层伤害同时放大 M 倍，使火、毒、电、毒气、切割持续异常期望呈 M² 增长。"}}, {"@type": "Question", "name": "托里德灵化形态或伊格尼斯堆穿透可以增加连锁起点吗？", "acceptedAnswer": {"@type": "Answer", "text": "不行。凡是带有末端伤害半径（半径 > 0）的射线，穿透深度均会被锁死为 0；只有半径为 0 的常规连锁射线 （如安培克斯、信条·冷冻光束步枪、信条·循环离子枪、赤毒·努寇微波枪、翠雀）支持穿透多起点。"}}]}</script>
@@ -112,24 +112,48 @@
 .mech-chip:hover{border-color:var(--accent);color:var(--accent)}
 .mech-subcat{margin-top:10px;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
 .mech-subcat>summary{cursor:pointer;font-size:12.5px;color:var(--text-2);font-weight:600}
-.mech-topnav{display:flex;align-items:center;gap:6px;margin-left:auto;flex-wrap:wrap}
-.mech-topnav a{padding:4px 9px;border-radius:6px;font-size:13px;color:var(--text-2);text-decoration:none}
-.mech-topnav a:hover,.mech-topnav a.cur{background:var(--panel2);color:var(--text)}
-.mech-topnav a.cur{font-weight:600}
+.mech-toc-fold>summary{cursor:pointer;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);list-style:none;display:flex;align-items:center;justify-content:space-between}
+.mech-toc-fold>summary::-webkit-details-marker{display:none}
+.mech-toc-fold>summary::after{content:"▸";font-size:12px;transition:transform .12s}
+.mech-toc-fold[open]>summary::after{transform:rotate(90deg)}
+.mech-toc-fold[open]>summary{margin-bottom:8px}
+.mech-lang-btn{font-size:12px;text-decoration:none;white-space:nowrap}
+@media(max-width:900px){.mech-page .topbar-inner .menu-toggle{margin-left:auto}}
 </style>
 <script>(function(){try{var t=localStorage.getItem("wfsim-theme");if(t==="dark"||t==="light")document.documentElement.setAttribute("data-theme",t);}catch(e){}})();</script>
 </head>
-<body>
-<header class="topbar">
+<body class="mech-page">
+<header class="topbar" id="topbar">
   <div class="topbar-inner">
     <a class="brand" href="/">WF<span>Sim</span></a>
-    <nav class="mech-topnav">
-      <a href="/weapons">武器</a>
-      <a href="/benchmark">基准榜</a>
-      <a href="/mechanics/zh" class="cur">机制</a>
-      <a href="/method/zh">方法</a>
-      <a href="/mechanics/beam-weapons" lang="en">English</a>
-    </nav>
+    <button id="menu-toggle" class="ghost-btn menu-toggle" aria-expanded="false" aria-controls="topmenu" aria-label="菜单" title="菜单">☰</button>
+    <div id="topmenu" class="topmenu">
+      <nav class="topnav">
+        <a class="tnav" href="/weapons">军械库</a>
+        <a class="tnav" href="/benchmark">基准榜</a>
+        <a class="tnav sel" href="/mechanics/zh">机制</a>
+        <a class="tnav" href="/utility/fissures">工具</a>
+        <div class="tbmore tbgroup" id="community-menu">
+          <button id="community-toggle" class="tnav tbmore-btn tbgroup-btn" aria-expanded="false" aria-controls="community-panel" aria-haspopup="true">社区</button>
+          <div class="tbmore-panel" id="community-panel">
+            <a class="tbmenu-link" href="/compute">为 WF模拟 贡献算力</a>
+            <a class="tbmenu-link" href="/contributors">贡献者</a>
+            <a class="tbmenu-link" href="/community/projects">社区项目</a>
+            <span class="tbmenu-sep"></span>
+            <a class="tbmenu-link" href="/method/zh">方法</a>
+            <a class="tbmenu-link" href="https://discord.gg/H4BMqvYFVg" target="_blank" rel="noopener">Discord</a>
+            <a class="tbmenu-link" href="https://qm.qq.com/q/uiXrMSTs8S" target="_blank" rel="noopener">QQ 群</a>
+            <a class="tbmenu-link" href="/clan">氏族<span class="clan-name">WFSim#582</span></a>
+            <a class="tbmenu-link" href="https://github.com/magenie33/wfsim" target="_blank" rel="noopener">GitHub</a>
+          </div>
+        </div>
+      </nav>
+      <div class="tblinks">
+        <a class="sup-link ghost-btn" href="/support" title="支持 WF模拟" aria-label="支持"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" d="M12 20.35l-1.32-1.2C6.03 14.92 3 12.17 3 8.79 3 6.03 5.16 3.87 7.92 3.87c1.56 0 3.06.72 4.04 1.86l.04.05.04-.05c.98-1.14 2.48-1.86 4.04-1.86C18.84 3.87 21 6.03 21 8.79c0 3.38-3.03 6.13-7.68 10.37l-1.32 1.19z"/></svg><span class="tbl">支持</span></a>
+        <a class="ghost-btn mech-lang-btn" href="/mechanics/beam-weapons" lang="en">English</a>
+        <button type="button" id="theme-toggle" class="ghost-btn" title="切换浅色/深色主题" aria-label="切换浅色/深色主题">◐</button>
+      </div>
+    </div>
   </div>
 </header>
 <main class="mech-wrap">
@@ -321,7 +345,7 @@
 })();</script>
 </article>
 <aside class="mech-aside">
-  <div class="mech-box"><h3>本页目录</h3><ul class="mech-toc"><li class="l2"><a href="#section-1">一、什么是“射线武器”？</a></li><li class="l2"><a href="#section-2">二、射线伤害预热（爬坡）全流程与多敌人推演</a></li><li class="l3"><a href="#section-3">阶段 1：首次接触与“首跳随射速变化”（预推进机制）</a></li><li class="l3"><a href="#section-6">阶段 2：持续命中爬升与持续异常“快照锁定”</a></li><li class="l3"><a href="#3-4">阶段 3 与阶段 4：停火保持（冷却延迟）、超时衰减与“半热重启”</a></li><li class="l3"><a href="#section-9">阶段 5：多目标独立计时、并发连锁去重与复杂多敌人实战全景推演</a></li><li class="l3"><a href="#section-11">实测校准清单：各武器预热基础起始下限</a></li><li class="l2"><a href="#section-12">三、射线武器的其余 5 大核心计算规则（附手算实例）</a></li><li class="l3"><a href="#1-0-5">规则 1：射速 = 每秒伤害跳数，弹药消耗通常为 0.5 发/跳</a></li><li class="l3"><a href="#section-14">规则 2：多重射击的“合并判定”机制</a></li><li class="l3"><a href="#section-19">规则 3：完整单跳直伤与持续异常公式</a></li><li class="l3"><a href="#section-22">规则 4：射程、距离衰减、穿透门控与爆头</a></li><li class="l3"><a href="#section-23">规则 5：连锁射线的寻路规则（已实测确认）</a></li><li class="l2"><a href="#section-24">四、射线武器的完整分类（6 大机制类型）</a></li><li class="l3"><a href="#section-25">第 1 类：纯单体直击型射线（含宽束射线）</a></li><li class="l3"><a href="#section-26">第 2 类：先天多射线合并型</a></li><li class="l3"><a href="#section-27">第 3 类：末端球体溅射型射线</a></li><li class="l3"><a href="#section-28">第 4 类：连锁跳跃型射线</a></li><li class="l3"><a href="#section-29">第 5 类：复合多起点连锁型射线</a></li><li class="l3"><a href="#section-30">第 6 类：击杀衍生独立副射线型</a></li><li class="l2"><a href="#section-31">五、具体武器综合手算实例</a></li><li class="l3"><a href="#1-torid">实例 1（重点拆解）：托里德（Torid）—— 双形态机制全景</a></li><li class="l3"><a href="#2-prime-2-0-5">实例 2：幻离子 Prime —— 2% 基础下限、0.5 秒换弹保热与中心主射线</a></li><li class="l3"><a href="#3-vs">实例 3：赤毒·努寇微波枪 vs 安培克斯 —— 固定衰减、累乘衰减与穿透联动</a></li><li class="l3"><a href="#4-prime-vs">实例 4：野猪 Prime（灵化）vs 视使之触 —— 自瞄多光束与击杀触须对比</a></li><li class="l3"><a href="#5-vs">实例 5：伊格尼斯·亡魂 vs 虫置（主手 / 副手）</a></li><li class="l2"><a href="#section-41">六、主流射线武器核心参数速查表</a></li><li class="l2"><a href="#section-42">七、常见误解与核对</a></li><li class="l2"><a href="#full-beam-index">全武器索引表</a></li></ul></div>
+  <div class="mech-box"><details class="mech-toc-fold" open><summary>本页目录</summary><ul class="mech-toc"><li class="l2"><a href="#section-1">一、什么是“射线武器”？</a></li><li class="l2"><a href="#section-2">二、射线伤害预热（爬坡）全流程与多敌人推演</a></li><li class="l3"><a href="#section-3">阶段 1：首次接触与“首跳随射速变化”（预推进机制）</a></li><li class="l3"><a href="#section-6">阶段 2：持续命中爬升与持续异常“快照锁定”</a></li><li class="l3"><a href="#3-4">阶段 3 与阶段 4：停火保持（冷却延迟）、超时衰减与“半热重启”</a></li><li class="l3"><a href="#section-9">阶段 5：多目标独立计时、并发连锁去重与复杂多敌人实战全景推演</a></li><li class="l3"><a href="#section-11">实测校准清单：各武器预热基础起始下限</a></li><li class="l2"><a href="#section-12">三、射线武器的其余 5 大核心计算规则（附手算实例）</a></li><li class="l3"><a href="#1-0-5">规则 1：射速 = 每秒伤害跳数，弹药消耗通常为 0.5 发/跳</a></li><li class="l3"><a href="#section-14">规则 2：多重射击的“合并判定”机制</a></li><li class="l3"><a href="#section-19">规则 3：完整单跳直伤与持续异常公式</a></li><li class="l3"><a href="#section-22">规则 4：射程、距离衰减、穿透门控与爆头</a></li><li class="l3"><a href="#section-23">规则 5：连锁射线的寻路规则（已实测确认）</a></li><li class="l2"><a href="#section-24">四、射线武器的完整分类（6 大机制类型）</a></li><li class="l3"><a href="#section-25">第 1 类：纯单体直击型射线（含宽束射线）</a></li><li class="l3"><a href="#section-26">第 2 类：先天多射线合并型</a></li><li class="l3"><a href="#section-27">第 3 类：末端球体溅射型射线</a></li><li class="l3"><a href="#section-28">第 4 类：连锁跳跃型射线</a></li><li class="l3"><a href="#section-29">第 5 类：复合多起点连锁型射线</a></li><li class="l3"><a href="#section-30">第 6 类：击杀衍生独立副射线型</a></li><li class="l2"><a href="#section-31">五、具体武器综合手算实例</a></li><li class="l3"><a href="#1-torid">实例 1（重点拆解）：托里德（Torid）—— 双形态机制全景</a></li><li class="l3"><a href="#2-prime-2-0-5">实例 2：幻离子 Prime —— 2% 基础下限、0.5 秒换弹保热与中心主射线</a></li><li class="l3"><a href="#3-vs">实例 3：赤毒·努寇微波枪 vs 安培克斯 —— 固定衰减、累乘衰减与穿透联动</a></li><li class="l3"><a href="#4-prime-vs">实例 4：野猪 Prime（灵化）vs 视使之触 —— 自瞄多光束与击杀触须对比</a></li><li class="l3"><a href="#5-vs">实例 5：伊格尼斯·亡魂 vs 虫置（主手 / 副手）</a></li><li class="l2"><a href="#section-41">六、主流射线武器核心参数速查表</a></li><li class="l2"><a href="#section-42">七、常见误解与核对</a></li><li class="l2"><a href="#full-beam-index">全武器索引表</a></li></ul></details></div>
   <div class="mech-box"><h3>引用与分享</h3><div class="mech-cite">&lt;ref&gt;[https://wfsim.app/mechanics/beam-weapons WFSim Mechanics: Beam Weapons (Continuous) Mechanics &amp; Damage Calculation], updated 2026-11-27.&lt;/ref&gt;</div><div class="mech-btn-row"><button type="button" class="mech-btn" data-copy="https://wfsim.app/mechanics/zh/beam-weapons">复制链接</button><button type="button" class="mech-btn" data-copy="&lt;ref&gt;[https://wfsim.app/mechanics/beam-weapons WFSim Mechanics: Beam Weapons (Continuous) Mechanics &amp; Damage Calculation], updated 2026-11-27.&lt;/ref&gt;">复制 Wiki 引用</button><button type="button" class="mech-btn" data-copy="[射线武器（持续型武器）计算机制全解析](https://wfsim.app/mechanics/zh/beam-weapons)">复制 MD 链接</button></div></div>
   <div class="mech-box"><h3>文中武器 (49)</h3><div class="mech-wlist"><a href="/weapons/Phantasma"><img class="wicon" src="/img/Phantasma.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">幻离子</a><a href="/weapons/Phage"><img class="wicon" src="/img/Phage.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">噬菌者</a><a href="/weapons/Torid"><img class="wicon" src="/img/Torid.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">托里德</a><a href="/weapons/Phantasma_Prime"><img class="wicon" src="/img/PhantasmaPrime.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">幻离子 Prime</a><a href="/weapons/Tenet_Glaxion"><img class="wicon" src="/img/CrpBEGlaxion.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">信条·冷冻光束步枪</a><a href="/weapons/Tazicor"><img class="wicon" src="/img/Tazicor.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">泰瑟步枪</a><a href="/weapons/Panthera"><img class="wicon" src="/img/Panthera.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">猎豹</a><a href="/weapons/Furis"><img class="wicon" src="/img/Furis.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">盗贼</a><a href="/weapons/MK1-Furis"><img class="wicon" src="/img/MK1-Furis.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">MK1-盗贼</a><a href="/weapons/vermisplicer_secondary"><img class="wicon" src="/img/Vermisplicer.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">虫置（副手）</a><a href="/weapons/Onos"><img class="wicon" src="/img/EntratiWristGun.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">赘骨</a><a href="/weapons/Panthera_Prime"><img class="wicon" src="/img/PantheraPrime.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">猎豹 Prime</a><a href="/weapons/Boar"><img class="wicon" src="/img/Boar.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">野猪</a><a href="/weapons/Amprex"><img class="wicon" src="/img/Amprex.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">安培克斯</a><a href="/weapons/Kuva_Nukor"><img class="wicon" src="/img/KuvaNukor.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">赤毒·努寇微波枪</a><a href="/weapons/Nukor"><img class="wicon" src="/img/Nukor.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">努寇微波枪</a><a href="/weapons/Spectra"><img class="wicon" src="/img/Spectra.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">光谱切割器</a><a href="/weapons/Tenet_Cycron"><img class="wicon" src="/img/CrpBECycron.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">信条·循环离子枪</a><a href="/weapons/Ignis"><img class="wicon" src="/img/Ignis.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">伊格尼斯</a><a href="/weapons/Ocucor"><img class="wicon" src="/img/Ocucor.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">视使之触</a><a href="/weapons/Athodai"><img class="wicon" src="/img/TnJetTurbinePistolWeapon.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">阿索代</a><a href="/weapons/Larkspur"><img class="wicon" src="/img/ShieldFrameArchGun.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">翠雀</a><a href="/weapons/Verglas"><img class="wicon" src="/img/SentinelFreezeRayRifle.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">冰凇</a><a href="/weapons/Basmu"><img class="wicon" src="/img/SentRifleNewWarGun.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">巴什穆</a><a href="/weapons/Embolist"><img class="wicon" src="/img/Embolist.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">安柏勒斯</a><a href="/weapons/Tenet_Quanta"><img class="wicon" src="/img/TenetQuanta.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">信条·量子切割器</a><a href="/weapons/Convectrix"><img class="wicon" src="/img/Convectrix.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">导热聚焦枪</a><a href="/weapons/Ignis_Wraith"><img class="wicon" src="/img/IgnisWraith.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">伊格尼斯·亡魂</a></div></div>
 </aside>
@@ -353,8 +377,31 @@
 <footer class="footer">
   <div class="footer-inner">
     <span>WF模拟 是非官方粉丝项目，与 Digital Extremes 无关。</span>
-    · <a href="/weapons">武器</a> · <a href="/mechanics/zh">机制</a> · <a href="/method/zh">方法</a> · <a href="/mechanics/zh/beam-weapons.md">Markdown</a>
+    · <a href="/weapons">军械库</a> · <a href="/mechanics/zh">机制</a> · <a href="/method/zh">方法</a> · <a href="/mechanics/zh/beam-weapons.md">Markdown</a>
   </div>
 </footer>
+<script>(function(){
+  var tb=document.getElementById("topbar"), mt=document.getElementById("menu-toggle");
+  var cm=document.getElementById("community-menu"), ct=document.getElementById("community-toggle");
+  var th=document.getElementById("theme-toggle");
+  function setMenu(on){if(!tb||!mt)return;tb.classList.toggle("menu-open",on);mt.setAttribute("aria-expanded",String(on));}
+  function setComm(on){if(!cm||!ct)return;cm.classList.toggle("open",on);ct.setAttribute("aria-expanded",String(on));}
+  if(mt)mt.addEventListener("click",function(ev){ev.stopPropagation();setComm(false);setMenu(!tb.classList.contains("menu-open"));});
+  if(ct)ct.addEventListener("click",function(ev){ev.stopPropagation();setComm(!cm.classList.contains("open"));});
+  document.addEventListener("click",function(ev){
+    if(tb&&tb.classList.contains("menu-open")&&!tb.contains(ev.target))setMenu(false);
+    if(cm&&cm.classList.contains("open")&&!cm.contains(ev.target))setComm(false);
+  });
+  document.addEventListener("keydown",function(ev){if(ev.key==="Escape"){setMenu(false);setComm(false);}});
+  if(th)th.addEventListener("click",function(){
+    var cur=document.documentElement.getAttribute("data-theme");
+    var dark=cur?cur==="dark":!(window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches);
+    var next=dark?"light":"dark";
+    document.documentElement.setAttribute("data-theme",next);
+    try{localStorage.setItem("wfsim-theme",next);}catch(e){}
+  });
+  var toc=document.querySelector(".mech-toc-fold");
+  if(toc&&window.matchMedia&&window.matchMedia("(max-width:880px)").matches)toc.open=false;
+})();</script>
 </body>
 </html>

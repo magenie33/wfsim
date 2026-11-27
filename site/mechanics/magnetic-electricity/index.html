@@ -19,7 +19,7 @@
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="stylesheet" href="/asset/style.ba6f3c1973b9.css">
+<link rel="stylesheet" href="/asset/style.0723dedcae45.css">
 <link rel="icon" type="image/svg+xml" href="/logo.svg">
 <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "Magnetic & Electricity Status Mechanics & Calculation (incl. Gas)", "description": "Two-stage Magnetic break formula (0.5%/stack, 2/(1+W) native weakpoint normalization, S² status damage double-dip), all 5 weapon W tiers, and the Electricity/Gas latest-application headshot landing layer L.", "inLanguage": "en", "dateModified": "2026-11-27", "url": "https://wfsim.app/mechanics/magnetic-electricity", "author": {"@type": "Organization", "name": "WFSim", "url": "https://wfsim.app/"}, "publisher": {"@type": "Organization", "name": "WFSim", "url": "https://wfsim.app/"}, "about": {"@type": "VideoGame", "name": "Warframe"}}</script>
 <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Why do different weapons deal different Magnetic break damage against the same shield?", "acceptedAnswer": {"@type": "Answer", "text": "Magnetic break starts from trunc(Max Pool * 0.005 * Stacks), then divides by 1 + max(W, 0) * V using the breaking weapon's innate weakpoint bonus W before multiplying by the target's generic proxy multiplier A. On standard humanoids (V = 1, A = 2), net scaling is 2 / (1 + W), so W = 0 weapons (all melee, Kuva Nukor) deal twice the break damage of W = 1.0 weapons (Lanka, Rubico Prime)."}}, {"@type": "Question", "name": "Does Status Damage double-dip on Magnetic break Electricity procs?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Status Damage multiplier S scales the Stage 1 break damage packet once, and the forced Stage 2 ordinary Electricity proc inherits that scaled source and multiplies by S a second time, giving S² scaling on the DoT ticks."}}, {"@type": "Question", "name": "How does headshot landing work on Electricity and Gas status pools?", "acceptedAnswer": {"@type": "Answer", "text": "Old seeds stay intact, but the body part of the most recently applied stack sets the entire pool's second landing multiplier L = 1 + Headshot Damage% and headshot-kill classification. A later body proc drops the whole pool to L = 1.0; a later headshot proc pulls every living seed (including Magnetic break seeds) onto head landing."}}]}</script>
@@ -112,24 +112,48 @@
 .mech-chip:hover{border-color:var(--accent);color:var(--accent)}
 .mech-subcat{margin-top:10px;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
 .mech-subcat>summary{cursor:pointer;font-size:12.5px;color:var(--text-2);font-weight:600}
-.mech-topnav{display:flex;align-items:center;gap:6px;margin-left:auto;flex-wrap:wrap}
-.mech-topnav a{padding:4px 9px;border-radius:6px;font-size:13px;color:var(--text-2);text-decoration:none}
-.mech-topnav a:hover,.mech-topnav a.cur{background:var(--panel2);color:var(--text)}
-.mech-topnav a.cur{font-weight:600}
+.mech-toc-fold>summary{cursor:pointer;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);list-style:none;display:flex;align-items:center;justify-content:space-between}
+.mech-toc-fold>summary::-webkit-details-marker{display:none}
+.mech-toc-fold>summary::after{content:"▸";font-size:12px;transition:transform .12s}
+.mech-toc-fold[open]>summary::after{transform:rotate(90deg)}
+.mech-toc-fold[open]>summary{margin-bottom:8px}
+.mech-lang-btn{font-size:12px;text-decoration:none;white-space:nowrap}
+@media(max-width:900px){.mech-page .topbar-inner .menu-toggle{margin-left:auto}}
 </style>
 <script>(function(){try{var t=localStorage.getItem("wfsim-theme");if(t==="dark"||t==="light")document.documentElement.setAttribute("data-theme",t);}catch(e){}})();</script>
 </head>
-<body>
-<header class="topbar">
+<body class="mech-page">
+<header class="topbar" id="topbar">
   <div class="topbar-inner">
     <a class="brand" href="/">WF<span>Sim</span></a>
-    <nav class="mech-topnav">
-      <a href="/weapons">Weapons</a>
-      <a href="/benchmark">Benchmark</a>
-      <a href="/mechanics" class="cur">Mechanics</a>
-      <a href="/method">Method</a>
-      <a href="/mechanics/zh/magnetic-electricity" lang="zh-Hans">中文</a>
-    </nav>
+    <button id="menu-toggle" class="ghost-btn menu-toggle" aria-expanded="false" aria-controls="topmenu" aria-label="Menu" title="Menu">☰</button>
+    <div id="topmenu" class="topmenu">
+      <nav class="topnav">
+        <a class="tnav" href="/weapons">Arsenal</a>
+        <a class="tnav" href="/benchmark">Benchmark</a>
+        <a class="tnav sel" href="/mechanics">Mechanics</a>
+        <a class="tnav" href="/utility/fissures">Utility</a>
+        <div class="tbmore tbgroup" id="community-menu">
+          <button id="community-toggle" class="tnav tbmore-btn tbgroup-btn" aria-expanded="false" aria-controls="community-panel" aria-haspopup="true">Community</button>
+          <div class="tbmore-panel" id="community-panel">
+            <a class="tbmenu-link" href="/compute">Help compute WFSim</a>
+            <a class="tbmenu-link" href="/contributors">Contributors</a>
+            <a class="tbmenu-link" href="/community/projects">Community Projects</a>
+            <span class="tbmenu-sep"></span>
+            <a class="tbmenu-link" href="/method">Method</a>
+            <a class="tbmenu-link" href="https://discord.gg/H4BMqvYFVg" target="_blank" rel="noopener">Discord</a>
+            <a class="tbmenu-link" href="https://qm.qq.com/q/uiXrMSTs8S" target="_blank" rel="noopener">QQ group</a>
+            <a class="tbmenu-link" href="/clan">Clan<span class="clan-name">WFSim#582</span></a>
+            <a class="tbmenu-link" href="https://github.com/magenie33/wfsim" target="_blank" rel="noopener">GitHub</a>
+          </div>
+        </div>
+      </nav>
+      <div class="tblinks">
+        <a class="sup-link ghost-btn" href="/support" title="Support WFSim" aria-label="Support"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" d="M12 20.35l-1.32-1.2C6.03 14.92 3 12.17 3 8.79 3 6.03 5.16 3.87 7.92 3.87c1.56 0 3.06.72 4.04 1.86l.04.05.04-.05c.98-1.14 2.48-1.86 4.04-1.86C18.84 3.87 21 6.03 21 8.79c0 3.38-3.03 6.13-7.68 10.37l-1.32 1.19z"/></svg><span class="tbl">Support</span></a>
+        <a class="ghost-btn mech-lang-btn" href="/mechanics/zh/magnetic-electricity" lang="zh-Hans">中文</a>
+        <button type="button" id="theme-toggle" class="ghost-btn" title="Toggle light / dark" aria-label="Toggle light / dark">◐</button>
+      </div>
+    </div>
   </div>
 </header>
 <main class="mech-wrap">
@@ -331,7 +355,7 @@ Final Tick Damage = Base Tick Damage × Landing Multiplier L × Live Armor / Res
 })();</script>
 </article>
 <aside class="mech-aside">
-  <div class="mech-box"><h3>On This Page</h3><ul class="mech-toc"><li class="l2"><a href="#1-why-cover-magnetic-and-electricity-together">1. Why Cover Magnetic and Electricity Together?</a></li><li class="l2"><a href="#2-core-mechanic-i-electricity-status-tesla-chain-full-calculation">2. Core Mechanic I: Electricity Status (Tesla Chain) Full Calculation</a></li><li class="l3"><a href="#1-base-properties-the-third-dot-resolution-model">1. Base Properties &amp; the &quot;Third DoT Resolution Model&quot;</a></li><li class="l3"><a href="#2-exact-electricity-damage-formula">2. Exact Electricity Damage Formula</a></li><li class="l3"><a href="#3-second-headshot-landing-layer-l-latest-application-anchor">3. Second Headshot Landing Layer L &amp; Latest-Application Anchor</a></li><li class="l2"><a href="#3-comparison-gas-vs-electricity">3. Comparison: Gas vs. Electricity</a></li><li class="l2"><a href="#4-core-mechanic-ii-magnetic-status-disrupt-magnetic-break-procs">4. Core Mechanic II: Magnetic Status (Disrupt) &amp; Magnetic Break Procs</a></li><li class="l3"><a href="#1-phase-1-before-the-break-magnetic-disrupt-stacks">1. Phase 1: Before the Break (Magnetic Disrupt Stacks)</a></li><li class="l3"><a href="#2-phase-2-the-break-moment-two-stage-magnetic-break-formula">2. Phase 2: The Break Moment — Two-Stage Magnetic Break Formula</a></li><li class="l3"><a href="#3-understanding-native-weakpoint-bonus-w-all-5-weapon-tiers-representative-weapons">3. Understanding Native Weakpoint Bonus W: All 5 Weapon Tiers &amp; Representative Weapons</a></li><li class="l3"><a href="#4-two-way-interaction-between-magnetic-break-procs-headshot-electricity-pools">4. Two-Way Interaction Between Magnetic Break Procs &amp; Headshot Electricity Pools</a></li><li class="l2"><a href="#5-four-measurement-calibrated-worked-examples">5. Four Measurement-Calibrated Worked Examples</a></li><li class="l3"><a href="#example-1-electricity-gas-mixed-hit-order-walkthrough-in-game-verified">Example 1: Electricity (&amp; Gas) Mixed Hit-Order Walkthrough (In-Game Verified)</a></li><li class="l3"><a href="#example-2-magnetic-overguard-break-step-by-step-naked-electricity-mod-s-double-dip-armor-post-break-head-pull">Example 2: Magnetic Overguard Break Step-by-Step — Naked, Electricity Mod, S² Double-Dip, Armor &amp; Post-Break Head Pull</a></li><li class="l3"><a href="#example-3-all-5-w-tiers-breaking-the-same-shield-side-by-side-in-game-controls">Example 3: All 5 W Tiers Breaking the Same Shield Side-by-Side (In-Game Controls)</a></li><li class="l3"><a href="#example-4-comparing-target-weakness-proxies-v-a-under-full-modifiers-900-armor">Example 4: Comparing Target Weakness Proxies (V, A) Under Full Modifiers &amp; 900 Armor</a></li><li class="l2"><a href="#6-magnetic-electricity-gas-quick-reference-comparison">6. Magnetic / Electricity / Gas Quick-Reference Comparison</a></li><li class="l2"><a href="#7-common-misconceptions">7. Common Misconceptions</a></li><li class="l2"><a href="#full-weakness-index">Full Weapon Index</a></li></ul></div>
+  <div class="mech-box"><details class="mech-toc-fold" open><summary>On This Page</summary><ul class="mech-toc"><li class="l2"><a href="#1-why-cover-magnetic-and-electricity-together">1. Why Cover Magnetic and Electricity Together?</a></li><li class="l2"><a href="#2-core-mechanic-i-electricity-status-tesla-chain-full-calculation">2. Core Mechanic I: Electricity Status (Tesla Chain) Full Calculation</a></li><li class="l3"><a href="#1-base-properties-the-third-dot-resolution-model">1. Base Properties &amp; the &quot;Third DoT Resolution Model&quot;</a></li><li class="l3"><a href="#2-exact-electricity-damage-formula">2. Exact Electricity Damage Formula</a></li><li class="l3"><a href="#3-second-headshot-landing-layer-l-latest-application-anchor">3. Second Headshot Landing Layer L &amp; Latest-Application Anchor</a></li><li class="l2"><a href="#3-comparison-gas-vs-electricity">3. Comparison: Gas vs. Electricity</a></li><li class="l2"><a href="#4-core-mechanic-ii-magnetic-status-disrupt-magnetic-break-procs">4. Core Mechanic II: Magnetic Status (Disrupt) &amp; Magnetic Break Procs</a></li><li class="l3"><a href="#1-phase-1-before-the-break-magnetic-disrupt-stacks">1. Phase 1: Before the Break (Magnetic Disrupt Stacks)</a></li><li class="l3"><a href="#2-phase-2-the-break-moment-two-stage-magnetic-break-formula">2. Phase 2: The Break Moment — Two-Stage Magnetic Break Formula</a></li><li class="l3"><a href="#3-understanding-native-weakpoint-bonus-w-all-5-weapon-tiers-representative-weapons">3. Understanding Native Weakpoint Bonus W: All 5 Weapon Tiers &amp; Representative Weapons</a></li><li class="l3"><a href="#4-two-way-interaction-between-magnetic-break-procs-headshot-electricity-pools">4. Two-Way Interaction Between Magnetic Break Procs &amp; Headshot Electricity Pools</a></li><li class="l2"><a href="#5-four-measurement-calibrated-worked-examples">5. Four Measurement-Calibrated Worked Examples</a></li><li class="l3"><a href="#example-1-electricity-gas-mixed-hit-order-walkthrough-in-game-verified">Example 1: Electricity (&amp; Gas) Mixed Hit-Order Walkthrough (In-Game Verified)</a></li><li class="l3"><a href="#example-2-magnetic-overguard-break-step-by-step-naked-electricity-mod-s-double-dip-armor-post-break-head-pull">Example 2: Magnetic Overguard Break Step-by-Step — Naked, Electricity Mod, S² Double-Dip, Armor &amp; Post-Break Head Pull</a></li><li class="l3"><a href="#example-3-all-5-w-tiers-breaking-the-same-shield-side-by-side-in-game-controls">Example 3: All 5 W Tiers Breaking the Same Shield Side-by-Side (In-Game Controls)</a></li><li class="l3"><a href="#example-4-comparing-target-weakness-proxies-v-a-under-full-modifiers-900-armor">Example 4: Comparing Target Weakness Proxies (V, A) Under Full Modifiers &amp; 900 Armor</a></li><li class="l2"><a href="#6-magnetic-electricity-gas-quick-reference-comparison">6. Magnetic / Electricity / Gas Quick-Reference Comparison</a></li><li class="l2"><a href="#7-common-misconceptions">7. Common Misconceptions</a></li><li class="l2"><a href="#full-weakness-index">Full Weapon Index</a></li></ul></details></div>
   <div class="mech-box"><h3>Cite & Share</h3><div class="mech-cite">&lt;ref&gt;[https://wfsim.app/mechanics/magnetic-electricity WFSim Mechanics: Magnetic &amp; Electricity Status Mechanics &amp; Calculation (incl. Gas)], updated 2026-11-27.&lt;/ref&gt;</div><div class="mech-btn-row"><button type="button" class="mech-btn" data-copy="https://wfsim.app/mechanics/magnetic-electricity">Copy link</button><button type="button" class="mech-btn" data-copy="&lt;ref&gt;[https://wfsim.app/mechanics/magnetic-electricity WFSim Mechanics: Magnetic &amp; Electricity Status Mechanics &amp; Calculation (incl. Gas)], updated 2026-11-27.&lt;/ref&gt;">Copy Wiki <ref></button><button type="button" class="mech-btn" data-copy="[Magnetic &amp; Electricity Status Mechanics &amp; Calculation (incl. Gas)](https://wfsim.app/mechanics/magnetic-electricity)">Copy MD link</button></div></div>
   <div class="mech-box"><h3>Weapons Referenced (89)</h3><div class="mech-wlist"><a href="/weapons/Torid"><img class="wicon" src="/img/Torid.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">Torid</a><a href="/weapons/Laetum"><img class="wicon" src="/img/ZarimanHeavyPistol.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">Laetum</a><a href="/weapons/Miter"><img class="wicon" src="/img/Miter.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">Miter</a><a href="/weapons/Glaive_Prime"><img class="wicon" src="/img/GlaivePrime.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">Glaive Prime</a><a href="/weapons/Xoris"><img class="wicon" src="/img/ProteaPolarizerCrpGlaive.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">Xoris</a><a href="/weapons/Harmony"><img class="wicon" src="/img/TnChoirScythe.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">Harmony</a><a href="/weapons/Hate"><img class="wicon" src="/img/Hate.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">Hate</a><a href="/weapons/Okina_Prime"><img class="wicon" src="/img/OkinaPrime.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">Okina Prime</a><a href="/weapons/Amprex"><img class="wicon" src="/img/Amprex.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">Amprex</a><a href="/weapons/Ignis_Wraith"><img class="wicon" src="/img/IgnisWraith.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">Ignis Wraith</a><a href="/weapons/Tenet_Arca_Plasmor"><img class="wicon" src="/img/CrpBEArcaPlasmor.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">Tenet Arca Plasmor</a><a href="/weapons/Kuva_Ogris"><img class="wicon" src="/img/KuvaOgris.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">Kuva Ogris</a><a href="/weapons/Kuva_Tonkor"><img class="wicon" src="/img/KuvaTonkor.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">Kuva Tonkor</a><a href="/weapons/Tenet_Envoy"><img class="wicon" src="/img/CrpBriefcaseLauncher.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">Tenet Envoy</a><a href="/weapons/Stahlta"><img class="wicon" src="/img/CrpRubanRifle.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">Stahlta</a><a href="/weapons/Scourge_Prime"><img class="wicon" src="/img/ScourgePrime.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">Scourge Prime</a><a href="/weapons/Kuva_Nukor"><img class="wicon" src="/img/KuvaNukor.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">Kuva Nukor</a><a href="/weapons/Atomos"><img class="wicon" src="/img/Atomos.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">Atomos</a><a href="/weapons/Gammacor"><img class="wicon" src="/img/Gammacor.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">Gammacor</a><a href="/weapons/Synoid_Gammacor"><img class="wicon" src="/img/SynoidGammacor.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">Synoid Gammacor</a><a href="/weapons/Kompressa_Prime"><img class="wicon" src="/img/KompressaPrime.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">Kompressa Prime</a><a href="/weapons/Spectra_Vandal"><img class="wicon" src="/img/CorpusLaserPistolVandal.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">Spectra Vandal</a><a href="/weapons/Coda_Pox"><img class="wicon" src="/img/CodaPox.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">Coda Pox</a><a href="/weapons/Prisma_Angstrum"><img class="wicon" src="/img/PrismaAngstrum.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">Prisma Angstrum</a><a href="/weapons/Grattler"><img class="wicon" src="/img/Grattler.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">Grattler</a><a href="/weapons/Imperator_Vandal"><img class="wicon" src="/img/ImperatorVandal.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">Imperator Vandal</a><a href="/weapons/Kuva_Ayanga"><img class="wicon" src="/img/GrnHeavyGrenadeLauncher.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">Kuva Ayanga</a><a href="/weapons/Corvas_Prime"><img class="wicon" src="/img/CorvasPrime.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">Corvas Prime</a></div></div>
 </aside>
@@ -363,8 +387,31 @@ Final Tick Damage = Base Tick Damage × Landing Multiplier L × Live Armor / Res
 <footer class="footer">
   <div class="footer-inner">
     <span>WFSim is an unofficial fan project, not affiliated with or endorsed by Digital Extremes.</span>
-    · <a href="/weapons">Weapons</a> · <a href="/mechanics">Mechanics</a> · <a href="/method">Method</a> · <a href="/mechanics/magnetic-electricity.md">Markdown</a>
+    · <a href="/weapons">Arsenal</a> · <a href="/mechanics">Mechanics</a> · <a href="/method">Method</a> · <a href="/mechanics/magnetic-electricity.md">Markdown</a>
   </div>
 </footer>
+<script>(function(){
+  var tb=document.getElementById("topbar"), mt=document.getElementById("menu-toggle");
+  var cm=document.getElementById("community-menu"), ct=document.getElementById("community-toggle");
+  var th=document.getElementById("theme-toggle");
+  function setMenu(on){if(!tb||!mt)return;tb.classList.toggle("menu-open",on);mt.setAttribute("aria-expanded",String(on));}
+  function setComm(on){if(!cm||!ct)return;cm.classList.toggle("open",on);ct.setAttribute("aria-expanded",String(on));}
+  if(mt)mt.addEventListener("click",function(ev){ev.stopPropagation();setComm(false);setMenu(!tb.classList.contains("menu-open"));});
+  if(ct)ct.addEventListener("click",function(ev){ev.stopPropagation();setComm(!cm.classList.contains("open"));});
+  document.addEventListener("click",function(ev){
+    if(tb&&tb.classList.contains("menu-open")&&!tb.contains(ev.target))setMenu(false);
+    if(cm&&cm.classList.contains("open")&&!cm.contains(ev.target))setComm(false);
+  });
+  document.addEventListener("keydown",function(ev){if(ev.key==="Escape"){setMenu(false);setComm(false);}});
+  if(th)th.addEventListener("click",function(){
+    var cur=document.documentElement.getAttribute("data-theme");
+    var dark=cur?cur==="dark":!(window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches);
+    var next=dark?"light":"dark";
+    document.documentElement.setAttribute("data-theme",next);
+    try{localStorage.setItem("wfsim-theme",next);}catch(e){}
+  });
+  var toc=document.querySelector(".mech-toc-fold");
+  if(toc&&window.matchMedia&&window.matchMedia("(max-width:880px)").matches)toc.open=false;
+})();</script>
 </body>
 </html>

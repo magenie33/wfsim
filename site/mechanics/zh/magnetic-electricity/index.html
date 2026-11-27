@@ -19,7 +19,7 @@
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="stylesheet" href="/asset/style.ba6f3c1973b9.css">
+<link rel="stylesheet" href="/asset/style.0723dedcae45.css">
 <link rel="icon" type="image/svg+xml" href="/logo.svg">
 <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "磁力与电击异常计算机制全解析（含毒气对照）", "description": "磁力破防电双阶段精确公式（0.5%/层、原生弱点 W 反向归一化、异常伤双吃 S²）、 全游戏 5 档 W 代表武器一览，以及电击与毒气“最新一层决定全池爆头落点 L”机制。", "inLanguage": "zh-Hans", "dateModified": "2026-11-27", "url": "https://wfsim.app/mechanics/zh/magnetic-electricity", "author": {"@type": "Organization", "name": "WFSim", "url": "https://wfsim.app/"}, "publisher": {"@type": "Organization", "name": "WFSim", "url": "https://wfsim.app/"}, "about": {"@type": "VideoGame", "name": "Warframe"}}</script>
 <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "为什么不同武器用同样 10 层磁力击破同一个护盾，破防电伤害会相差一倍？", "acceptedAnswer": {"@type": "Answer", "text": "磁力破防以最大池值 × 0.005 × 层数起步，先除以 1 + max(W, 0) × V，再乘目标弱点代理倍率 A。 对常规人形目标（V=1, A=2），净系数为 2 / (1 + W)：全部近战及赤毒·努寇微波枪等 W = 0 武器， 整整是兰卡、绝路 Prime 等 W = 1.0 武器的 2 倍。"}}, {"@type": "Question", "name": "磁力破防电对异常伤害加成是双吃（S²）吗？", "acceptedAnswer": {"@type": "Answer", "text": "是的。第一段一次性破防直伤包吃 1 次异常伤害 S，第二段强制挂出的普通电击异常继承该源值后再吃 1 次 S， 最终持续跳伤对异常伤害呈 S² 平方级缩放。"}}, {"@type": "Question", "name": "电击和毒气混打头和身体时，二次落点倍率 L 怎么算？", "acceptedAnswer": {"@type": "Answer", "text": "每层旧种子原封不动保留，但整个合并池的落点倍率 L = 1 + 爆头伤害% 与爆头击杀归属完全由最新挂上去的那一层决定。 破防后补一枪爆头电，甚至可以把磁力破防电的大种子一并拉上头部落点。"}}]}</script>
@@ -112,24 +112,48 @@
 .mech-chip:hover{border-color:var(--accent);color:var(--accent)}
 .mech-subcat{margin-top:10px;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
 .mech-subcat>summary{cursor:pointer;font-size:12.5px;color:var(--text-2);font-weight:600}
-.mech-topnav{display:flex;align-items:center;gap:6px;margin-left:auto;flex-wrap:wrap}
-.mech-topnav a{padding:4px 9px;border-radius:6px;font-size:13px;color:var(--text-2);text-decoration:none}
-.mech-topnav a:hover,.mech-topnav a.cur{background:var(--panel2);color:var(--text)}
-.mech-topnav a.cur{font-weight:600}
+.mech-toc-fold>summary{cursor:pointer;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);list-style:none;display:flex;align-items:center;justify-content:space-between}
+.mech-toc-fold>summary::-webkit-details-marker{display:none}
+.mech-toc-fold>summary::after{content:"▸";font-size:12px;transition:transform .12s}
+.mech-toc-fold[open]>summary::after{transform:rotate(90deg)}
+.mech-toc-fold[open]>summary{margin-bottom:8px}
+.mech-lang-btn{font-size:12px;text-decoration:none;white-space:nowrap}
+@media(max-width:900px){.mech-page .topbar-inner .menu-toggle{margin-left:auto}}
 </style>
 <script>(function(){try{var t=localStorage.getItem("wfsim-theme");if(t==="dark"||t==="light")document.documentElement.setAttribute("data-theme",t);}catch(e){}})();</script>
 </head>
-<body>
-<header class="topbar">
+<body class="mech-page">
+<header class="topbar" id="topbar">
   <div class="topbar-inner">
     <a class="brand" href="/">WF<span>Sim</span></a>
-    <nav class="mech-topnav">
-      <a href="/weapons">武器</a>
-      <a href="/benchmark">基准榜</a>
-      <a href="/mechanics/zh" class="cur">机制</a>
-      <a href="/method/zh">方法</a>
-      <a href="/mechanics/magnetic-electricity" lang="en">English</a>
-    </nav>
+    <button id="menu-toggle" class="ghost-btn menu-toggle" aria-expanded="false" aria-controls="topmenu" aria-label="菜单" title="菜单">☰</button>
+    <div id="topmenu" class="topmenu">
+      <nav class="topnav">
+        <a class="tnav" href="/weapons">军械库</a>
+        <a class="tnav" href="/benchmark">基准榜</a>
+        <a class="tnav sel" href="/mechanics/zh">机制</a>
+        <a class="tnav" href="/utility/fissures">工具</a>
+        <div class="tbmore tbgroup" id="community-menu">
+          <button id="community-toggle" class="tnav tbmore-btn tbgroup-btn" aria-expanded="false" aria-controls="community-panel" aria-haspopup="true">社区</button>
+          <div class="tbmore-panel" id="community-panel">
+            <a class="tbmenu-link" href="/compute">为 WF模拟 贡献算力</a>
+            <a class="tbmenu-link" href="/contributors">贡献者</a>
+            <a class="tbmenu-link" href="/community/projects">社区项目</a>
+            <span class="tbmenu-sep"></span>
+            <a class="tbmenu-link" href="/method/zh">方法</a>
+            <a class="tbmenu-link" href="https://discord.gg/H4BMqvYFVg" target="_blank" rel="noopener">Discord</a>
+            <a class="tbmenu-link" href="https://qm.qq.com/q/uiXrMSTs8S" target="_blank" rel="noopener">QQ 群</a>
+            <a class="tbmenu-link" href="/clan">氏族<span class="clan-name">WFSim#582</span></a>
+            <a class="tbmenu-link" href="https://github.com/magenie33/wfsim" target="_blank" rel="noopener">GitHub</a>
+          </div>
+        </div>
+      </nav>
+      <div class="tblinks">
+        <a class="sup-link ghost-btn" href="/support" title="支持 WF模拟" aria-label="支持"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" d="M12 20.35l-1.32-1.2C6.03 14.92 3 12.17 3 8.79 3 6.03 5.16 3.87 7.92 3.87c1.56 0 3.06.72 4.04 1.86l.04.05.04-.05c.98-1.14 2.48-1.86 4.04-1.86C18.84 3.87 21 6.03 21 8.79c0 3.38-3.03 6.13-7.68 10.37l-1.32 1.19z"/></svg><span class="tbl">支持</span></a>
+        <a class="ghost-btn mech-lang-btn" href="/mechanics/magnetic-electricity" lang="en">English</a>
+        <button type="button" id="theme-toggle" class="ghost-btn" title="切换浅色/深色主题" aria-label="切换浅色/深色主题">◐</button>
+      </div>
+    </div>
   </div>
 </header>
 <main class="mech-wrap">
@@ -331,7 +355,7 @@
 })();</script>
 </article>
 <aside class="mech-aside">
-  <div class="mech-box"><h3>本页目录</h3><ul class="mech-toc"><li class="l2"><a href="#section-1">一、为什么要把“磁力”和“电击”放在一起讲？</a></li><li class="l2"><a href="#section-2">二、核心机制一：电击异常（特斯拉电弧）全流程计算</a></li><li class="l3"><a href="#section-3">1. 基础属性与“第三种异常结算模型”</a></li><li class="l3"><a href="#section-4">2. 电击异常的精确伤害公式</a></li><li class="l3"><a href="#3-l">3. 电击的二次落点倍率 L 与最新层锚定规则</a></li><li class="l2"><a href="#gas">三、对比：毒气（Gas）与电击的异同</a></li><li class="l2"><a href="#section-12">四、核心机制二：磁力异常（干扰）与“磁力破防电”全流程拆解</a></li><li class="l3"><a href="#section-13">1. 阶段一：破防前（磁力干扰层数）</a></li><li class="l3"><a href="#section-14">2. 阶段二：破防瞬间——“磁力破防电”的完整双阶段公式（经游戏内实测与模型校准）</a></li><li class="l3"><a href="#3-w-5">3. 详解“原生弱点加成 W”：全部 5 个档位与代表武器一览</a></li><li class="l3"><a href="#section-21">4. 磁力破防电与“爆头电击池”的双向锚点互动（经游戏内实测验证）</a></li><li class="l2"><a href="#section-22">五、4 组实测级完整手算实例</a></li><li class="l3"><a href="#section-23">实例 1：电击（及毒气）混合命中顺序手算（对应游戏内实测验证）</a></li><li class="l3"><a href="#2-s">实例 2：磁力破防超宏防护全流程手算——从裸卡、电击加成、异常伤双吃（S²）到破防后拉头（对应游戏内实测验证）</a></li><li class="l3"><a href="#3-5-w">实例 3：全部 5 档原生弱点 W 击破同一护盾的完整横评算例（对应游戏内实测验证）</a></li><li class="l3"><a href="#4-v-a-900">实例 4：不同敌人弱点代理 (V, A) + 实战全乘区（含 900 护甲与破防后拉头）综合对比手算</a></li><li class="l2"><a href="#section-29">六、磁力 / 电击 / 毒气核心机制速查对照表</a></li><li class="l2"><a href="#section-30">七、常见误解与核对</a></li><li class="l2"><a href="#full-weakness-index">全武器索引表</a></li></ul></div>
+  <div class="mech-box"><details class="mech-toc-fold" open><summary>本页目录</summary><ul class="mech-toc"><li class="l2"><a href="#section-1">一、为什么要把“磁力”和“电击”放在一起讲？</a></li><li class="l2"><a href="#section-2">二、核心机制一：电击异常（特斯拉电弧）全流程计算</a></li><li class="l3"><a href="#section-3">1. 基础属性与“第三种异常结算模型”</a></li><li class="l3"><a href="#section-4">2. 电击异常的精确伤害公式</a></li><li class="l3"><a href="#3-l">3. 电击的二次落点倍率 L 与最新层锚定规则</a></li><li class="l2"><a href="#gas">三、对比：毒气（Gas）与电击的异同</a></li><li class="l2"><a href="#section-12">四、核心机制二：磁力异常（干扰）与“磁力破防电”全流程拆解</a></li><li class="l3"><a href="#section-13">1. 阶段一：破防前（磁力干扰层数）</a></li><li class="l3"><a href="#section-14">2. 阶段二：破防瞬间——“磁力破防电”的完整双阶段公式（经游戏内实测与模型校准）</a></li><li class="l3"><a href="#3-w-5">3. 详解“原生弱点加成 W”：全部 5 个档位与代表武器一览</a></li><li class="l3"><a href="#section-21">4. 磁力破防电与“爆头电击池”的双向锚点互动（经游戏内实测验证）</a></li><li class="l2"><a href="#section-22">五、4 组实测级完整手算实例</a></li><li class="l3"><a href="#section-23">实例 1：电击（及毒气）混合命中顺序手算（对应游戏内实测验证）</a></li><li class="l3"><a href="#2-s">实例 2：磁力破防超宏防护全流程手算——从裸卡、电击加成、异常伤双吃（S²）到破防后拉头（对应游戏内实测验证）</a></li><li class="l3"><a href="#3-5-w">实例 3：全部 5 档原生弱点 W 击破同一护盾的完整横评算例（对应游戏内实测验证）</a></li><li class="l3"><a href="#4-v-a-900">实例 4：不同敌人弱点代理 (V, A) + 实战全乘区（含 900 护甲与破防后拉头）综合对比手算</a></li><li class="l2"><a href="#section-29">六、磁力 / 电击 / 毒气核心机制速查对照表</a></li><li class="l2"><a href="#section-30">七、常见误解与核对</a></li><li class="l2"><a href="#full-weakness-index">全武器索引表</a></li></ul></details></div>
   <div class="mech-box"><h3>引用与分享</h3><div class="mech-cite">&lt;ref&gt;[https://wfsim.app/mechanics/magnetic-electricity WFSim Mechanics: Magnetic &amp; Electricity Status Mechanics &amp; Calculation (incl. Gas)], updated 2026-11-27.&lt;/ref&gt;</div><div class="mech-btn-row"><button type="button" class="mech-btn" data-copy="https://wfsim.app/mechanics/zh/magnetic-electricity">复制链接</button><button type="button" class="mech-btn" data-copy="&lt;ref&gt;[https://wfsim.app/mechanics/magnetic-electricity WFSim Mechanics: Magnetic &amp; Electricity Status Mechanics &amp; Calculation (incl. Gas)], updated 2026-11-27.&lt;/ref&gt;">复制 Wiki 引用</button><button type="button" class="mech-btn" data-copy="[磁力与电击异常计算机制全解析（含毒气对照）](https://wfsim.app/mechanics/zh/magnetic-electricity)">复制 MD 链接</button></div></div>
   <div class="mech-box"><h3>文中武器 (87)</h3><div class="mech-wlist"><a href="/weapons/Torid"><img class="wicon" src="/img/Torid.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">托里德</a><a href="/weapons/Laetum"><img class="wicon" src="/img/ZarimanHeavyPistol.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">奏凯</a><a href="/weapons/Miter"><img class="wicon" src="/img/Miter.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">米特尔</a><a href="/weapons/Glaive_Prime"><img class="wicon" src="/img/GlaivePrime.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">战刃 Prime</a><a href="/weapons/Xoris"><img class="wicon" src="/img/ProteaPolarizerCrpGlaive.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">驱魔之刃</a><a href="/weapons/Harmony"><img class="wicon" src="/img/TnChoirScythe.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">和谐</a><a href="/weapons/Hate"><img class="wicon" src="/img/Hate.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">憎恨</a><a href="/weapons/Okina_Prime"><img class="wicon" src="/img/OkinaPrime.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">翁 Prime</a><a href="/weapons/Amprex"><img class="wicon" src="/img/Amprex.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">安培克斯</a><a href="/weapons/Ignis_Wraith"><img class="wicon" src="/img/IgnisWraith.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">伊格尼斯·亡魂</a><a href="/weapons/Tenet_Arca_Plasmor"><img class="wicon" src="/img/CrpBEArcaPlasmor.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">信条·弧电离子枪</a><a href="/weapons/Kuva_Ogris"><img class="wicon" src="/img/KuvaOgris.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">赤毒·食人女魔</a><a href="/weapons/Kuva_Tonkor"><img class="wicon" src="/img/KuvaTonkor.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">赤毒·征服榴炮</a><a href="/weapons/Tenet_Envoy"><img class="wicon" src="/img/CrpBriefcaseLauncher.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">信条·典客</a><a href="/weapons/Stahlta"><img class="wicon" src="/img/CrpRubanRifle.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">钢刃步枪</a><a href="/weapons/Scourge_Prime"><img class="wicon" src="/img/ScourgePrime.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">祸根 Prime</a><a href="/weapons/Kuva_Nukor"><img class="wicon" src="/img/KuvaNukor.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">赤毒·努寇微波枪</a><a href="/weapons/Atomos"><img class="wicon" src="/img/Atomos.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">原子矿融炮</a><a href="/weapons/Gammacor"><img class="wicon" src="/img/Gammacor.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">咖玛腕甲枪</a><a href="/weapons/Synoid_Gammacor"><img class="wicon" src="/img/SynoidGammacor.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">枢议·咖玛腕甲枪</a><a href="/weapons/Kompressa_Prime"><img class="wicon" src="/img/KompressaPrime.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">卡帕压力枪 Prime</a><a href="/weapons/Spectra_Vandal"><img class="wicon" src="/img/CorpusLaserPistolVandal.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">光谱切割器·破坏者</a><a href="/weapons/Coda_Pox"><img class="wicon" src="/img/CodaPox.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">终幕·脓痘</a><a href="/weapons/Prisma_Angstrum"><img class="wicon" src="/img/PrismaAngstrum.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">棱晶·安格斯壮</a><a href="/weapons/Grattler"><img class="wicon" src="/img/Grattler.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">葛拉特勒</a><a href="/weapons/Imperator_Vandal"><img class="wicon" src="/img/ImperatorVandal.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">凯旋将军·破坏者</a><a href="/weapons/Kuva_Ayanga"><img class="wicon" src="/img/GrnHeavyGrenadeLauncher.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">赤毒·怒雷</a><a href="/weapons/Corvas_Prime"><img class="wicon" src="/img/CorvasPrime.png.webp" alt="" width="22" height="15" loading="lazy" decoding="async">黑鸦 Prime</a></div></div>
 </aside>
@@ -363,8 +387,31 @@
 <footer class="footer">
   <div class="footer-inner">
     <span>WF模拟 是非官方粉丝项目，与 Digital Extremes 无关。</span>
-    · <a href="/weapons">武器</a> · <a href="/mechanics/zh">机制</a> · <a href="/method/zh">方法</a> · <a href="/mechanics/zh/magnetic-electricity.md">Markdown</a>
+    · <a href="/weapons">军械库</a> · <a href="/mechanics/zh">机制</a> · <a href="/method/zh">方法</a> · <a href="/mechanics/zh/magnetic-electricity.md">Markdown</a>
   </div>
 </footer>
+<script>(function(){
+  var tb=document.getElementById("topbar"), mt=document.getElementById("menu-toggle");
+  var cm=document.getElementById("community-menu"), ct=document.getElementById("community-toggle");
+  var th=document.getElementById("theme-toggle");
+  function setMenu(on){if(!tb||!mt)return;tb.classList.toggle("menu-open",on);mt.setAttribute("aria-expanded",String(on));}
+  function setComm(on){if(!cm||!ct)return;cm.classList.toggle("open",on);ct.setAttribute("aria-expanded",String(on));}
+  if(mt)mt.addEventListener("click",function(ev){ev.stopPropagation();setComm(false);setMenu(!tb.classList.contains("menu-open"));});
+  if(ct)ct.addEventListener("click",function(ev){ev.stopPropagation();setComm(!cm.classList.contains("open"));});
+  document.addEventListener("click",function(ev){
+    if(tb&&tb.classList.contains("menu-open")&&!tb.contains(ev.target))setMenu(false);
+    if(cm&&cm.classList.contains("open")&&!cm.contains(ev.target))setComm(false);
+  });
+  document.addEventListener("keydown",function(ev){if(ev.key==="Escape"){setMenu(false);setComm(false);}});
+  if(th)th.addEventListener("click",function(){
+    var cur=document.documentElement.getAttribute("data-theme");
+    var dark=cur?cur==="dark":!(window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches);
+    var next=dark?"light":"dark";
+    document.documentElement.setAttribute("data-theme",next);
+    try{localStorage.setItem("wfsim-theme",next);}catch(e){}
+  });
+  var toc=document.querySelector(".mech-toc-fold");
+  if(toc&&window.matchMedia&&window.matchMedia("(max-width:880px)").matches)toc.open=false;
+})();</script>
 </body>
 </html>

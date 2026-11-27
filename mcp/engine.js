@@ -2,7 +2,7 @@
 import module from "../site/pkg/wfsim_wasm_bg.8ecd6342c859.wasm";
 import pack0 from "../site/pkg/pack.data.964d5c452e6b.json";
 import pack1 from "../site/pkg/pack.site.84ee2a8e8b24.json";
-import pack2 from "../site/pkg/pack.text.71ad22442962.json";
+import pack2 from "../site/pkg/pack.text.3eaba43be052.json";
 let wasm_bindgen = (function(exports) {
     let script_src;
     if (typeof document !== 'undefined' && document.currentScript !== null) {
