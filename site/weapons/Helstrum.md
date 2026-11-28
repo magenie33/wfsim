@@ -24,7 +24,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 - The missiles home, which is not modelled; with one target at zero distance, homing and straight missiles land the same.
 - The explosion's falloff is not published, so it is not modelled; the target stands at the centre and takes the full 30.
 - The companion fires this weapon: it picks its targets, fires when it decides, and stops while reviving or out of range. Here it fires continuously at one target, so the number is the ceiling.
-- This attack's spread is not in the data, so none of its shots miss. At range the number is the ceiling; at point blank it is unaffected.
 
 ## In WFSim
 
