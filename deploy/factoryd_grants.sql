@@ -6,7 +6,7 @@ DO $$ BEGIN
 END $$;
 GRANT CONNECT ON DATABASE wfsim TO wfsim_factoryd;
 GRANT SELECT ON record_candidate_answers, record_engine_refusals, state_factory_parameters, state_compute_work, state_board_pending_work,
-  record_refusal_withdrawals, state_pending_verifications, record_hourly_compute_totals, entity_compute_devices TO wfsim_factoryd;
+  record_refusal_withdrawals, state_pending_verifications, state_task_answer_heads, record_hourly_compute_totals, entity_compute_devices TO wfsim_factoryd;
 GRANT SELECT, INSERT, UPDATE, DELETE ON state_factory_findings, state_factory_snapshot, state_compute_fair_shares TO wfsim_factoryd;
 GRANT SELECT ON state_task_pipeline_controls TO wfsim_factoryd;
 GRANT SELECT ON record_compute_order_cancellations TO wfsim_factoryd;
