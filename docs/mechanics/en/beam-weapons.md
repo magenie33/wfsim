@@ -1,13 +1,13 @@
 # [Warframe] Beam Weapons (Continuous) Mechanics & Damage Calculation Guide
 
 > **Author & Attribution**: WFSim | [wfsim.app](https://wfsim.app)  
-> **Scope**: Damage resolution, ramp-up timing, merged multishot, and spread mechanics of Warframe continuous (beam) weapons, calibrated against in-game Simulacrum measurements. Unresolved edge cases are noted in place.
+> **Scope**: Damage resolution, ramp-up timing, merged multishot, and spread mechanics of Warframe continuous (beam) weapons.
 
 ---
 
-## Key Formulas & Verified Constants {#key-formulas}
+## Key Formulas & Constants {#key-formulas}
 
-| Quantity | Formula / Constant | Verified Scope |
+| Quantity | Formula / Constant | Scope |
 | --- | --- | --- |
 | **Tick Rate & Ammo** | `Ticks/sec = Fire Rate`; typical ammo cost `0.5 / tick` (`1.0 / tick` on select beams) | All `Held` continuous weapons |
 | **First-Tick Ramp Share** | `R(1) = Floor + (1 - Floor) × min(1, 1 / (Fire Rate × T_rise))` (`Floor` typically `0.20`, `T_rise = 0.6 s`) | Pre-advance before Tick 1; `Floor = 1.0` skips ramp |
@@ -94,7 +94,7 @@ Take **Torid (Incarnon Form)** (base ramp floor **20%**, ramp duration **0.6 s**
 #### Example B: Phantasma Prime's 2% Base Floor and 15.6% First Tick
 * **Phantasma / Phantasma Prime** actually has a base ramp floor of **`2%`** (`0.02`) and a `0.6 s` ramp duration.
 * At its base Fire Rate of **`12 ticks/s`**, Tick 1 advances `1 ÷ (12 × 0.6) = 13.89%`:  
-  `Tick 1 = 2% + 98% × 13.89% =` **15.61%** — which explains why base-fire-rate testing commonly observes a ~15% opening tick.
+  `Tick 1 = 2% + 98% × 13.89% =` **15.61%** — which explains why base-fire-rate play commonly shows a ~15% opening tick.
 * Double its Fire Rate to **`24 ticks/s`**, and Tick 1 advances only `6.94%`:  
   `Tick 1 = 2% + 98% × 6.94% =` **8.81%**.
 
@@ -104,7 +104,7 @@ Take **Torid (Incarnon Form)** (base ramp floor **20%**, ramp duration **0.6 s**
 
 On each sustained tick, ramp progress rises by `(1 ÷ Fire Rate) ÷ Ramp Duration`, capped at `1.0` (100%).
 
-**Status DoT snapshotting (verified in-game)**: The ramp multiplier does not just scale direct hits — it **multiplies straight into the base damage of any DoT status (Heat / Toxin / Electricity / Gas / Slash) procced on that tick**, and **each status stack permanently snapshots the ramp multiplier of the tick that created it**. Old stacks applied during ramp-up are never upgraded once the beam reaches 100%.
+**Status DoT snapshotting**: The ramp multiplier does not just scale direct hits — it **multiplies straight into the base damage of any DoT status (Heat / Toxin / Electricity / Gas / Slash) procced on that tick**, and **each status stack permanently snapshots the ramp multiplier of the tick that created it**. Old stacks applied during ramp-up are never upgraded once the beam reaches 100%.
 
 > **Example C (Phantasma Prime stacking Heat across the ramp window — base 12 FR, 2% floor, 90 total base damage, +90% Heat)**:
 > * Tick 1 (`0.083 s`): **15.6%** → Heat stack base `90 × 15.6% = 14.05`
@@ -116,7 +116,7 @@ On each sustained tick, ramp progress rises by `(1 ÷ Fire Rate) ÷ Ramp Duratio
 > * Tick 7 (`0.583 s`): **97.3%** → Heat stack base `87.55`
 > * Tick 8+ (`0.667 s`): **100.0%** → Heat stack base `90.00`
 >
-> Because Ticks 1–7 permanently lock their low ramped bases, in-game testing shows the first 10 Heat stacks applied from cold deal only **669–690** per tick (far below the fully-ramped 10-stack value of `855`), whereas the *next* 10 Heat stacks applied at 100% ramp add **+855** (`687 → 1,542`) to the dot.
+> Because Ticks 1–7 permanently lock their low ramped bases, the first 10 Heat stacks applied from cold deal only **669–690** per tick (far below the fully-ramped 10-stack value of `855`), whereas the *next* 10 Heat stacks applied at 100% ramp add **+855** (`687 → 1,542`) to the DoT.
 
 ---
 
@@ -173,7 +173,7 @@ In real combat with multiple enemies, beam ramp-up enforces **4 strict rules**:
 
 > Notice the divergence in the final row: after the exact same `1.5 s` pause, fully ramped Enemies B and C only dip to a **78.3% warm restart** (back to 100% in 2 ticks), while Enemy D (which only had 2 ticks of progress) bottoms out completely back to a **36.7% cold restart**.
 
-### Measured Ramp-Up Floors Across Beam Weapons {#ramp-floors}
+### Ramp-Up Floors Across Beam Weapons {#ramp-floors}
 
 | Base Floor | Representative Weapons | Special Curve Parameters (Default: 0.6s ramp / 0.8s delay / 1.2s decay) |
 | :---: | --- | --- |
@@ -204,7 +204,7 @@ In real combat with multiple enemies, beam ramp-up enforces **4 strict rules**:
 
 > **Worked Examples**:
 > * **Tenet Glaxion (0.5 ammo/tick)**: 90 mag, 12 FR → `90 ÷ 0.5 = 180` ticks → `180 ÷ 12 = 15.0 s`.
-> * **Verglas Prime (measured 1.0 ammo/tick)**: 80 mag, 12 FR → `80 ÷ 12 ≈ 6.67 s` (not 13.33 s).
+> * **Verglas Prime (1.0 ammo/tick)**: 80 mag, 12 FR → `80 ÷ 12 ≈ 6.67 s` (not 13.33 s).
 > * **Torid Incarnon (1.0 charge/tick)**: 170 charge, 8 FR → `170 ÷ 8 = 21.25 s`. Incarnon charge bars are separate from ammo: **Magazine Capacity and Ammo Efficiency (e.g., the ammo efficiency portion of Primary Crux) do not apply to Incarnon charge** (Primary Crux's status chance bonus still applies).
 
 ---
@@ -231,7 +231,7 @@ Bonus proc triggers roll **after** merging — only **once per tick**. At 100% c
 * **Beam Weapon**: 1 merged tick rolls 30% once → `0.3` expected stacks × `300` merged base = **90**.  
 Long-run expected DPS is **identical**; beams simply produce fewer, larger, higher-variance Slash procs.
 
-#### Example C: Center-Beam Multishot Formula (Measured)
+#### Example C: Center-Beam Multishot Formula
 **Phantasma / Phantasma Prime** and **Phage** consist of 1 fixed center beam plus outer beams; multishot bonuses **scale only the outer beams**:
 ```text
 Actual Beam Count = (Base Beams - 1) × (1 + Multishot Bonus) + 1
@@ -261,32 +261,31 @@ Direct Tick = Single-Beam Panel Damage (base + elements)
 
 #### (2) Single-Stack DoT Damage (Heat / Toxin / Electricity / Gas / Slash)
 ```text
-DoT Tick = (Single-Beam Base Damage × M × Current Ramp Mult × Crit Mult × Part Mult × Faction Mult + 1)
+DoT Tick = Single-Beam Base Damage × M × Current Ramp Mult × Crit Mult × Part Mult × Faction Mult
          × Status Coefficient
          × (1 + Matching Element %)    ← Slash ignores element mods (factor = 1)
          × Faction Multiplier          ← Faction double-dips here
          × (1 + Status Damage %)
 ```
 * **Status Coefficient**: **0.35** for Slash; **0.50** for Heat, Toxin, Electricity, and Gas.
-* **The `+ 1` accumulator**: The engine initializes DoT accumulators at `1` (merged pools like Heat/Electricity/Gas add `+1` once for the whole pool; independent-stack DoTs like Slash/Toxin add `+1` per stack).
-* **Base Damage** includes base damage and base-damage modifiers only (no elemental mod damage) and **bypasses the `1/32` quantization** used on direct hits.
+* **Base Damage** includes base damage and base-damage modifiers only (no elemental mod damage).
 
 ---
 
 ### Rule 4: Range, Falloff, Punch Through Gates & Headshots {#range-punch-through}
 
 * **Hard Range Wall**: Almost all beams deal 100% damage up to max range and 0 beyond it.
-  * **Rare beams with distance falloff**: **Furis (Incarnon Form)** (linear falloff across 10–16 m), **Catabolyst / Coda Catabolyst** (9–19 m falloff down to ~1.88%).
+  * **Rare beams with distance falloff**: **Furis (Incarnon Form)** (linear falloff across 10–16 m), **Catabolyst / Coda Catabolyst** (9–19 m falloff down to ~2%).
   * **Beam Length mods (Sinister Reach / Ruinous Extension)**: Extend main beam length (and Ocucor tendril length) only — **never chain hop range**.
 * **Two Separate Punch Through Mechanisms**:
-  1. **Any beam with a terminal damage radius (`radius > 0`) hard-clamps Punch Through depth to `0`**: Whenever `radius > 0`, the game clamps Punch Through to `0`, overriding both innate and modded Punch Through — this covers **Torid (Incarnon), Catabolyst / Coda Catabolyst, Glaxion Vandal, Embolist, Gaze (Primary), Ignis / Wraith, and Cortege**. Additionally, **Boar / Boar Prime (Incarnon)** ignores Punch Through (verified in-game).
-  2. **"Infinite Body Punch Through" is a separate flag**: **Ignis / Wraith, Cortege, Phantasma / Prime, Onos (Incarnon), and Athodai / Prime (Alt-Fire)** use an independent "ignore enemy body collision" flag to pierce unlimited enemies without consuming Punch Through depth, still stopping at walls (unless `radius == 0` with innate terrain Punch Through, like Athodai Alt-Fire's 2 m).
+  1. **Any beam with a terminal damage radius (`radius > 0`) clamps Punch Through depth to `0`**: Whenever `radius > 0`, Punch Through is clamped to `0`, overriding both innate and modded Punch Through — this covers **Torid (Incarnon), Catabolyst / Coda Catabolyst, Glaxion Vandal, Embolist, Gaze (Primary), Ignis / Wraith, and Cortege**. Additionally, **Boar / Boar Prime (Incarnon)** ignores Punch Through.
+  2. **"Infinite Body Punch Through" is a separate mechanic**: **Ignis / Wraith, Cortege, Phantasma / Prime, Onos (Incarnon), and Athodai / Prime (Alt-Fire)** pierce unlimited enemies natively without consuming Punch Through depth, still stopping at walls (unless `radius == 0` with innate terrain Punch Through, like Athodai Alt-Fire's 2 m).
   3. **Multi-Origin Stacking on Punch-Through Chains**: Humanoid torsos are ~**0.5 m** thick. On **Amprex, Tenet Glaxion, Tenet Cycron, Kuva Nukor, and Larkspur / Prime**, every enemy pierced by the main beam counts as a **direct hit (gets multishot, can headshot)** and **spawns its own independent chain set**.
 * **Headshot Boundary**: **Only main-beam direct hits (including Punch Through) can headshot** (**Athodai / Prime Alt-Fire** is locked to 1×); terminal spheres, chains, auto-lock secondary beams, and tendrils all lock to body.
 
 ---
 
-### Rule 5: Chain Pathfinding Rules (Verified) {#chain-rules}
+### Rule 5: Chain Pathfinding Rules {#chain-rules}
 
 1. **Ignores terrain and line-of-sight**: Only checks 3D distance between enemies against chain hop range.
 2. **"Fresh target" first, then "nearest"**: When multiple origins chain on the same tick, each chain prioritizes enemies not yet hit by any chain that tick (closest first); only if no fresh target is in range may it re-hit an already-struck enemy.
@@ -377,13 +376,11 @@ In that 4-origin, 24-instance scenario at **3× multishot**:
 * **The 1 direct-hit origin + its 5-hop primary chain (6 instances)**: Receive **3× merged multishot** (direct ×3, status ×3, DoT ×9), and the main target can headshot.
 * **The other 3 sphere-edge origins + their 15 chain hops (18 instances)**: **Do NOT get multishot (1× only)**, and all lock to body.
 
-> **Open Edge Case (Do chain nodes spawn secondary spheres?)**: WFSim currently models **one 2.3 m sphere at the main-beam contact point only (chain hops do not spawn secondary spheres)**; an isolated single-tick cluster test remains open for final confirmation.
-
 #### 4. Five Specific Torid Quirks
-1. **Gun Condition Overload (e.g. Galvanized Aptitude) behaves oppositely in the two forms (verified in-game)**:
+1. **Gun Condition Overload (e.g. Galvanized Aptitude) behaves oppositely in the two forms**:
    * **Base Form (Grenade + Cloud)**: **Multiplicative** GunCO, applies to the cloud too, and **includes Evolution II flat base damage**.
    * **Incarnon Form (Beam)**: **Additive** GunCO, and **excludes Evolution II flat base damage**.
-   * **In-Game Verification**: With Evo II **Final Fusillade (+51 base)**, Incarnon panel reads `102`, naked crit (`3.1×`) = `316`. With 1 stack (+40%) and 1 status type, in-game damage reads **`380`**, matching `(102 + 51 × 0.4) × 3.1 = 379.44 → 380` (not `443` from including Evo II base) — effectively halving GunCO's percentage gain against the post-Evo panel.
+   * **Example**: With Evo II **Final Fusillade (+51 base)**, Incarnon panel reads `102`, naked crit (`3.1×`) = `316`. With 1 stack (+40%) and 1 status type, damage reads **`380`**, matching `(102 + 51 × 0.4) × 3.1 = 379.44 → 380` (not `443` from including Evo II base) — effectively halving GunCO's percentage gain against the post-Evo panel.
 2. **Evo II "Plentiful Mayhem (+31 base, multishot consumes charge & +60% damage per extra multishot)"**: In Incarnon beam mode, the bonus multishot portion scales by `1.6×`. Example: at `3.3` panel multishot (`+2.3` bonus), effective merged multishot becomes `1 + 2.3 × 1.6 =` **4.68** (~×1.42 direct/status, ~×2.01 expected DoT), while each tick consumes ~`3.3` charge — emptying 170 charge in ~`51` ticks (~`6.4 s`).
 3. **Punch Through disabled**: Locked to `0` by the `radius > 0` gate; cannot add chain origins via Punch Through.
 4. **Mod/Arcane exclusions**: Cannot equip **Sinister Reach / Combustion Beam**; **Primary Compression** works at 100% effectiveness on Base Form clouds (up to +240%), and **0%** in Incarnon beam mode.
@@ -394,8 +391,8 @@ In that 4-origin, 24-instance scenario at **3× multishot**:
 ### Example 2: Phantasma Prime — 2% Floor, 0.5 s Warm-Reload & Center Beam {#phantasma-prime}
 
 * **Stats**: Innate **6 beams** (**5 outer + 1 center**), 15 damage/beam (90 total), **22.2% status/beam**, **12 ticks/s**, 0.5 ammo/tick (11 mag = 22 ticks ≈ 1.83 s, **0.5 s reload**), infinite body pierce, **2% base ramp floor**.
-* **Worked Walkthrough (verified in-game)**:
-  1. **Fire-rate Tick 1**: At 12 FR, Tick 1 advances `1 ÷ 7.2 = 13.89%` → **15.61%**. With +90% Heat, Tick 1 Heat proc ticks for `(90 × 0.1561 + 1) × 0.5 × 1.9 = 14.30 →` **14** (versus **+85.5/stack** at full ramp).
+* **Worked Walkthrough**:
+  1. **Fire-rate Tick 1**: At 12 FR, Tick 1 advances `1 ÷ 7.2 = 13.89%` → **15.61%**. With +90% Heat, Tick 1 Heat proc ticks for `90 × 0.1561 × 0.5 × 1.9 = 13.35 →` **13** (versus **+85.5/stack** at full ramp).
   2. **Adding +120% Multishot (Hell's Chamber)**: Center beam does not scale → `5 × 2.2 + 1 =` **12 beams** (exact ×2). Tick status doubles to `266.4%` (×2), full-ramp Heat per stack doubles to `+171.0` (×2), and total full-ramp Heat DPS becomes **4.0×**.
   3. **Seamless 0.5 s Reload**: Emptying a mag into an elite and reloading takes `0.5 s ≤ 0.8 s` grace delay, so **Tick 1 after reload continues at 100% ramp**. Ramp resets to `15.6%` only when switching to a fresh enemy.
 
@@ -416,7 +413,7 @@ In that 4-origin, 24-instance scenario at **3× multishot**:
 | **Single Target** | 1 main beam only (auto-lock does not multiply single-target damage) | 1 main beam only (tendrils bending onto the primary target are purely visual — **0 extra damage, 0 extra status**) |
 | **Multi-Target** | Auto-locks up to 3 targets within 10°, each chaining 2 hops (10 m, 80% geometric) → up to **9 targets**, peak total `3 × (1 + 0.8 + 0.64) = 7.32×` | At 4 tendrils, hits **5 targets** within 40° simultaneously; each tendril is a **100% independent beam instance** (no chains) |
 | **Multishot & Headshots** | All 3 lock-on beams and their chains **scale with multishot**; **only the reticle target can headshot** | All 4 tendrils roll crit/status independently, **scale with weapon multishot, cannot headshot**; tendril direct kills do not spawn new tendrils, while main-beam or any status kills do |
-| **Punch Through** | **Disabled** (verified in-game) | Works normally on the main beam |
+| **Punch Through** | **Disabled** | Works normally on the main beam |
 
 ---
 
@@ -425,7 +422,7 @@ In that 4-origin, 24-instance scenario at **3× multishot**:
 * **Ignis Wraith**: Infinite body pierce across its 27 m beam (all pierced targets receive multishot) plus a 3 m falloff-free terminal sphere (reaching 30 m); sphere-edge targets ignore multishot and headshots; Punch Through depth is clamped to `0` by the 3 m radius gate (no wall-piercing, no benefit from PT mods).
 * **Vermisplicer (Primary vs. Secondary)**:
   * **Primary (Type 4C Fan-Fork)**: 20% ramp floor (0.6 s ramp); forks up to 3 beams at fixed 70% within 6 m of the primary target.
-  * **Secondary (Type 2A Innate Multi-Beam)**: **No ramp-up (100% floor)**, 5 auto-seeking tendrils + 1 m PT; the 5 tendrils **split the base status budget evenly** (e.g. 39% total → 7.8% per tendril, verified in-game; added multishot does not dilute per-tendril status).
+  * **Secondary (Type 2A Innate Multi-Beam)**: **No ramp-up (100% floor)**, 5 auto-seeking tendrils + 1 m PT; the 5 tendrils **split the base status budget evenly** (e.g. 39% total → 7.8% per tendril; added multishot does not dilute per-tendril status).
 
 ---
 
@@ -452,7 +449,7 @@ In that 4-origin, 24-instance scenario at **3× multishot**:
 | **Furis (Incarnon)** | 1. Direct (Wide) | 12 | 1.0 (charge) | **100% (No Ramp)** | 2 m wide beam (no sphere/chain, 10–16 m falloff) | Yes | 100% damage on Tick 1; additive GunCO excludes Evo II base |
 | **Athodai Prime (Alt)** | 1. Direct (Wide) | 12 | 1.0 | 20% → **31.1%** | 4.0 m wide beam + infinite body pierce (16 m) | Yes (2 m innate) | Mag-dump; headshot multiplier locked at 1× |
 | **Vermisplicer (Pri/Sec)** | 4C Fork / 2A Multi | 12 | 0.5 | Pri 20%→31.1% / Sec **100%** | Pri: 3 × 70% forks (6 m); Sec: 5 tendrils | Yes (Sec 1 m) | Secondary has no ramp-up; 5 tendrils split base status budget |
-| **Verglas Prime (Sent.)** | 1. Direct | 12 | **1.0** | 20% → **31.1%** | None | Yes | Verified 1.0 ammo/tick; aims continuously with 0 headshots |
+| **Verglas Prime (Sent.)** | 1. Direct | 12 | **1.0** | 20% → **31.1%** | None | Yes | 1.0 ammo/tick; aims continuously with 0 headshots |
 
 ---
 

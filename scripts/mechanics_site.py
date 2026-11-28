@@ -520,13 +520,13 @@ def render_markdown_html(
 
 def magnetic_widget_html(lang: str) -> str:
     zh = lang == "zh"
-    lbl_title = "磁力破防电实时试算（单精度公式直算）" if zh else "Magnetic Break Calculator (Single-Precision Formula)"
+    lbl_title = "磁力破防电实时试算" if zh else "Magnetic Break Calculator"
     lbl_pool = "最大护盾 / 超宏防护" if zh else "Max Shield / Overguard"
     lbl_w = "击破武器档位（原生弱点 W）" if zh else "Breaking Weapon Tier (Innate W)"
     lbl_n = "破防时磁力层数 (1–10)" if zh else "Magnetic Stacks (1–10)"
     lbl_elec = "击破武器 +电击元素%" if zh else "Breaking Weapon +Electricity %"
     lbl_sd = "+异常伤害%（S² 双吃）" if zh else "+Status Damage % (S²)"
-    lbl_proxy = "目标弱点代理 (V, A)" if zh else "Target Proxy (V, A)"
+    lbl_proxy = "目标弱点系数 (V, A)" if zh else "Target Weakpoint Factor (V, A)"
     lbl_norm = "基础源值 → 归一化" if zh else "Source → Normalized"
     lbl_s1 = "第一段破防直伤包" if zh else "Stage 1 Break Packet"
     lbl_s2 = "第二段电击每跳" if zh else "Stage 2 Electric Tick"
@@ -546,11 +546,11 @@ def magnetic_widget_html(lang: str) -> str:
     opts_p = (
         '<option value="1,2" selected>常规人形 (V=1.0, A=2.0)</option>'
         '<option value="0.05,2">爆破型吞噬者 (V=0.05, A=2.0)</option>'
-        '<option value="0,1">科腐巴鲍 / 追随者 (无代理倍率)</option>'
+        '<option value="0,1">科腐巴鲍 / 追随者 (系数 1.0)</option>'
         if zh
         else '<option value="1,2" selected>Standard Humanoid (V=1.0, A=2.0)</option>'
         '<option value="0.05,2">Demolisher Devourer (V=0.05, A=2.0)</option>'
-        '<option value="0,1">Techrot Babau / Acolytes (no proxy mult)</option>'
+        '<option value="0,1">Techrot Babau / Acolytes (1.0x)</option>'
     )
     return f"""<div class="mech-calc" id="magnetic-calculator">
 <h3>{lbl_title}</h3>
@@ -565,11 +565,10 @@ def magnetic_widget_html(lang: str) -> str:
 <div class="mc-out">
   <div><span>{lbl_norm}</span><strong id="mc-norm">3,454</strong><small id="mc-q">Q = 5,181</small></div>
   <div><span>{lbl_s1}</span><strong id="mc-s1">6,908</strong><small>{"身体 · 剥甲" if zh else "Body · unarmored"}</small></div>
-  <div><span>{lbl_s2}</span><strong id="mc-s2">9,154</strong><small id="mc-tot">6 ticks: 54,924</small></div>
+  <div><span>{lbl_s2}</span><strong id="mc-s2">9,153</strong><small id="mc-tot">6 ticks: 54,918</small></div>
 </div>
 </div>
 <script>(function(){{
-  var f=Math.fround;
   function g(id){{return document.getElementById(id);}}
   function run(){{
     var pool=Math.max(0,Number(g("mc-pool").value)||0);
@@ -578,19 +577,14 @@ def magnetic_widget_html(lang: str) -> str:
     var elec=(Number(g("mc-elec").value)||0)/100;
     var S=1+(Number(g("mc-sd").value)||0)/100;
     var p=g("mc-proxy").value.split(",").map(Number), V=p[0], A=p[1];
-    var Q=Math.trunc(f(f(f(pool)*f(0.005))*f(N)));
-    var norm=Q, pb;
-    if(V===0&&A===1){{pb=f(f(Q)*f(S));}}
-    else{{
-      var div=f(f(1)+f(Math.max(W,0)*V));
-      norm=Math.floor(f(f(f(Q)/div)+f(0.5)));
-      pb=f(f(f(norm)*f(S))*f(A));
-    }}
-    var seed=f(f(pb)*f(S));
-    var tick=f(Math.max(1,f(f(0.5)*f(1+seed)))*f(1+elec));
+    var Q=pool*0.005*N;
+    var norm=V===0&&A===1?Q:Q/(1+Math.max(W,0)*V);
+    var pb=norm*S*A;
+    var seed=pb*S;
+    var tick=Math.max(1,0.5*seed)*(1+elec);
     var s1=Math.round(pb), s2=Math.round(tick);
-    g("mc-norm").textContent=norm.toLocaleString();
-    g("mc-q").textContent="Q = "+Q.toLocaleString();
+    g("mc-norm").textContent=Math.round(norm).toLocaleString();
+    g("mc-q").textContent="Q = "+Math.round(Q).toLocaleString();
     g("mc-s1").textContent=s1.toLocaleString();
     g("mc-s2").textContent=s2.toLocaleString();
     g("mc-tot").textContent="6 ticks: "+(s2*6).toLocaleString();
@@ -1362,7 +1356,7 @@ def ship_mechanics(
         idx_card_rel = "og/mechanics.png" if lang == "en" else "og/mechanics-zh.png"
         idx_card_main = idx_meta.get("card_title") or idx_meta["title"]
         idx_card_sub = cat["index"]["zh" if lang == "en" else "en"].get("card_title")
-        idx_card_facts = "Warframe Mechanics · Simulacrum Calibrated" if lang == "en" else "Warframe 机制参考 · 幻影装置实测校准"
+        idx_card_facts = "Warframe Mechanics Reference · WFSim" if lang == "en" else "Warframe 机制参考 · WFSim"
         idx_card_stats = idx_meta.get("card_stats") or idx_meta["description"]
         drew_idx = bool(og_card_fn and og_card_fn(app_dir / idx_card_rel, idx_card_main, idx_card_sub, idx_card_facts, idx_card_stats))
         idx_og_img = f"{site_url}/{idx_card_rel}" if drew_idx else f"{site_url}/logo.svg"

@@ -7,17 +7,17 @@ index:
     title: Warframe Mechanics Reference
     card_title: WFSim Mechanics
     card_stats: >-
-      Simulacrum-calibrated Warframe formulas · clickable weapon links · plain Markdown twins
+      Warframe damage & status formulas · clickable weapon links · plain Markdown twins
     description: >-
-      Factual Warframe damage, status, and weapon mechanics calibrated against
-      in-game Simulacrum measurements, with clickable links to each weapon in WFSim.
+      Warframe damage, status, and weapon mechanics reference with formulas,
+      worked examples, and clickable links to each weapon in WFSim.
   zh:
     title: Warframe 机制参考
     card_title: WFSim 机制参考
     card_stats: >-
-      幻影装置实测校准 · 全武器图标直链 · 纯静态秒开与 Markdown 孪生
+      Warframe 伤害与异常公式 · 全武器图标直链 · 纯静态页面与 Markdown 孪生
     description: >-
-      基于幻影装置游戏内实测校准的 Warframe 伤害、异常与武器底层机制手册，
+      Warframe 伤害、异常与武器结算机制参考手册，含完整公式与算例，
       文中提及的具体武器均可直接点击进入 WFSim 对应武器页。
 
 articles:
@@ -108,9 +108,9 @@ articles:
       faq:
         - q: Why do different weapons deal different Magnetic break damage against the same shield?
           a: >-
-            Magnetic break starts from trunc(Max Pool * 0.005 * Stacks), then divides by
-            1 + max(W, 0) * V using the breaking weapon's innate weakpoint bonus W before
-            multiplying by the target's generic proxy multiplier A. On standard humanoids
+            Magnetic break starts from Max Pool * 0.5% * Stacks, divides by
+            1 + max(W, 0) * V using the breaking weapon's innate weakpoint bonus W,
+            and multiplies by the target's base weakpoint factor A. On standard humanoids
             (V = 1, A = 2), net scaling is 2 / (1 + W), so W = 0 weapons (all melee,
             Kuva Nukor) deal twice the break damage of W = 1.0 weapons (Lanka, Rubico Prime).
         - q: Does Status Damage double-dip on Magnetic break Electricity procs?
@@ -137,7 +137,7 @@ articles:
       faq:
         - q: 为什么不同武器用同样 10 层磁力击破同一个护盾，破防电伤害会相差一倍？
           a: >-
-            磁力破防以最大池值 × 0.005 × 层数起步，先除以 1 + max(W, 0) × V，再乘目标弱点代理倍率 A。
+            磁力破防以最大池值 × 0.5% × 层数起步，先除以 1 + max(W, 0) × V，再乘目标弱点系数 A。
             对常规人形目标（V=1, A=2），净系数为 2 / (1 + W)：全部近战及赤毒·努寇微波枪等 W = 0 武器，
             整整是兰卡、绝路 Prime 等 W = 1.0 武器的 2 倍。
         - q: 磁力破防电对异常伤害加成是双吃（S²）吗？
