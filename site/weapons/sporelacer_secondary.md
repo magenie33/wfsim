@@ -21,13 +21,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
-- Kitgun statistics use the published assembly tables; native secondary overrides are bound, but the runtime part-composition consumer is unverified.
 - The three bomblets the sac splits into are not fired. The module lists a Bomblet Impact and a 2.1 m Bomblet Explosion, both Toxin, and nothing prices the explosion. All the chamber's Toxin goes to the first explosion, which overpays it if the bomblets share that Toxin and underpays the shot if they add to it.
 - The Condition Overload catalog prices this weapon's term on a fixed 57 damage whatever the grip, which cannot be expressed as a share of the direct hit. The direct hit takes the ordinary term on its own Impact instead: none on the default Gibber grip, 261 on Haymaker.
 - The projectile falls off from 13 m to 26 m to an unpublished amount, so no falloff is applied.
 - The sac arcs heavily, reduced by Projectile Speed; not modelled.
-- The projectile has travel time and must be led at range (wiki). Every shot here connects instantly, so against a moving target the real hit rate is lower.
-- In game the blast staggers the wielder; the player has no body here, so it costs nothing.
 
 ## In WFSim
 

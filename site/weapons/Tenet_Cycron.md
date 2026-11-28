@@ -21,7 +21,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
-- The beam's native first-contact ramp and reacquisition timing remain uncalibrated. A source-bound 3D beam can keep separate ramp progress per target.
 - In game the chain can pass through corpses (page); here a body that dies is removed.
 - Ruinous Extension extends the beam to 36 m (page); beam-range mods are shown on the card but not applied until a measurement shows whether they add a flat or a percentage amount.
 

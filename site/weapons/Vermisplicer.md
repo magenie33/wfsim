@@ -21,7 +21,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
-- Kitgun statistics use the published assembly tables; native primary overrides are bound, but the runtime part-composition consumer is unverified.
 - The tendrils fan out from the final direct contact and skip directly struck enemies in 3D. The planar scene uses a sequential chain.
 - The tendril auto-targets, with a noticeable delay between firing and dealing damage while ammo is spent (page); the delay is not modelled.
 

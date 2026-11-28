@@ -21,8 +21,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
-- The blast needs no line of sight. There is no cover here, so the perk adds nothing.
-- In game the blast staggers the wielder; the player has no body here, so it costs nothing.
 - A direct hit forces a knockdown (wiki). Enemies here are not knocked down; the number is unaffected.
 
 ## In WFSim

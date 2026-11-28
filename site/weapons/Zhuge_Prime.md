@@ -21,12 +21,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
-- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
-- It reloads 50% faster from an empty magazine (wiki); the engine has one reload time per weapon. The sim always empties the magazine, so the 3 s here is the slow reload and the number reads low.
 - The explosion arrives 0.6 s after the bolt lands, which lets an enemy walk out of it (page); here it resolves on impact, so nothing escapes.
-- On a kill the body follows the bolt, damaging anyone in its path (wiki). There is no ragdoll here, so against a crowd the number reads low.
-- The blast needs no line of sight. There is no cover here, so the perk adds nothing.
-- In game the blast staggers the wielder; the player has no body here, so it costs nothing.
 
 ## In WFSim
 

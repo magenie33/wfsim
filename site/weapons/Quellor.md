@@ -6,10 +6,6 @@ Rifle · Primary · Mastery Rank 12. 58 base damage (cold 16, impact 8, puncture
 
 Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=quellor
 
-## Not modelled here
-
-- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
-
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Quellor

@@ -22,7 +22,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 ## Not modelled here
 
 - The dart's 1.5 s explosion delay is not modelled: the blast arrives with the dart, so a short fight gets its damage early.
-- The companion fires this weapon: it picks its targets, fires when it decides, and stops while reviving or out of range. Here it fires continuously at one target, so the number is the ceiling.
 
 ## In WFSim
 

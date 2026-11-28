@@ -22,8 +22,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 ## Not modelled here
 
 - Reload grenade packets, count and fan use parsed inputs. Release, flight and impact clocks and Critical Mutation group ordering remain unmodelled; the declared mid-reload impact approximation remains in use.
-- The beam's native first-contact ramp and reacquisition timing remain uncalibrated. A source-bound 3D beam can keep separate ramp progress per target.
-- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
 - Unmeasured: when in the reload the grenade lands. The page says it is thrown mid-reload without a time, so it lands halfway through; the throw itself takes no time.
 - The explosion's self-stagger, which costs the wielder time when the target stands inside the blast, is not modelled.
 - Galvanized Shot's bug on the grenade's direct hit (multiplicative with base damage; the Bugs section of the wiki's Catabolyst page) is not modelled.

@@ -19,11 +19,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% weak-point aim · 4-player health · 180 s · KPM | cycle | 2.4401 | Primed Chilling Grasp, Toxic Barrage, Incendiary Coat, Galvanized Hell, Primed Ravage, Galvanized Savvy, Critical Deceleration, Semi-Shotgun Cannonade, Vigilante Supplies, Primary Compression | 2026-10-24 05:15 UTC · dac6ecbaf97e |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% weak-point aim · 180 s · KPM | cycle | 10.2133 | Primed Chilling Grasp, Contagious Spread, Blaze, Galvanized Hell, Primed Ravage, Galvanized Savvy, Critical Deceleration, Semi-Shotgun Cannonade, Primary Compression | 2026-10-24 05:07 UTC · dac6ecbaf97e |
 
-## Not modelled here
-
-- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
-- A reload is never interrupted here: in game you can fire mid-reload and keep the shells already loaded. A listed reload is a whole reload, by design.
-
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Strun_Wraith

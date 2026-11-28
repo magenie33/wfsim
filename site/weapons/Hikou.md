@@ -22,7 +22,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 ## Not modelled here
 
 - Not offered here: the thrown-exclusive Concealed Explosives, a second damage source on a weapon with this fire rate.
-- This weapon is silent; there is nobody to alert here, so stealth is worth nothing.
 
 ## In WFSim
 

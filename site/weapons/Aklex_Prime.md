@@ -6,10 +6,6 @@ Dual Pistols · Secondary · Mastery Rank 15. 150 base damage (impact 15, punctu
 
 Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=aklex_prime
 
-## Not modelled here
-
-- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
-
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Aklex_Prime

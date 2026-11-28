@@ -19,12 +19,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% weak-point aim · 4-player health · 180 s · KPM | base | 0.4007 | Hellfire, Primary Acuity, Primed Shred, Galvanized Aptitude, Galvanized Scope, Bladed Rounds, Rifle Elementalist, Vital Sense, Primary Crux | 2026-10-24 05:27 UTC · dac6ecbaf97e |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 1.2519 | Hellfire, Primary Acuity, Primed Shred, Galvanized Aptitude, Galvanized Scope, Bladed Rounds, Rifle Elementalist, Vital Sense, Primary Crux | 2026-10-24 05:27 UTC · dac6ecbaf97e |
 
-## Not modelled here
-
-- Fire-rate ramp endpoints use parsed values; ramp length retains the declared shot-count convention because the native counter's update cadence is unverified.
-- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
-- The spool rebuilds after every reload. Per the page, short pauses in burst fire keep it, so a player who taps keeps more of the rate than the sim. The spool itself is modelled.
-
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Supra_Vandal

@@ -22,8 +22,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 ## Not modelled here
 
 - A direct hit forces a knockdown and the explosion a ragdoll; neither is damage, and enemies here are neither knocked down nor thrown.
-- The blast needs no line of sight. There is no cover here, so the perk adds nothing.
-- In game the blast staggers the wielder; the player has no body here, so it costs nothing.
 
 ## In WFSim
 

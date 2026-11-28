@@ -21,7 +21,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
-- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
 - A partly charged shot is not modelled: an early release multiplies the Normal Shot's own base by (1 + charge) and adds the evolution's flat damage outside that, so 50% is 40 x 1.5 + 3, not 43 x 1.5. Only the two ends are carried: no charge, and the full charge.
 - A ghost is counted, not fought: a charged-shot kill leaves one for 7 s and the run reports how many there were, but a ghost neither attacks nor blocks here.
 

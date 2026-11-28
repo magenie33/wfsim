@@ -22,7 +22,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 ## Not modelled here
 
 - The self-stagger from its own explosion at close range is not modelled; it deals the firer no damage.
-- The Arch-Gun Deployer's five-minute cooldown is not modelled: in a mission the weapon is gone once its reserve runs dry; here it simply stops firing.
 
 ## In WFSim
 

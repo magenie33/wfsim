@@ -19,12 +19,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% weak-point aim · 4-player health · 180 s · KPM | base | 0.8845 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Primed Target Cracker, Galvanized Shot, Lethal Torrent, Magnetic Might, Cascadia Flare | 2026-10-23 01:29 UTC · 62a82930d1d3 |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 7.3989 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Primed Target Cracker, Galvanized Shot, Lethal Torrent, Magnetic Might, Cascadia Flare | 2026-10-23 01:29 UTC · 62a82930d1d3 |
 
-## Not modelled here
-
-- Native projectile collision dimensions are bound as evidence; unverified width and sweep consumers retain the declared collision approximation.
-- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
-- The blast needs no line of sight. There is no cover here, so the perk adds nothing.
-
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Kuva_Seer

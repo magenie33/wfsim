@@ -21,8 +21,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
-- The beam's native first-contact ramp and reacquisition timing remain uncalibrated. A source-bound 3D beam can keep separate ramp progress per target.
-- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
 - In game the chain can route through corpses (wiki); here a body that dies leaves the formation, so in a long fight the chain reaches fewer enemies and the number reads low.
 
 ## In WFSim

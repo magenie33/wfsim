@@ -21,13 +21,8 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
-- Native projectile collision dimensions are bound as evidence; unverified width and sweep consumers retain the declared collision approximation.
-- Flight uses the declared constant speed; native projectile acceleration is not simulated.
-- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
 - The rockets arm only after 7 m (wiki); closer, they hit without exploding. The sim applies the explosion at every range, so a fight set inside 7 m reads high by the whole explosion, most of the weapon.
 - Reloading while sprinting gives +25% reload speed (+50% on Gauss); nobody moves here, so the reload is always the standing one.
-- The blast needs no line of sight. There is no cover here, so the perk adds nothing.
-- In game the blast staggers the wielder; the player has no body here, so it costs nothing.
 
 ## In WFSim
 

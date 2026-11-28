@@ -21,8 +21,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
-- Some battery defaults are absent from the parsed records; the published recharge convention remains in use.
-- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
 - Switching modes takes 1 s of animation (0.5 s on Wisp); the sim never switches, so each mode is measured as the whole weapon.
 - It gets nothing from reload-triggered mods such as Spring-Loaded Chamber (wiki), because a battery never reloads.
 

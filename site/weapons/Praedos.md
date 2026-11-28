@@ -19,13 +19,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% weak-point aim · 4-player health · 180 s · KPM | base | 1.8488 | Primed Fever Strike, Vicious Frost, Condition Overload, Blood Rush, Primed Fury, Organ Shatter, Weeping Wounds, Magnetic Rush, Sovereign Outcast, Dreamer's Wrath, Melee Exposure | 2026-10-22 20:03 UTC · 62a82930d1d3 |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 7.2698 | Primed Fever Strike, Vicious Frost, Condition Overload, Blood Rush, Primed Fury, Galvanized Steel, Weeping Wounds, Magnetic Rush, Sovereign Outcast, Discipline's Merit, Melee Exposure | 2026-10-24 03:35 UTC · db272037fe1d |
 
-## Not modelled here
-
-- Animation and event clocks use the pinned earlier package export. Current metadata verifies action references and properties, but does not re-establish every clip duration, playback fit, collision window or accepted-input boundary.
-- Slam damage and critical rules retain the declared component model. Radius uses the maximum-height convention; ascent, descent, ground contact and recovery are not a calibrated physical cycle. Native attenuation and clip lengths do not establish that cycle.
-- Melee reach, sweep/thrust arcs and bone motion retain the declared arena approximation. Native collision dimensions alone do not establish the animated contact surface.
-- Power Spike's partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number reads low.
-
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Praedos

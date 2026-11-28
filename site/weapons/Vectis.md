@@ -19,11 +19,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% weak-point aim · 4-player health · 180 s · KPM | cycle | 0.9131 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Galvanized Aptitude, Galvanized Scope, Vile Acceleration, Vital Sense, Primary Crux | 2026-10-24 05:48 UTC · dac6ecbaf97e |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% weak-point aim · 180 s · KPM | cycle | 11.7858 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Galvanized Aptitude, Galvanized Scope, Vile Acceleration, Vital Sense, Primary Crux | 2026-10-24 05:59 UTC · dac6ecbaf97e |
 
-## Not modelled here
-
-- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
-- A miss while scoped drops the combo counter by one. This entry cannot miss, so only its 2 s timer removes a stack, and the number is the ceiling.
-
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Vectis

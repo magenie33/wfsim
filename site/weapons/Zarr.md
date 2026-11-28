@@ -21,8 +21,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
-- The blast needs no line of sight. There is no cover here, so the perk adds nothing.
-- In game the blast staggers the wielder; the player has no body here, so it costs nothing.
 - The bomblets take no Condition Overload: the wiki's catalog gives them a rule of their own (Zarr | Cannon Child Bomb | Projectile | 15 | 25 | 167% | Adding), and the engine sets the rule per weapon. They read low by that term only.
 
 ## In WFSim

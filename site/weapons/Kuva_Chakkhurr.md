@@ -19,12 +19,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% weak-point aim · 4-player health · 180 s · KPM | base | 1.6617 | Primed Cryo Rounds, Primary Acuity, Internal Bleeding, Primed Bane of Grineer, Serration, Galvanized Aptitude, Vile Acceleration, Vital Sense, Primary Compression | 2026-10-24 05:25 UTC · dac6ecbaf97e |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 5.1220 | Hellfire, Thermite Rounds, Heavy Caliber, Primary Acuity, Critical Delay, Hammer Shot, Semi-Rifle Cannonade, Vital Sense, Vigilante Supplies, Primary Compression | 2026-10-24 05:34 UTC · dac6ecbaf97e |
 
-## Not modelled here
-
-- Native projectile collision dimensions are bound as evidence; unverified width and sweep consumers retain the declared collision approximation.
-- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
-- The blast needs no line of sight. There is no cover here, so the perk adds nothing.
-
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Kuva_Chakkhurr

@@ -21,8 +21,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
-- The blast needs no line of sight. There is no cover here, so the perk adds nothing.
-- In game the blast staggers the wielder; the player has no body here, so it costs nothing.
 - The rocket flies at 60 m/s and can be shot down; nothing shoots back here, so every rocket arrives.
 
 ## In WFSim

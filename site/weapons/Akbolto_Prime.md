@@ -19,11 +19,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% weak-point aim · 4-player health · 180 s · KPM | base | 0.8013 | Primed Heated Charge, Scorch, Pistol Acuity, Primed Target Cracker, Galvanized Shot, Anemic Agility, Pistol Elementalist, Magnetic Might, Eject Magazine, Cascadia Flare | 2026-10-24 05:47 UTC · dac6ecbaf97e |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 2.5243 | Primed Heated Charge, Scorch, Pistol Acuity, Primed Target Cracker, Galvanized Shot, Anemic Agility, Pistol Elementalist, Magnetic Might, Eject Magazine, Cascadia Flare | 2026-10-24 05:31 UTC · dac6ecbaf97e |
 
-## Not modelled here
-
-- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
-- On a kill the body follows the bolt, damaging anyone in its path (wiki). There is no ragdoll here, so against a crowd the number reads low.
-
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Akbolto_Prime

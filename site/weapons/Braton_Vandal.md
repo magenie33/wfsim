@@ -19,10 +19,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% weak-point aim · 4-player health · 180 s · KPM | cycle | 4.2126 | Primed Cryo Rounds, Infected Clip, Hellfire, Primary Acuity, Serration, Galvanized Aptitude, Vile Acceleration, Vital Sense, Primary Deadhead | 2026-10-24 03:45 UTC · db272037fe1d |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% weak-point aim · 180 s · KPM | cycle | 16.4985 | Primed Cryo Rounds, Malignant Force, Primary Acuity, Galvanized Aptitude, Hammer Shot, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Deadhead | 2026-10-24 03:58 UTC · dac6ecbaf97e |
 
-## Not modelled here
-
-- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
-
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Braton_Vandal

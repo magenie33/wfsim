@@ -22,7 +22,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 ## Not modelled here
 
 - Native alternative behavior declarations are bound as evidence; their runtime availability and complete attack sequences are not simulated. Only the declared entry modes are used.
-- The beam's native first-contact ramp and reacquisition timing remain uncalibrated. A source-bound 3D beam can keep separate ramp progress per target.
 
 ## In WFSim
 

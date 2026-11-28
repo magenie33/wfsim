@@ -22,7 +22,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 ## Not modelled here
 
 - The charge time is not modelled because the page publishes none: mods treat it as a charge weapon, but it fires at the listed 1.00/s. A real draw can only be slower, so the rate is a ceiling.
-- The companion fires this weapon: it picks its targets, fires when it decides, and stops while reviving or out of range. Here it fires continuously at one target, so the number is the ceiling.
 
 ## In WFSim
 

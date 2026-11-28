@@ -22,8 +22,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 ## Not modelled here
 
 - Not offered here: the thrown-exclusive Concealed Explosives.
-- On a kill the body follows the bolt, damaging anyone in its path (wiki). There is no ragdoll here, so against a crowd the number reads low.
-- This weapon is silent; there is nobody to alert here, so stealth is worth nothing.
 
 ## In WFSim
 

@@ -22,7 +22,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 ## Not modelled here
 
 - The wave's wide, flat hitbox is not modelled; this fight has no geometry for it.
-- The Arch-Gun Deployer's five-minute cooldown is not modelled: in a mission the weapon is gone once its reserve runs dry; here it simply stops firing.
 
 ## In WFSim
 

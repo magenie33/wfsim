@@ -19,12 +19,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% weak-point aim · 4-player health · 180 s · KPM | base | 0.1459 | Primed Cryo Rounds, Infected Clip, Primary Acuity, Serration, Hammer Shot, Vital Sense, Dreadful Killshot, Magnetic Capacity, Primary Deadhead | 2026-10-24 05:19 UTC · dac6ecbaf97e |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 1.0175 | Primed Cryo Rounds, Infected Clip, Primary Acuity, Serration, Hammer Shot, Vital Sense, Dreadful Killshot, Magnetic Capacity, Primary Deadhead | 2026-10-24 05:16 UTC · dac6ecbaf97e |
 
-## Not modelled here
-
-- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
-- The blast needs no line of sight. There is no cover here, so the perk adds nothing.
-- In game the blast staggers the wielder; the player has no body here, so it costs nothing.
-
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Basmu

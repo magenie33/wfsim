@@ -19,10 +19,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% weak-point aim · 4-player health · 180 s · KPM | base | 0.1478 | Primed Cryo Rounds, Infected Clip, Heavy Caliber, Primary Acuity, Galvanized Aptitude, Galvanized Scope, Vile Acceleration, Vital Sense, Primary Crux | 2026-10-23 01:06 UTC · 62a82930d1d3 |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 0.9358 | Primed Cryo Rounds, Infected Clip, Heavy Caliber, Primary Acuity, Galvanized Aptitude, Galvanized Scope, Vile Acceleration, Vital Sense, Primary Crux | 2026-10-23 01:06 UTC · 62a82930d1d3 |
 
-## Not modelled here
-
-- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
-
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Kuva_Karak

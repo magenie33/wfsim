@@ -19,14 +19,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% weak-point aim · 4-player health · 180 s · KPM | base | 0.7101 | Primed Cryo Rounds, Malignant Force, Heavy Caliber, Primary Acuity, Galvanized Aptitude, Vile Acceleration, Vital Sense, Magnetic Capacity, Primed Stabilizer, Primary Compression | 2026-10-23 13:13 UTC · 5c64c380e5f2 |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 7.7288 | Primed Cryo Rounds, Malignant Force, Heavy Caliber, Primary Acuity, Galvanized Aptitude, Vile Acceleration, Vital Sense, Magnetic Capacity, Primed Stabilizer, Primary Compression | 2026-10-23 13:07 UTC · 5c64c380e5f2 |
 
-## Not modelled here
-
-- Some battery defaults are absent from the parsed records; the published recharge convention remains in use.
-- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
-- The battery discharge when the magazine empties, a 20 m pulse for 100 Impact, is not built yet. Its rule is published: base damage, faction damage and Firestorm apply; elemental and multishot bonuses do not, and blast-radius mods reach it. Its status is a 100% chance, not a forced proc. The number reads low.
-- The discharge also strips Sentient and Shadow Stalker damage resistances; no target here has any.
-- +30% Movement Speed while aiming and the explosion's self-stagger are not read here.
-
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Shedu

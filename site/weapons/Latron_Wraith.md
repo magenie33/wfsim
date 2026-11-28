@@ -19,10 +19,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% weak-point aim · 4-player health · 180 s · KPM | cycle | 7.6854 | Primed Cryo Rounds, Malignant Force, Galvanized Chamber, Galvanized Aptitude, Galvanized Scope, Semi-Rifle Cannonade, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Compression | 2026-11-02 22:38 UTC · 4393e1730621 |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% weak-point aim · 180 s · KPM | cycle | 26.8249 | Primed Cryo Rounds, Malignant Force, Galvanized Chamber, Galvanized Aptitude, Galvanized Scope, Semi-Rifle Cannonade, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Compression | 2026-11-02 22:38 UTC · 4393e1730621 |
 
-## Not modelled here
-
-- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
-
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Latron_Wraith

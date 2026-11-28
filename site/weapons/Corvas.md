@@ -23,7 +23,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 - The Archwing version is not offered: in space it fires a single 440-damage Impact/Heat projectile at 13% status, which is a different weapon.
 - The 11-degree spread is not modelled; at zero distance all eleven pellets land.
-- The Arch-Gun Deployer's five-minute cooldown is not modelled: in a mission the weapon is gone once its reserve runs dry; here it simply stops firing.
 
 ## In WFSim
 

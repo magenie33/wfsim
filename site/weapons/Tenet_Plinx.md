@@ -19,11 +19,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% weak-point aim · 4-player health · 180 s · KPM | alternate | 1.5579 | Primed Heated Charge, Scorch, Pistol Acuity, Primed Target Cracker, Galvanized Shot, Creeping Bullseye, Pistol Elementalist, Semi-Pistol Cannonade, Secondary Deadhead | 2026-10-24 05:35 UTC · dac6ecbaf97e |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% weak-point aim · 180 s · KPM | alternate | 5.3480 | Primed Heated Charge, Scorch, Pistol Acuity, Primed Target Cracker, Galvanized Shot, Creeping Bullseye, Pistol Elementalist, Semi-Pistol Cannonade, Secondary Deadhead | 2026-10-24 05:35 UTC · dac6ecbaf97e |
 
-## Not modelled here
-
-- Some battery defaults are absent from the parsed records; the published recharge convention remains in use.
-- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
-
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Tenet_Plinx

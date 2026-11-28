@@ -21,7 +21,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
-- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
 - Aiming raises a shield that blocks frontal projectiles, closing on a reload or a charge (wiki). Nothing shoots back here; the number is unaffected.
 
 ## In WFSim

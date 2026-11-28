@@ -21,7 +21,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
-- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
 - The duplex trigger is not modelled: one pull fires two rounds in game, and this entry paces one per pull.
 
 ## In WFSim

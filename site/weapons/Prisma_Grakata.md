@@ -6,10 +6,6 @@ Rifle · Primary · Mastery Rank 11. 15 base damage (impact 6, puncture 5, slash
 
 Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=prisma_grakata
 
-## Not modelled here
-
-- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
-
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Prisma_Grakata

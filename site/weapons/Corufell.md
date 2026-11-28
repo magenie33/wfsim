@@ -8,13 +8,7 @@ Current published rankings and revisions: https://wfsim.app/api/board/pages/cata
 
 ## Not modelled here
 
-- Animation and event clocks use the pinned earlier package export. Current metadata verifies action references and properties, but does not re-establish every clip duration, playback fit, collision window or accepted-input boundary.
-- Slam damage and critical rules retain the declared component model. Radius uses the maximum-height convention; ascent, descent, ground contact and recovery are not a calibrated physical cycle. Native attenuation and clip lengths do not establish that cycle.
-- Melee reach, sweep/thrust arcs and bone motion retain the declared arena approximation. Native collision dimensions alone do not establish the animated contact surface.
-- Power Spike's partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number reads low.
-- The wiki publishes no slide attack figure or duration for this weapon, so there is no slide mode.
 - The sliding heavy attack that swings the scythe is not modelled. Tennokai uses the ranged heavy's own damage and delivery.
-- Citrine and Citrine Prime grant +20% Heavy Attack Wind Up Speed; that signature bonus is not modelled. The stacking of Prime's innate 1.5x wind-up speed with wind-up mods is unmeasured; this loop multiplies their speed factors.
 
 ## In WFSim
 

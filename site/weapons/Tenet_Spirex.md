@@ -19,12 +19,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% weak-point aim · 4-player health · 180 s · KPM | base | 0.2077 | Primed Convulsion, Pistol Pestilence, Galvanized Diffusion, Hornet Strike, Primed Target Cracker, Lethal Torrent, Creeping Bullseye, Semi-Pistol Cannonade, Secondary Merciless | 2026-10-24 05:46 UTC · dac6ecbaf97e |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 0.7396 | Ice Storm, Pistol Pestilence, Galvanized Diffusion, Primed Target Cracker, Galvanized Crosshairs, Galvanized Shot, Lethal Torrent, Magnetic Might, Secondary Deadhead | 2026-10-23 01:29 UTC · 62a82930d1d3 |
 
-## Not modelled here
-
-- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
-- Bullseye Reload, its passive: a headshot grants +25% reload speed for 4 s, stacking to 2 (wiki). It is not applied, so a headshot build reads low.
-- In game the blast staggers the wielder; the player has no body here, so it costs nothing.
-
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Tenet_Spirex

@@ -21,11 +21,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
-- Fire-rate ramp endpoints use parsed values; ramp length retains the declared shot-count convention because the native counter's update cadence is unverified.
-- This entry uses the fully spooled pellet count; the initial pellet-count ramp and reset are not simulated.
-- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
 - The pellet count spools up too, one more per consecutive shot (page); this entry fires the full count from the first shot. No fire-rate ramp is published either, so the rate is the settled one.
-- The auto-spool ramp is not modelled: the rate is the spooled-up 3.67/s from the first shot, so a short burst is faster here than in game.
 
 ## In WFSim
 

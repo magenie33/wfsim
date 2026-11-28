@@ -24,7 +24,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 - The missiles home, which is not modelled; with one target at zero distance, homing and straight missiles land the same.
 - The 8-degree spread is not modelled; at zero distance all six missiles land on the one target.
 - The explosion's falloff is not published, so it is not modelled; the target stands at the centre and takes the full 228.
-- The Arch-Gun Deployer's five-minute cooldown is not modelled: in a mission the weapon is gone once its reserve runs dry; here it simply stops firing.
 
 ## In WFSim
 

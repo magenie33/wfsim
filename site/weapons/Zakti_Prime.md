@@ -21,9 +21,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
-- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
 - The cloud arrives 1 s after the dart lands (wiki); here it resolves on impact, so nothing walks out of it.
-- The blast needs no line of sight. There is no cover here, so the perk adds nothing.
 
 ## In WFSim
 

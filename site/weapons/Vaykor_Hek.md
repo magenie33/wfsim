@@ -21,7 +21,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
-- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
 - The Justice syndicate effect detonates a radial blast and heals the wielder (wiki). It runs on a syndicate meter the sim does not track; the blast is not counted.
 
 ## In WFSim

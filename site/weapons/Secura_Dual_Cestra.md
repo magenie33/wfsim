@@ -21,10 +21,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
-- Fire-rate ramp endpoints use parsed values; ramp length retains the declared shot-count convention because the native counter's update cadence is unverified.
-- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
 - The Sequence syndicate effect turns damage dealt into shields for the wielder and nearby allies (wiki). There are no shields and no allies here; the number is unaffected.
-- The auto-spool ramp is not modelled: the rate is the spooled-up 12.5/s from the first shot, so a short burst is faster here than in game.
 
 ## In WFSim
 

@@ -21,11 +21,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
-- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
 - Weak-point hits get +250% critical chance, additive with Point Strike (wiki). The engine has no headshot-only crit bonus, so the crit chance here is 40% where a headshot lands at 290%. It is most of the weapon; the number reads low.
-- On a kill the body follows the bolt, damaging anyone in its path (wiki). There is no ragdoll here, so against a crowd the number reads low.
-- This weapon is silent; there is nobody to alert here, so stealth is worth nothing.
-- Lower zoom levels are not modelled: the scope always sits at its top level and its best buff.
 
 ## In WFSim
 

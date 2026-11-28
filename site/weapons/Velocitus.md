@@ -19,10 +19,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% weak-point aim · 4-player health · 180 s · KPM | base | 5.7776 | Primed Polar Magazine, Primed Venomous Clip, Primed Combustion Rounds, Primed Dual Rounds, Primed Rubedo-Lined Barrel, Critical Focus, Hollowed Bullets, Parallax Scope, Primary Crux, Secondary Deadhead | 2026-10-28 23:17 UTC · be8a95fc1ba2 |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 14.1445 | Primed Polar Magazine, Contamination Casing, Primed Combustion Rounds, Primed Dual Rounds, Primed Rubedo-Lined Barrel, Critical Focus, Hollowed Bullets, Parallax Scope, Primary Crux, Secondary Deadhead | 2026-10-28 23:20 UTC · be8a95fc1ba2 |
 
-## Not modelled here
-
-- The Arch-Gun Deployer's five-minute cooldown is not modelled: in a mission the weapon is gone once its reserve runs dry; here it simply stops firing.
-
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Velocitus

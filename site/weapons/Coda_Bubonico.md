@@ -19,11 +19,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% weak-point aim · 4-player health · 180 s · KPM | base | 8.3623 | Primed Chilling Grasp, Toxic Barrage, Galvanized Hell, Primed Cleanse Grineer, Primed Point Blank, Primed Ravage, Galvanized Savvy, Critical Deceleration, Vigilante Supplies, Primary Deadhead | 2026-10-22 20:08 UTC · 62a82930d1d3 |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 30.9509 | Primed Chilling Grasp, Toxic Barrage, Blaze, Galvanized Hell, Primed Point Blank, Primed Ravage, Galvanized Savvy, Critical Deceleration, Vigilante Supplies, Primary Deadhead | 2026-10-24 03:32 UTC · db272037fe1d |
 
-## Not modelled here
-
-- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
-- The spool rebuilds after every reload. Per the page, short pauses in burst fire keep it, so a player who taps keeps more of the rate than the sim. The spool itself is modelled.
-
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Coda_Bubonico

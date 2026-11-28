@@ -19,11 +19,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% weak-point aim · 4-player health · 180 s · KPM | base | 0.1321 | Primed Convulsion, Pistol Pestilence, Primed Heated Charge, Pistol Acuity, Hornet Strike, Primed Target Cracker, Primed Pistol Gambit, Anemic Agility, Secondary Deadhead | 2026-10-24 05:47 UTC · dac6ecbaf97e |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 0.7407 | Deep Freeze, Pistol Pestilence, Primed Heated Charge, Pistol Acuity, Hornet Strike, Magnum Force, Primed Target Cracker, Anemic Agility, Secondary Deadhead | 2026-10-24 05:47 UTC · dac6ecbaf97e |
 
-## Not modelled here
-
-- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
-- Critical hits have a 6% chance to set the next shot's status chance to 500% (wiki). The engine does not model this crit-triggered status lock, so it procs at its card's 1%. It is most of the weapon; the number reads low.
-
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Sagek_Prime

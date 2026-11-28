@@ -19,11 +19,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% weak-point aim · 4-player health · 180 s · KPM | base | 3.8816 | Primed Polar Magazine, Primed Venomous Clip, Primed Combustion Rounds, Primed Dual Rounds, Primed Rubedo-Lined Barrel, Critical Focus, Hollowed Bullets, Parallax Scope, Primary Crux, Cascadia Flare | 2026-10-24 08:22 UTC · dac6ecbaf97e |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 14.1170 | Primed Polar Magazine, Primed Venomous Clip, Primed Combustion Rounds, Primed Dual Rounds, Automatic Trigger, Critical Focus, Primed Ammo Chain, Magnetized Cycle, Primary Crux, Cascadia Flare | 2026-10-24 05:27 UTC · dac6ecbaf97e |
 
-## Not modelled here
-
-- The auto-spool ramp is not modelled: the rate is the spooled-up 25/s from the first shot, so a short burst is faster here than in game.
-- The Arch-Gun Deployer's five-minute cooldown is not modelled: in a mission the weapon is gone once its reserve runs dry; here it simply stops firing.
-
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Imperator_Vandal

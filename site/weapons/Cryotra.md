@@ -22,7 +22,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 ## Not modelled here
 
 - The cold field is not modelled, and it is most of the weapon: each grenade leaves a 1.5 m field dealing 20 Cold a second at 30% status, with no published duration. Only the grenade's 10 Impact is counted, so the number reads low.
-- The companion fires this weapon: it picks its targets, fires when it decides, and stops while reviving or out of range. Here it fires continuously at one target, so the number is the ceiling.
 
 ## In WFSim
 

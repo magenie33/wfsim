@@ -6,10 +6,6 @@ Shotgun · Primary · Mastery Rank 7. 70 base damage x5 multishot (impact 52.5, 
 
 Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=sobek
 
-## Not modelled here
-
-- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
-
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Sobek

@@ -19,10 +19,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% weak-point aim · 4-player health · 180 s · KPM | cycle | 1.6225 | Malignant Force, Rime Rounds, Amalgam Serration, Split Flights, Galvanized Aptitude, Critical Delay, Vile Acceleration, Vital Sense, Vigilante Supplies, Primary Deadhead | 2026-10-24 05:09 UTC · dac6ecbaf97e |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% weak-point aim · 180 s · KPM | alternate cycle | 16.1995 | Primed Cryo Rounds, Infected Clip, Amalgam Serration, Split Flights, Galvanized Aptitude, Galvanized Scope, Vile Acceleration, Vital Sense, Vigilante Supplies, Primary Deadhead | 2026-10-24 04:18 UTC · dac6ecbaf97e |
 
-## Not modelled here
-
-- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
-
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Paris_Prime

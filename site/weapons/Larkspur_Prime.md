@@ -19,11 +19,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% weak-point aim · 4-player health · 180 s · KPM | base | 5.3080 | Contamination Casing, Hypothermic Shell, Primed Combustion Rounds, Magma Chamber, Primed Dual Rounds, Primed Rubedo-Lined Barrel, Containment Breach, Hollowed Bullets, Primary Crux, Secondary Enervate | 2026-10-23 20:26 UTC · 5c64c380e5f2 |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 11.7350 | Primed Polar Magazine, Primed Venomous Clip, Primed Combustion Rounds, Primed Dual Rounds, Primed Rubedo-Lined Barrel, Primed Ammo Chain, Hollowed Bullets, Magnetized Cycle, Primary Deadhead, Secondary Enervate | 2026-10-23 20:21 UTC · 5c64c380e5f2 |
 
-## Not modelled here
-
-- The Arch-Gun Deployer's five-minute cooldown is not modelled: in a mission the weapon is gone once its reserve runs dry; here it simply stops firing.
-- Hildryn's signature bonus is not modelled: carried by her, it holds 700 reserve ammo instead of 400.
-
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Larkspur_Prime

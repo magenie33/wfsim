@@ -19,11 +19,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% weak-point aim · 4-player health · 180 s · KPM | base | 0.6709 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Galvanized Shot, Primed Pistol Gambit, Lethal Torrent, Pistol Elementalist, Secondary Enervate | 2026-10-24 05:39 UTC · dac6ecbaf97e |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 1.3779 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Galvanized Shot, Primed Pistol Gambit, Lethal Torrent, Pistol Elementalist, Secondary Enervate | 2026-10-24 05:39 UTC · dac6ecbaf97e |
 
-## Not modelled here
-
-- The beam's native first-contact ramp and reacquisition timing remain uncalibrated. A source-bound 3D beam can keep separate ramp progress per target.
-- Some battery defaults are absent from the parsed records; the published recharge convention remains in use.
-
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Cycron

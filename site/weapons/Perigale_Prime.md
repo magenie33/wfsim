@@ -21,9 +21,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
-- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
-- A miss while scoped drops the combo counter by one. This entry cannot miss, so only its 2 s timer removes a stack, and the number is the ceiling.
-- Lower zoom levels are not modelled: the scope always sits at its top level and its best buff.
 - Voruna's signature bonus is not modelled: carried by her, the ammo pool grows to 56.
 
 ## In WFSim

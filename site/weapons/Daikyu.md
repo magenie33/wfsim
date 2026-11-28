@@ -21,12 +21,8 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
-- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
 - Fires only at full charge; an early release fires nothing. The sim always charges fully, so the number is the ceiling.
 - Not offered here: Spring-Loaded Broadhead, Amalgam Daikyu Target Acquired and the bow-exclusive Thunderbolt.
-- On a kill the body follows the bolt, damaging anyone in its path (wiki). There is no ragdoll here, so against a crowd the number reads low.
-- This weapon is silent; there is nobody to alert here, so stealth is worth nothing.
-- Lower zoom levels are not modelled: the scope always sits at its top level and its best buff.
 
 ## In WFSim
 

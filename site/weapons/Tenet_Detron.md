@@ -21,7 +21,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
-- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
 - The Condition Overload bonus ignores damage falloff (the catalog's notes on both rows); here it falls off with the shot, so a status-stacking build at range reads low.
 - The in-game falloff display is wrong on this weapon (page): it shows 13-22 m, and full damage holds to about 28 m. The 26-52 m entered here is the module's and infobox's.
 

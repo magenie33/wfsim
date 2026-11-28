@@ -22,7 +22,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 ## Not modelled here
 
 - Chaining is not modelled, and it is what the weapon is for: the beam jumps to up to 3 enemies within 5 m of each other. There is one target here, so against a crowd the number reads low.
-- The companion fires this weapon: it picks its targets, fires when it decides, and stops while reviving or out of range. Here it fires continuously at one target, so the number is the ceiling.
 
 ## In WFSim
 

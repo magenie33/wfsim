@@ -21,8 +21,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
-- Native projectile collision dimensions are bound as evidence; unverified width and sweep consumers retain the declared collision approximation.
-- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
 - The projectile is a wall 4.4 m thick that sweeps everything in that band; the sim fires a ray, so only bodies on the line are hit and against a crowd the number reads low.
 - Shots bounce off surfaces up to 4 times, which can double a shot's hits off a wall behind the target (page); there are no surfaces here.
 - The guaranteed Impact proc reaches only 29 m but is applied at every distance here; past 29 m the damage is already at its falloff floor.

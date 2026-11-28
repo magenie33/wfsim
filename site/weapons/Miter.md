@@ -21,7 +21,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
-- Native projectile collision dimensions are bound as evidence; unverified width and sweep consumers retain the declared collision approximation.
 - The Uncharged Shot is not modelled; this entry carries only the Charged Shot.
 
 ## In WFSim

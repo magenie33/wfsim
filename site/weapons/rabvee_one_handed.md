@@ -4,12 +4,6 @@ Machete · Melee · Mastery Rank 0. 230 base damage (impact 138, puncture 11.5, 
 
 Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=rabvee_one_handed
 
-## Not modelled here
-
-- Animation and event clocks use the pinned earlier package export. Current metadata verifies action references and properties, but does not re-establish every clip duration, playback fit, collision window or accepted-input boundary.
-- Melee reach, sweep/thrust arcs and bone motion retain the declared arena approximation. Native collision dimensions alone do not establish the animated contact surface.
-- Zaw statistics use the declared assembly tables. Native strike and handedness records are bound, but the complete runtime part-composition consumer is unverified; unassembled placeholders do not replace the finished weapon.
-
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/rabvee_one_handed

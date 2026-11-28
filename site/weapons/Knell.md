@@ -19,11 +19,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% weak-point aim · 4-player health · 180 s · KPM | base | 1.3371 | Primed Convulsion, Pathogen Rounds, Primed Heated Charge, Pistol Acuity, Hornet Strike, Primed Target Cracker, Lethal Torrent, Anemic Agility, Secondary Deadhead | 2026-10-24 05:45 UTC · dac6ecbaf97e |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 5.3712 | Primed Convulsion, Pathogen Rounds, Primed Heated Charge, Pistol Acuity, Hornet Strike, Primed Target Cracker, Lethal Torrent, Anemic Agility, Secondary Deadhead | 2026-10-24 05:45 UTC · dac6ecbaf97e |
 
-## Not modelled here
-
-- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
-- Lower zoom levels are not modelled: the scope always sits at its top level and its best buff.
-
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Knell

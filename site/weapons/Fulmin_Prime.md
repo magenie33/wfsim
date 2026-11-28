@@ -21,7 +21,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
-- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
 - Switching modes takes 1 s of animation (0.5 s on Wisp); the sim never switches, so each mode is measured as the whole weapon.
 
 ## In WFSim

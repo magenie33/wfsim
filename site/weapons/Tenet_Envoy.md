@@ -21,11 +21,8 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
-- The blast needs no line of sight. There is no cover here, so the perk adds nothing.
 - The rockets can be guided by aiming and fired from behind cover, at half speed while guided (20 m/s against 40). The target here does not move, so guidance changes nothing.
 - A rocket that hits nothing detonates after 6 s; the sim does not model a miss.
-- It reloads 10% of its magazine a second while holstered or deployed; it is never holstered here, so the reload is always the full one.
-- In game the blast staggers the wielder; the player has no body here, so it costs nothing.
 
 ## In WFSim
 

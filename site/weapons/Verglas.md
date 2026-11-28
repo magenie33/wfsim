@@ -19,10 +19,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% weak-point aim · 4-player health · 180 s · KPM | base | 0.07754 | Malignant Force, Rime Rounds, Hellfire, Thermite Rounds, Heavy Caliber, Split Chamber, Rifle Elementalist, Magnetic Capacity | 2026-11-02 12:42 UTC · 4393e1730621 |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 0.5956 | Malignant Force, Rime Rounds, Hellfire, Thermite Rounds, Heavy Caliber, Split Chamber, Rifle Elementalist, Magnetic Capacity | 2026-11-02 12:42 UTC · 4393e1730621 |
 
-## Not modelled here
-
-- The companion fires this weapon: it picks its targets, fires when it decides, and stops while reviving or out of range. Here it fires continuously at one target, so the number is the ceiling.
-
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Verglas

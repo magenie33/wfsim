@@ -25,7 +25,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 - The projectile explodes on impact or after 15 m (wiki). This entry treats 15 m as the reach, which stops the direct hit correctly but also stops the explosion, so beyond 15 m it deals nothing here while in game it still explodes.
 - Its guaranteed knockback and ragdoll (wiki) are crowd control, not damage, and are not applied. The number is unaffected.
 - Projectiles bounce off surfaces (wiki); there are no walls here.
-- The blast needs no line of sight. There is no cover here, so the perk adds nothing.
 
 ## In WFSim
 

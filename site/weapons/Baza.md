@@ -19,11 +19,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% weak-point aim · 4-player health · 180 s · KPM | base | 0.4503 | Infected Clip, Rime Rounds, Thermite Rounds, Primary Acuity, Serration, Speed Trigger, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Crux | 2026-10-24 05:44 UTC · dac6ecbaf97e |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 1.9688 | Infected Clip, Rime Rounds, Thermite Rounds, Primary Acuity, Serration, Speed Trigger, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Crux | 2026-10-24 05:48 UTC · dac6ecbaf97e |
 
-## Not modelled here
-
-- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
-- This weapon is silent; there is nobody to alert here, so stealth is worth nothing.
-
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Baza

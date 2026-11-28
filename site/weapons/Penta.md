@@ -24,8 +24,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 - The grenades are detonated by hand with the alt-fire, with no arming delay (wiki). The sim has no second trigger, so each grenade detonates on landing: the ceiling for a player who detonates at once. Laying several and detonating them together is not modelled.
 - Only five grenades can be live at once, and multishot counts toward the limit (wiki). The sim resolves each shot on its own and never reaches the cap, so a multishot build reads high.
 - Not offered here: Tether Grenades, Napalm Grenades and the launcher-exclusive Adhesive Blast. Tether Grenades turns each grenade into a vortex.
-- The blast needs no line of sight. There is no cover here, so the perk adds nothing.
-- In game the blast staggers the wielder; the player has no body here, so it costs nothing.
 
 ## In WFSim
 

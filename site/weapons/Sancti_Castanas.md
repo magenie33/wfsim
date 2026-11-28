@@ -26,8 +26,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 - The mines are detonated by hand with the alt-fire, and several can be laid first (wiki). The sim detonates each on landing: the ceiling for one mine. Laying several and detonating them together is not modelled.
 - Mines stick to surfaces, enemies and allies, and multishot throws them in a very wide horizontal spread (wiki), so on this weapon multishot covers ground rather than adding damage to one target.
 - The Purity syndicate effect heals and cleanses the wielder and nearby allies (wiki). There is no health and no ally here; the number is unaffected.
-- This weapon is silent; there is nobody to alert here, so stealth is worth nothing.
-- The blast needs no line of sight. There is no cover here, so the perk adds nothing.
 
 ## In WFSim
 

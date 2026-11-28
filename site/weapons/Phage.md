@@ -22,7 +22,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 ## Not modelled here
 
 - Bound 3D projectile forms apply their declared fan or charge endpoints. Custom beam patterns and unselected firing variants use the declared approximation.
-- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
 - From the hip the seven beams spread; aiming focuses them on the crosshair (wiki). The sim aims, so all seven land: the ceiling against one enemy.
 
 ## In WFSim

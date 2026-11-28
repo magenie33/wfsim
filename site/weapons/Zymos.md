@@ -22,10 +22,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 ## Not modelled here
 
 - Native projectile callbacks are bound as evidence; unverified callback timing, scaling and secondary effects are not simulated.
-- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
 - A headshot spawns six homing spores that explode in 3.3 m each, plus a further explosion (module). The engine has no hit that spawns projectiles, so none is counted, and in a headshot-heavy fight the number reads several times low.
-- The blast needs no line of sight. There is no cover here, so the perk adds nothing.
-- In game the blast staggers the wielder; the player has no body here, so it costs nothing.
 
 ## In WFSim
 

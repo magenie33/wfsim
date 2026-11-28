@@ -21,7 +21,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
-- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
 - The semi-auto mode is entered by deploying a disc that lasts until a reload and highlights enemy heads within 20 m through walls (wiki). The sim does not use the highlight or the disc's timer, so the mode is available from the first shot.
 
 ## In WFSim

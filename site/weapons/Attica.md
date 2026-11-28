@@ -8,10 +8,7 @@ Current published rankings and revisions: https://wfsim.app/api/board/pages/cata
 
 ## Not modelled here
 
-- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
 - Not offered here: Spring-Loaded Broadhead and the bow-exclusive Thunderbolt. Thunderbolt turns every arrow into a grenade, a second damage source.
-- On a kill the body follows the bolt, damaging anyone in its path (wiki). There is no ragdoll here, so against a crowd the number reads low.
-- This weapon is silent; there is nobody to alert here, so stealth is worth nothing.
 
 ## In WFSim
 

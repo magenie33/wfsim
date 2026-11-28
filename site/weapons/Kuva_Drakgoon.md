@@ -22,9 +22,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 ## Not modelled here
 
 - Bound 3D projectile forms apply their declared fan or charge endpoints. Custom beam patterns and unselected firing variants use the declared approximation.
-- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
 - Assumed: a bounce lands on a weak point 50% of the time. It can headshot (wiki), but where it lands depends on geometry the sim does not model, and no rate is published.
-- The 3D arena reflects off posed enemies and the open floor. Wall and cover geometry remain outside this scenario.
 
 ## In WFSim
 

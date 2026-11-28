@@ -21,9 +21,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
-- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
 - The Blight syndicate effect blinds enemies in a radius and opens them to finishers (wiki). It runs on a syndicate meter the sim does not track, and blindness is crowd control; it is not counted.
-- This weapon is silent; there is nobody to alert here, so stealth is worth nothing.
 
 ## In WFSim
 

@@ -21,7 +21,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
-- The beam's native first-contact ramp and reacquisition timing remain uncalibrated. A source-bound 3D beam can keep separate ramp progress per target.
 - The beam's 0.15 m thickness, the largest of any continuous weapon, is not modelled: the beam here is a ray, so a shot that would clip an enemy with its edge misses, and Heavy Caliber's accuracy penalty costs more than in game.
 - The area damage can headshot, which the page marks as a bug; the sim applies headshots to the direct hit only, so the blast is never a headshot here.
 

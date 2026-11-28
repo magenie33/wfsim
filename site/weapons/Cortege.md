@@ -22,7 +22,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 ## Not modelled here
 
 - The beam's cone, 'radial damage varying from 1 to 4 meters in a cone shape' (wiki), has no published damage figure and is not modelled. Only the direct beam is applied, so against anything the cone would catch the number reads low.
-- The Arch-Gun Deployer's five-minute cooldown is not modelled: in a mission the weapon is gone once its reserve runs dry; here it simply stops firing.
 
 ## In WFSim
 

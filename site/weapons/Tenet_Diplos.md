@@ -19,11 +19,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% weak-point aim · 4-player health · 180 s · KPM | base | 1.8627 | Frostbite, Pistol Pestilence, Primed Heated Charge, Pistol Acuity, Primed Target Cracker, Galvanized Shot, Anemic Agility, Pistol Elementalist, Primed Steady Hands, Cascadia Flare | 2026-11-03 12:12 UTC · 51a5068e9d8b |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 7.6609 | Frostbite, Pistol Pestilence, Primed Heated Charge, Pistol Acuity, Primed Target Cracker, Galvanized Shot, Anemic Agility, Pistol Elementalist, Primed Steady Hands, Cascadia Flare | 2026-11-03 12:05 UTC · 51a5068e9d8b |
 
-## Not modelled here
-
-- It reloads 10% of its magazine a second while holstered or deployed; it is never holstered here, so the reload is always the full one.
-- The very heavy side-to-side recoil (page) makes its accuracy hold only for the first shot; the sim has no recoil.
-
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Tenet_Diplos

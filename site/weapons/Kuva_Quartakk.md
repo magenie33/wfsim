@@ -19,10 +19,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% weak-point aim · 4-player health · 180 s · KPM | base | 0.1265 | Stormbringer, Malignant Force, Primed Cryo Rounds, Galvanized Chamber, Serration, Galvanized Aptitude, Critical Delay, Hammer Shot, Primed Stabilizer, Primary Frostbite | 2026-10-24 05:45 UTC · dac6ecbaf97e |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 0.6432 | Stormbringer, Malignant Force, Primed Cryo Rounds, Galvanized Chamber, Serration, Galvanized Aptitude, Critical Delay, Hammer Shot, Primed Stabilizer, Primary Frostbite | 2026-10-24 05:45 UTC · dac6ecbaf97e |
 
-## Not modelled here
-
-- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
-
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Kuva_Quartakk

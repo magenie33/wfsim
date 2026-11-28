@@ -19,14 +19,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% weak-point aim · 4-player health · 180 s · KPM | alternate | 0.3787 | Malignant Force, Rime Rounds, Stormbringer, Primary Acuity, Primed Shred, Galvanized Aptitude, Galvanized Scope, Vital Sense, Primary Crux | 2026-10-22 19:13 UTC · 62a82930d1d3 |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% weak-point aim · 180 s · KPM | alternate | 2.1688 | Malignant Force, Rime Rounds, Stormbringer, Primary Acuity, Primed Shred, Galvanized Aptitude, Galvanized Scope, Vital Sense, Primary Crux | 2026-10-24 06:03 UTC · dac6ecbaf97e |
 
-## Not modelled here
-
-- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
-- Headshot kills from the bolt boost reload speed by 50% (wiki); a kill-triggered buff the engine does not model.
-- Used by Garuda it gains 1 m of innate punch through (wiki), a Warframe-specific bonus not modelled here.
-- On a kill the body follows the bolt, damaging anyone in its path (wiki). There is no ragdoll here, so against a crowd the number reads low.
-- This weapon is silent; there is nobody to alert here, so stealth is worth nothing.
-
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Nagantaka_Prime

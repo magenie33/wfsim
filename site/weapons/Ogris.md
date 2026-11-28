@@ -23,8 +23,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 - Enemies can shoot down the rockets (wiki); nothing shoots back here, so every rocket arrives.
 - Not offered here: the launcher-exclusive Adhesive Blast, which sticks the rocket to what it hits and moves where it explodes.
-- The blast needs no line of sight. There is no cover here, so the perk adds nothing.
-- In game the blast staggers the wielder; the player has no body here, so it costs nothing.
 
 ## In WFSim
 

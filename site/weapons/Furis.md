@@ -19,10 +19,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% weak-point aim · 4-player health · 180 s · KPM | cycle | 13.4062 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Primed Expel Grineer, Primed Target Cracker, Primed Pistol Gambit, Lethal Torrent, Cascadia Flare | 2026-10-23 09:00 UTC · 4296a0964da6 |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% weak-point aim · 180 s · KPM | cycle | 35.8303 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Primed Target Cracker, Galvanized Crosshairs, Lethal Torrent, Magnetic Might, Cascadia Flare | 2026-10-23 09:32 UTC · 4296a0964da6 |
 
-## Not modelled here
-
-- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
-
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Furis

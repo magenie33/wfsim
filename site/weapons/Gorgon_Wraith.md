@@ -19,12 +19,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% weak-point aim · 4-player health · 180 s · KPM | cycle | 0.6141 | Primed Cryo Rounds, Malignant Force, Thermite Rounds, Galvanized Chamber, Serration, Galvanized Scope, Vile Acceleration, Vital Sense, Primary Compression | 2026-10-24 05:39 UTC · dac6ecbaf97e |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% weak-point aim · 180 s · KPM | cycle | 2.2246 | Primed Cryo Rounds, Malignant Force, Galvanized Chamber, Serration, Critical Delay, Vile Acceleration, Vital Sense, Magnetic Capacity, Primary Compression | 2026-10-24 05:39 UTC · dac6ecbaf97e |
 
-## Not modelled here
-
-- Fire-rate ramp endpoints use parsed values; ramp length retains the declared shot-count convention because the native counter's update cadence is unverified.
-- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
-- The spool rebuilds after every reload. Per the page, short pauses in burst fire keep it, so a player who taps keeps more of the rate than the sim. The spool itself is modelled.
-
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Gorgon_Wraith

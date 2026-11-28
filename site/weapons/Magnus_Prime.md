@@ -21,7 +21,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
-- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
 - Chamber Cascade: a hit or a damaging status has a 4% chance to grant 100% ammo efficiency for 4 s (wiki). Reserves are infinite by default, so it adds nothing here.
 
 ## In WFSim
