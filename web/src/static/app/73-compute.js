@@ -916,6 +916,30 @@ const ORDER_KIND_NAMES = { rescore: "rescores after a model change {n}", sweep: 
   new_build: "new builds {n}", refresh: "requested score refreshes {n}", riven_gain: "riven gains {n}", user_calculation: "player calculations {n}",
   board: "leaderboard calculations {n}", board_review: "leaderboard reviews {n}", chat: "riven analyses {n}", survey: "survey searches {n}",
   family_build: "related weapon searches {n}", verification: "result checks {n}", unattributed_calculation: "unattributed calculations {n}" };
+const QUEUE_PIPELINE_STAGES = [
+  ["computing", "Leased", "leased {n}", "seg-computing"],
+  ["verifying", "Verifying", "verifying {n}", "seg-verifying"],
+  ["ready", "Ready in pool", "in pool {n}", "seg-ready"],
+  ["staged", "Queued on server", "on server {n}", "seg-staged"],
+];
+function validStageCounts(row, expectedTotal) {
+  if (!row || typeof row !== "object") return null;
+  const counts = {};
+  let sum = 0;
+  for (const [key] of QUEUE_PIPELINE_STAGES) {
+    const v = row[key];
+    if (!Number.isSafeInteger(v) || v < 0) return null;
+    counts[key] = v;
+    sum += v;
+  }
+  return sum === expectedTotal ? counts : null;
+}
+function validSplitCounts(row, expectedTotal) {
+  if (!row || typeof row !== "object") return null;
+  const { active, staged } = row;
+  if (!Number.isSafeInteger(active) || active < 0 || !Number.isSafeInteger(staged) || staged < 0) return null;
+  return active + staged === expectedTotal ? { active, staged } : null;
+}
 function computeZoneOrders(queue) {
   if (!queue || !Number.isSafeInteger(queue.total) || queue.total < 0 || !Array.isArray(queue.zones)) return null;
   let sum = 0, previous = -1;
@@ -928,7 +952,43 @@ function computeZoneOrders(queue) {
     sum += total;
     orders.push({ zone, total });
   }
-  return sum === queue.total ? orders : null;
+  if (sum !== queue.total) return null;
+  if (Array.isArray(queue.zone_states) && queue.zone_states.length === orders.length) {
+    const hasDetailed = queue.zone_states.some((z) => z && ("computing" in z || "verifying" in z || "ready" in z));
+    if (hasDetailed) {
+      const detailed = queue.zone_states.map((z, i) => z && z.zone === orders[i].zone && z.total === orders[i].total
+        ? validStageCounts(z, orders[i].total) : null);
+      if (detailed.every(Boolean)) orders.forEach((o, i) => { o.states = detailed[i]; });
+    } else {
+      const split = queue.zone_states.map((z, i) => z && z.zone === orders[i].zone && z.total === orders[i].total
+        ? validSplitCounts(z, orders[i].total) : null);
+      if (split.every(Boolean)) orders.forEach((o, i) => { o.split = split[i]; });
+    }
+  }
+  return orders;
+}
+function computeQueuePipelineHtml(queue, total, n) {
+  if (!queue) return "";
+  if (queue.states !== undefined) {
+    const full = validStageCounts(queue.states, total);
+    if (!full) return "";
+    const bar = total > 0 ? `<div class="demand-bar pipeline-bar">${QUEUE_PIPELINE_STAGES
+      .filter(([key]) => full[key] > 0)
+      .map(([key, , , cls]) => `<div class="${cls}" style="flex:${Math.max(full[key] / total, 0.018)}"></div>`).join("")}</div>` : "";
+    const tiles = QUEUE_PIPELINE_STAGES.map(([key, label, , cls]) =>
+      `<div class="demand-state"><span class="demand-dot ${cls}"></span><span class="demand-state-label">${aT(label)}</span><b>${escHtml(n(full[key]))}</b></div>`
+    ).join("");
+    return `${bar}<div class="demand-states">${tiles}</div>`;
+  }
+  const split = validSplitCounts(queue, total);
+  if (split && split.staged > 0) {
+    const segs = [["ready", split.active, "seg-ready"], ["staged", split.staged, "seg-staged"]].filter(([, v]) => v > 0);
+    const bar = total > 0 ? `<div class="demand-bar pipeline-bar">${segs
+      .map(([, v, cls]) => `<div class="${cls}" style="flex:${Math.max(v / total, 0.018)}"></div>`).join("")}</div>` : "";
+    return `${bar}<div class="demand-states"><div class="demand-state"><span class="demand-dot seg-ready"></span><span class="demand-state-label">${aT("In active pool")}</span><b>${escHtml(n(split.active))}</b></div>
+      <div class="demand-state"><span class="demand-dot seg-staged"></span><span class="demand-state-label">${aT("Queued on server")}</span><b>${escHtml(n(split.staged))}</b></div></div>`;
+  }
+  return "";
 }
 function computeDemandHtml() {
   const fresh = currentComputeDemand(computeDemand), d = fresh ? computeDemand : {};
@@ -938,15 +998,20 @@ function computeDemandHtml() {
     && Number.isSafeInteger(o.total) && o.total >= 0) ? d.orders : null;
   const owed = orders?.reduce((sum, o) => sum + o.total, 0);
   const counted = Number.isSafeInteger(owed) && owed >= 0;
-  const pace = fresh && [d.per_hour?.volunteers, d.per_hour?.official].every(value => Number.isSafeInteger(value) && value >= 0);
-  const done = pace ? d.per_hour.volunteers + d.per_hour.official : null;
-  const share = done ? Math.round((100 * d.per_hour.volunteers) / done) : 0;
+  const pace = fresh && Number.isSafeInteger(d.per_hour?.volunteers) && d.per_hour.volunteers >= 0;
+  const done = pace ? d.per_hour.volunteers : null;
   const sourceNames = { requested: "from user requests {n}", system: "system generated {n}", unattributed: "source unknown {n}" };
+  const pipeline = counted && d.queue ? computeQueuePipelineHtml(d.queue, owed, n) : "";
   const list = (counted ? orders : []).filter(o => o.total).map(o => {
     const sources = Object.keys(sourceNames).map(key => o.sources?.[key]);
     const valid = sources.every(value => Number.isSafeInteger(value) && value >= 0) && sources.reduce((sum, value) => sum + value, 0) === o.total;
-    const source = valid ? Object.entries(sourceNames).filter(([key]) => o.sources[key]).map(([key, name]) =>
-      tr(name).replace("{n}", n(o.sources[key]))).join(" · ") : "";
+    const zoneDetail = o.states
+      ? QUEUE_PIPELINE_STAGES.filter(([key]) => o.states[key] > 0).map(([key, , shortLabel]) => tr(shortLabel).replace("{n}", n(o.states[key]))).join(" · ")
+      : o.split && o.split.staged > 0
+        ? [["in pool {n}", o.split.active], ["on server {n}", o.split.staged]].filter(([, v]) => v > 0).map(([label, v]) => tr(label).replace("{n}", n(v))).join(" · ")
+        : "";
+    const source = zoneDetail || (valid ? Object.entries(sourceNames).filter(([key]) => o.sources[key]).map(([key, name]) =>
+      tr(name).replace("{n}", n(o.sources[key]))).join(" · ") : "");
     const label = d.queue && Number.isInteger(o.zone) && o.zone >= 0 && o.zone <= 99
       ? tr("Zone {zone} · {n}").replace("{zone}", String(o.zone).padStart(2, "0"))
       : tr(ORDER_KIND_NAMES[o.kind] || `${o.kind} {n}`);
@@ -974,14 +1039,11 @@ function computeDemandHtml() {
   return `<div class="block" id="compute-demand"><div class="bh"><h2>${aT("Task queue")}</h2><span class="set-note" style="margin-left:auto">${
     escHtml(updated)}</span></div><div class="bb"><dl class="kvs">
     <div class="kv"><dt>${aT("Computing now")}</dt><dd><span class="online-dot"></span>${big(computingCount === null ? "—" : n(computingCount))} ${aT("devices")}</dd></div>
-    <div class="kv"><dt>${aT("Total orders")}</dt><dd style="min-width:0">${big(counted ? n(owed) : "—")} ${aT("tasks")}${
+    <div class="kv"><dt>${aT("Total orders")}</dt><dd style="min-width:0">${big(counted ? n(owed) : "—")} ${aT("tasks")}${pipeline}${
       list ? `<ul class="order-list">${list}</ul>` : ""}</dd></div>
     ${goals ? `<div class="kv"><dt>${aT("Goals")}</dt><dd style="min-width:0">${goals}</dd></div>` : ""}
-    <div class="kv"><dt>${aT("Done per hour")}</dt><dd>${big(done === null ? "—" : n(done))} ${aT("rows of scores")}${pace ? `
-      <div class="demand-bar"><div style="width:${share}%"></div></div>
-      <div class="set-note"><span class="demand-key on">■</span> ${escHtml(tr("volunteers {n} ({p}%)").replace("{n}", n(d.per_hour.volunteers)).replace("{p}", share))}
-        &nbsp; <span class="demand-key">■</span> ${escHtml(tr("official machines {n} ({p}%)").replace("{n}", n(d.per_hour.official)).replace("{p}", 100 - share))}
-        · ${aT("the last 24 hours' average")}</div>` : ""}</dd></div>
+    <div class="kv"><dt>${aT("Done per hour")}</dt><dd>${big(done === null ? "—" : n(done))} ${aT("rows of scores")}${
+      pace ? `<div class="set-note">${aT("the last 24 hours' average")}</div>` : ""}</dd></div>
     ${clearance}
   </dl></div></div>`;
 }

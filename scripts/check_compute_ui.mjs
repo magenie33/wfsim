@@ -8,8 +8,9 @@ const { evaluate, check } = app;
 await app.send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "reduce" }] });
 const ui = await evaluate(`(async () => {
   const wait = () => new Promise(resolve => setTimeout(resolve, 150));
-  const demandLoader = loadComputeDemand;
+  const demandLoader = loadComputeDemand, cliAsked = computeCliAsked, cliRelease = computeCliRelease;
   loadComputeDemand = async () => {};
+  computeCliAsked = true; computeCliRelease = null;
   const sampled = new Date(Date.now() - 1000).toISOString();
   computingEpoch = undefined;
   computeDemand = { ok: true, v: 1, at: sampled, counts_at: sampled, expires_at: ${JSON.stringify(statisticsExpiresAt(new Date().toISOString()))},
@@ -86,7 +87,7 @@ const ui = await evaluate(`(async () => {
   accountState.account = null; renderAuthPage('compute'); await wait();
   out.anonymous = !!document.querySelector('#compute-community a[href^="/login"]') && document.querySelector('#compute-community dt').textContent === 'This device' && document.querySelector('#compute-community dd b').textContent === '17';
   tallyTo = oldTally; tallyFrom = oldFrom; computingCount = oldCount;
-  loadComputeDemand = demandLoader;
+  loadComputeDemand = demandLoader; computeCliAsked = cliAsked; computeCliRelease = cliRelease;
   return out;
 })()`);
 check("compute ledgers and recent tasks show ten entries per page", ui.first.every(n => n === 10), JSON.stringify(ui));

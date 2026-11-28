@@ -1,10 +1,23 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import {clearanceOf} from './clearance.js';
 import {iso, PACE_HOURS} from './instant.js';
-import {queueZonesSql,queueOrders,readQueueCounts} from './queue_counts.js';
+import {queuePipeline,readQueueCounts} from './queue_counts.js';
 
 const HOUR = 3600000;
 export const QUEUE_PRICE_INTERVAL = 10 * 60000;
+
+export function effectiveQueueVerbs(row) {
+  if (!row?.verbs || typeof row.verbs !== 'object') return null;
+  if (!Array.isArray(row.staged) || !row.staged.length) return row.verbs;
+  let staged = 0;
+  for (const pair of row.staged) {
+    if (!Array.isArray(pair) || pair.length !== 2 || !Number.isSafeInteger(pair[1]) || pair[1] < 1) return null;
+    staged += pair[1];
+  }
+  const simulate = (row.verbs.simulate ?? 0) + staged;
+  if (!Number.isSafeInteger(simulate)) return null;
+  return { ...row.verbs, simulate };
+}
 
 // The sample unit is one finished execution round, including all its measured
 // volunteer attempts. A result selected from an earlier round cannot price it.
@@ -26,16 +39,18 @@ async function sampleCost(db, verb, hourWindows, since) {
 }
 
 export function queueHours(row,total,prices,now) {
-  if (!row.verbs || !prices || row.order_epoch!==prices.epoch || !(now>=prices.at && now<prices.expires)) return null;
-  const counts=Object.values(row.verbs);
+  const verbs=effectiveQueueVerbs(row);
+  if (!verbs || !prices || row.order_epoch!==prices.epoch || !(now>=prices.at && now<prices.expires)) return null;
+  const counts=Object.values(verbs);
   if (!counts.every(n=>Number.isSafeInteger(n) && n>=0) || counts.reduce((a,b)=>a+b,0)!==total) return null;
-  return clearanceOf({total,verbs:row.verbs},prices).hours;
+  return clearanceOf({total,verbs},prices).hours;
 }
 
 export async function measureQueueCosts(db, prior, now=Date.now()) {
   const row=await readQueueCounts(db,{requireWorkload:true});
-  if (!row?.verbs) return null;
-  const verbs=Object.keys(row.verbs);
+  const effectiveVerbs=effectiveQueueVerbs(row);
+  if (!effectiveVerbs) return null;
+  const verbs=Object.keys(effectiveVerbs);
   if (prior && prior.epoch===row.order_epoch && now>=prior.at && now<prior.at+QUEUE_PRICE_INTERVAL
       && verbs.every(verb=>Object.hasOwn(prior.msOf,verb))) return prior;
   const hour=iso(now).slice(0,13), since=iso(now-PACE_HOURS*HOUR).slice(0,13);
@@ -51,7 +66,7 @@ export async function measureQueueCosts(db, prior, now=Date.now()) {
       msOf[verb]=Number(cost.ms);
       factsOf[verb]=Number(cost.facts);
     } catch (error) {
-      if (Object.hasOwn(row.verbs,verb) || !['57014','55P03'].includes(error?.code)) throw error;
+      if (Object.hasOwn(effectiveVerbs,verb) || !['57014','55P03'].includes(error?.code)) throw error;
     }
   }
   return {epoch:row.order_epoch,at:now,expires:now+2*QUEUE_PRICE_INTERVAL,msOf,factsOf,
@@ -86,9 +101,10 @@ export function compareQueueDay(prior, row) {
 
 export async function recordQueueDay(db, prices, now=Date.now()) {
   if (!prices) return;
-  const row=await db.prepare(queueZonesSql).first();
-  if (!row) return;
-  const {total}=queueOrders(row.zones), hours=queueHours(row,total,prices,now);
+  const row=await readQueueCounts(db,{requireWorkload:true});
+  const verbs=effectiveQueueVerbs(row);
+  if (!row || !verbs) return;
+  const {total}=queuePipeline(row.zones,row.staged??[]), hours=queueHours(row,total,prices,now);
   if (hours===null) return;
   const day=row.counts_at.slice(0,10),epoch=row.order_epoch??'';
   const last=await db.prepare(`SELECT day::text AS day,forecast FROM state_queue_clearance_days
@@ -96,7 +112,7 @@ export async function recordQueueDay(db, prices, now=Date.now()) {
   if (last?.day===day) return;
   const unit_ms=Object.fromEntries(Object.keys(prices.msOf).filter(v=>prices.factsOf[v]>0)
     .map(v=>[v,prices.msOf[v]/prices.factsOf[v]]));
-  const forecast={at:row.counts_at,verbs:row.verbs,completed:row.completed,unit_ms,ms_per_hour:prices.perHour,
+  const forecast={at:row.counts_at,verbs,completed:row.completed,unit_ms,ms_per_hour:prices.perHour,
     hours,comparison:compareQueueDay(last?.forecast,row)};
   await db.batch([
     db.prepare(`INSERT INTO state_queue_clearance_days(day,epoch,observed_at,forecast)

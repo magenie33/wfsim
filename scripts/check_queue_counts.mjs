@@ -6,7 +6,7 @@ import postgres from './pg/node_modules/postgres/src/index.js';
 import {seedComputeWork} from './pg/fixtures.mjs';
 import {compareQueueDay,measureQueueCosts,queueHours,recordQueueDay} from '../worker/queue_clearance.js';
 import {pgDb,postgresClient,placeholders} from '../worker/db.js';
-import {queueDemandOf} from '../worker/contribution.js';
+import {queueDemandOf,queueFleetOf} from '../worker/contribution.js';
 import {seedQueueZones,queueZonesSql} from '../worker/queue_counts.js';
 
 const port=Number(process.env.WFSIM_STATISTICS_TEST_PORT);
@@ -143,6 +143,25 @@ try{
   await assert.rejects(measureQueueCosts(timedOut,partialPrices,now+12*60000),{code:'57014'});
   assert.equal(queueHours(arrival,arrivalTotal,quietPrices,now+12*60000),
     2*arrival.verbs.simulate+18,'arrival uses confirmed rare-round cost from the idle interval');
+  await query(`INSERT INTO entity_board_orders(id,why,policy,zone,order_base,engine,specification,total_items,admitted_items,state,created_at,updated_at)
+    VALUES('order-staged-z00','test','rescore_all',0,1000000000000,'','{}',1025,25,'admitting','2026-02-01','2026-02-01'),
+          ('order-staged-z01','test','rescore_all',1,1000000000000,'','{}',500,0,'active','2026-02-01','2026-02-01'),
+          ('order-done-z00','test','rescore_all',0,2000000000000,'','{}',999,999,'completed','2026-02-01','2026-02-01')`);
+  await query("UPDATE state_compute_scheduling SET leased_to='first',lease_until=$1 WHERE id='c'",[new Date(now+1800000).toISOString()]);
+  await query("INSERT INTO state_task_answer_heads(question,engine) VALUES('a','fixture')");
+  const fleet=await queueFleetOf({LIBRARY:db},async()=>({volunteers:240,official:24}),now+12*60000);
+  const fullDemand=await queueDemandOf({LIBRARY:db},{fleet,prices:quietPrices,now:()=>now+12*60000});
+  assert.equal(fullDemand.queue.staged,1500);
+  assert.equal(fullDemand.queue.total,fullDemand.queue.active+1500);
+  assert.equal(fullDemand.queue.states.computing,1);
+  assert.equal(fullDemand.queue.states.verifying,1);
+  assert.equal(fullDemand.queue.states.ready,fullDemand.queue.active-2);
+  assert.equal(fullDemand.queue.states.staged,1500);
+  assert.equal(fullDemand.clear_hours,2*(arrival.verbs.simulate+1500)+18);
+  await query("DELETE FROM state_task_answer_heads WHERE question='a'");
+  await query("UPDATE state_compute_scheduling SET leased_to=NULL,lease_until=NULL WHERE id='c'");
+  await query("DELETE FROM entity_board_orders");
+  console.log('ok staged board orders and leased/verifying active states partition the full queue and clearance hours');
   await writer.end();await query('SELECT queue_count_fold()');
   await check('folding a disconnected writer preserves the complete read');
   const again=await seed();assert.equal(again.installed,false);await check('retry cannot overwrite a seed');

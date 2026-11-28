@@ -20,11 +20,15 @@ try {
     return { total: row?.querySelector('b')?.textContent,
       rows: [...box.querySelectorAll('.order-list li > span:first-child')].map(li => li.textContent.trim()),
       sources: [...box.querySelectorAll('.order-list .set-note')].map(node => node.textContent),
+      states: [...box.querySelectorAll('.demand-state')].map(node => node.textContent.trim()),
+      done: [...box.querySelectorAll('.kv')].find(k => k.querySelector('dt').textContent === 'Done per hour')?.textContent.trim() || null,
       note: box.querySelector('.bh .set-note')?.textContent,
       estimate: [...box.querySelectorAll('.kv')].find(k => k.querySelector('dt').textContent === 'Cleared in')?.textContent.trim() || null };
   })()`);
   let state = await draw(demand);
   app.check("total orders sums actual queued work, excluding prospective inventory", state.total === "23", JSON.stringify(state));
+  app.check("done per hour shows volunteer pace without official machine ratio",
+    state.done?.includes("100 rows of scores") && !state.done.includes("official") && !state.done.includes("volunteers"), JSON.stringify(state));
   app.check("queued task kinds are listed and unknown kinds retain their ids",
     state.rows.join('|') === "new builds 20|future_scope 3", JSON.stringify(state));
   const zones = [[0, 2], [3, 21]];
@@ -49,6 +53,34 @@ try {
     state.total === '23' && state.rows.join('|') === 'Zone 00 · 2|Zone 03 · 21' && !state.estimate, JSON.stringify(state));
   state = await draw({ ...demand, orders: [{ kind: 'sweep', total: 999 }], queue: { total: 23, zones } });
   app.check("the queue owns the total when compatibility rows differ", state.total === '23', JSON.stringify(state));
+  state = await draw({
+    ...demand,
+    queue: {
+      total: 1025, active: 25, staged: 1000,
+      states: { computing: 4, verifying: 3, ready: 18, staged: 1000 },
+      zones: [[0, 1020], [1, 5]],
+      zone_states: [
+        { zone: 0, total: 1020, computing: 4, verifying: 2, ready: 14, staged: 1000 },
+        { zone: 1, total: 5, computing: 0, verifying: 1, ready: 4, staged: 0 },
+      ],
+    },
+  });
+  app.check("pipeline states partition total orders across leased, verifying, pool-ready and server-staged work",
+    state.total === '1,025'
+    && state.states.join('|') === 'Leased4|Verifying3|Ready in pool18|Queued on server1,000'
+    && state.rows.join('|') === 'Zone 00 · 1,020|Zone 01 · 5'
+    && state.sources.join('|') === 'leased 4 · verifying 2 · in pool 14 · on server 1,000|verifying 1 · in pool 4',
+    JSON.stringify(state));
+  state = await draw({
+    ...demand,
+    queue: {
+      total: 1025, active: 25, staged: 1000,
+      states: { computing: 4, verifying: 3, ready: 19, staged: 1000 },
+      zones: [[0, 1020], [1, 5]],
+    },
+  });
+  app.check("inconsistent pipeline state sums are omitted while valid zone totals remain",
+    state.total === '1,025' && !state.states.length, JSON.stringify(state));
   for (const queue of [{ total: 24, zones }, { total: 23, zones: [[3, 10], [3, 13]] }, { total: 1, zones: [[100, 1]] }]) {
     state = await draw({ ...demand, queue });
     app.check("a broken zone sum or identity cannot become a public total", state.total === '—' && !state.rows.length, JSON.stringify(state));

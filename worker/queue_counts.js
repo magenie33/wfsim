@@ -105,7 +105,12 @@ export async function seedQueueZones(query, options) {
 }
 
 export const queueSchemaSql = `SELECT to_regclass('state_queue_zone_seed') IS NOT NULL installed,
-  to_regclass('state_queue_clearance_days') IS NOT NULL typed`;
+  to_regclass('state_queue_clearance_days') IS NOT NULL typed,
+  to_regclass('entity_board_orders') IS NOT NULL board_orders`;
+
+const stagedBoardOrdersSql = `SELECT zone::smallint zone,sum(greatest(total_items-admitted_items,0))::bigint n
+  FROM entity_board_orders WHERE state IN('admitting','active')
+  GROUP BY zone HAVING sum(greatest(total_items-admitted_items,0))>0`;
 
 const zoneTotalsSql = `WITH epoch AS MATERIALIZED (SELECT compute_order_cut_epoch() at),
   seed AS MATERIALIZED (SELECT s.zones FROM state_queue_zone_seed s WHERE epoch=coalesce((SELECT at FROM epoch),'')),
@@ -147,18 +152,86 @@ export async function readQueueCounts(db,{requireWorkload=false}={}) {
   const schema=await db.prepare(queueSchemaSql).first();
   if (!schema?.installed) return undefined;
   if (requireWorkload && !schema.typed) return null;
-  return await db.prepare(schema.typed ? queueZonesSql : zoneTotalsSql).first() ?? null;
+  const base=schema.typed ? queueZonesSql : zoneTotalsSql;
+  const sql=schema.board_orders
+    ? `WITH base AS MATERIALIZED (${base}), staged_orders AS (${stagedBoardOrdersSql})
+       SELECT base.*,coalesce((SELECT jsonb_agg(jsonb_build_array(zone,n) ORDER BY zone) FROM staged_orders),'[]') staged FROM base`
+    : base;
+  const row=await db.prepare(sql).first();
+  if (!row) return null;
+  return schema.board_orders ? row : {...row,staged:[]};
+}
+
+function parseZonePairs(pairs, label) {
+  if (!Array.isArray(pairs)) throw Error(`missing ${label}`);
+  let prior=-1;
+  const map=new Map();
+  for (const pair of pairs) {
+    if (!Array.isArray(pair)||pair.length!==2) throw Error(`invalid ${label}`);
+    const [zone,n]=pair;
+    if (!Number.isInteger(zone)||zone<=prior||zone<0||zone>99||!Number.isSafeInteger(n)||n<=0) throw Error(`invalid ${label}`);
+    prior=zone;
+    map.set(zone,n);
+  }
+  return map;
 }
 
 export function queueOrders(zones, held = []) {
   const active = new Map(held.map(row=>[Number(row.zone),Number(row.n)]));
-  let prior=-1, total=0;
-  if (!Array.isArray(zones)) throw Error('missing queue zones');
-  const orders=zones.map(([zone,n])=>{
-    if (!Number.isInteger(zone)||zone<=prior||zone>99||!Number.isSafeInteger(n)||n<=0) throw Error('invalid queue zones');
-    prior=zone; total+=n;
+  const openMap = parseZonePairs(zones, 'queue zones');
+  let total=0;
+  const orders=[...openMap].map(([zone,n])=>{
+    total+=n;
     return {kind:String(zone).padStart(2,'0'),zone,total:n,dispatched:Math.min(n,active.get(zone)??0)};
   });
   if (!Number.isSafeInteger(total)) throw Error('queue total exceeds the public format');
   return {orders,total};
+}
+
+export function queuePipeline(zones, staged = [], held = null) {
+  const openMap = parseZonePairs(zones, 'queue zones');
+  const stagedMap = parseZonePairs(staged, 'staged queue zones');
+  const allZones = [...new Set([...openMap.keys(), ...stagedMap.keys()])].sort((a,b)=>a-b);
+  const hasFleet = Array.isArray(held);
+  const hasDetailedStates = hasFleet && held.every(row =>
+    row && Number.isSafeInteger(Number(row.computing)) && Number(row.computing) >= 0
+    && Number.isSafeInteger(Number(row.verifying)) && Number(row.verifying) >= 0);
+  const fleetByZone = new Map((held ?? []).map(row => [Number(row.zone), {
+    leased: Math.max(0, Number(row.n ?? 0)),
+    computing: Math.max(0, Number(row.computing ?? 0)),
+    verifying: Math.max(0, Number(row.verifying ?? 0)),
+  }]));
+  let activeTotal = 0, stagedTotal = 0, total = 0;
+  const combinedZones = [], orders = [], activeOrders = [], zoneStates = [];
+  const states = hasDetailedStates ? { computing: 0, verifying: 0, ready: 0, staged: 0 } : null;
+  for (const zone of allZones) {
+    const open = openMap.get(zone) ?? 0;
+    const unreleased = stagedMap.get(zone) ?? 0;
+    const zoneTotal = open + unreleased;
+    if (!Number.isSafeInteger(zoneTotal) || zoneTotal <= 0) throw Error('invalid combined queue zone');
+    activeTotal += open;
+    stagedTotal += unreleased;
+    total += zoneTotal;
+    combinedZones.push([zone, zoneTotal]);
+    const fleet = fleetByZone.get(zone);
+    const dispatched = hasFleet ? Math.min(open, fleet?.leased ?? 0) : undefined;
+    orders.push({ kind: String(zone).padStart(2, '0'), zone, total: zoneTotal, ...(hasFleet ? { dispatched } : {}) });
+    if (open > 0) {
+      activeOrders.push({ kind: String(zone).padStart(2, '0'), zone, total: open, ...(hasFleet ? { dispatched } : {}) });
+    }
+    if (hasDetailedStates) {
+      const verifying = Math.min(open, fleet?.verifying ?? 0);
+      const computing = Math.min(open - verifying, fleet?.computing ?? 0);
+      const ready = open - verifying - computing;
+      states.computing += computing;
+      states.verifying += verifying;
+      states.ready += ready;
+      states.staged += unreleased;
+      zoneStates.push({ zone, total: zoneTotal, computing, verifying, ready, staged: unreleased });
+    } else {
+      zoneStates.push({ zone, total: zoneTotal, active: open, staged: unreleased });
+    }
+  }
+  if (![activeTotal, stagedTotal, total].every(Number.isSafeInteger)) throw Error('queue total exceeds the public format');
+  return { total, activeTotal, stagedTotal, combinedZones, orders, activeOrders, states, zoneStates };
 }

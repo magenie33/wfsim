@@ -3350,6 +3350,15 @@ ui:
   "source unknown {n}": "来源未知 {n}"
   "result checks {n}": "结果验证 {n}"
   "tasks": 个任务
+  "Leased": "设备占用"
+  "Verifying": "正在验证"
+  "Ready in pool": "池内待领"
+  "Queued on server": "在服待发"
+  "In active pool": "活跃池内"
+  "leased {n}": "占用 {n}"
+  "verifying {n}": "验证 {n}"
+  "in pool {n}": "待领 {n}"
+  "on server {n}": "待发 {n}"
   "dispatched {n}": "已派出 {n}"
   "waiting on the server {n}": "服务器待派 {n}"
   "rows of scores": 行成绩
@@ -3359,8 +3368,6 @@ ui:
   "requested score refreshes {n}": "已请求的成绩刷新 {n}"
   "riven gains {n}": "裂罅收益 {n} 个"
   "Done per hour": 每小时完成
-  "volunteers {n} ({p}%)": "志愿者 {n}（{p}%）"
-  "official machines {n} ({p}%)": "官方服务器 {n}（{p}%）"
   "Cleared in": 预计清空
   "Estimate updating": 预估更新中
   "No pending tasks": 暂无待处理任务

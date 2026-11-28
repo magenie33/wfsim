@@ -38,7 +38,7 @@
 import {queueHours} from './queue_clearance.js';
 import { json, no, now, sameSite, sessionAccount, sha256 } from "./accounts.js";
 import {statisticsSourceSql} from './statistics_source.js';
-import {queueOrders,readQueueCounts} from './queue_counts.js';
+import {queuePipeline,readQueueCounts} from './queue_counts.js';
 import { iso, PACE_HOURS } from "./instant.js";
 import { clearanceOf } from "./clearance.js";
 import { SURVEY_CHANNEL, SURVEY_KEEP_MS } from "./appraise.js";
@@ -818,10 +818,35 @@ export async function queueFleetOf(env,pace,now=Date.now()) {
   const cut=await db.prepare('SELECT compute_order_cut_epoch() AS epoch').first();
   const [flow,devices,held,reading]=await Promise.all([
     pace(now).catch(()=>null),computingNow(env).catch(()=>null),
-    db.prepare(`WITH held AS MATERIALIZED (SELECT s.id FROM state_compute_scheduling s
-       WHERE s.leased_to IS NOT NULL AND s.lease_until>? AND s.state='open')
-      SELECT q.zone,count(*) n FROM held h CROSS JOIN LATERAL
-       (SELECT w.zone FROM state_compute_effective_work w WHERE w.id=h.id OFFSET 0) q GROUP BY q.zone`).bind(at).all().then(r=>r.results).catch(()=>null),
+    db.prepare(`WITH cut_epoch AS MATERIALIZED (SELECT compute_order_cut_epoch() AS epoch),
+      held AS MATERIALIZED (
+        SELECT s.id,s.task_id,coalesce(s.zone,factory_default_zone(s.producer)) AS z,coalesce(s.zone_position,s.task_id) AS pos
+        FROM state_compute_scheduling s
+        WHERE s.leased_to IS NOT NULL AND s.lease_until>?1::text AND s.state='open'
+      ),
+      led_ids AS MATERIALIZED (
+        SELECT h.question AS id FROM state_task_answer_heads h
+        UNION
+        SELECT pv.question AS id FROM state_pending_verifications pv
+      ),
+      led AS MATERIALIZED (
+        SELECT s.id,s.task_id,coalesce(s.zone,factory_default_zone(s.producer)) AS z,coalesce(s.zone_position,s.task_id) AS pos
+        FROM led_ids l JOIN state_compute_scheduling s ON s.id=l.id AND s.state='open'
+      ),
+      combined AS (
+        SELECT coalesce(h.id,l.id) AS id,coalesce(h.task_id,l.task_id) AS task_id,
+          coalesce(h.z,l.z) AS z,coalesce(h.pos,l.pos) AS pos,
+          (h.id IS NOT NULL) AS is_held,(l.id IS NOT NULL) AS is_led
+        FROM held h FULL OUTER JOIN led l ON h.id=l.id
+      )
+      SELECT c.z::int AS zone,
+        (count(*) FILTER (WHERE c.is_held))::int AS n,
+        (count(*) FILTER (WHERE c.is_held AND NOT c.is_led))::int AS computing,
+        (count(*) FILTER (WHERE c.is_led))::int AS verifying
+      FROM combined c
+      WHERE (SELECT epoch FROM cut_epoch) IS NULL
+         OR compute_order_cancelled(c.id,c.task_id,c.z,c.pos,'open') IS NULL
+      GROUP BY c.z ORDER BY c.z`).bind(at).all().then(r=>r.results).catch(()=>null),
     nowOf(db,now).catch(()=>null),
   ]);
   const per_hour=flow ? {volunteers:Math.round(Number(flow.volunteers)/PACE_HOURS),official:Math.round(Number(flow.official)/PACE_HOURS)} : null;
@@ -833,12 +858,14 @@ export async function queueDemandOf(env,{fleet=null,detail=null,prices=null,now=
   const row=await readQueueCounts(db);
   if(!row)return row;
   const active=fleet && Date.parse(fleet.expires_at)>now() && fleet.order_epoch===row.order_epoch ? fleet : null;
-  const {orders,total}=queueOrders(row.zones,active?.held??[]);
-  if(!active?.held)for(const order of orders)delete order.dispatched;
+  const {total,activeTotal,stagedTotal,combinedZones,orders,activeOrders,states,zoneStates}=queuePipeline(
+    row.zones,row.staged??[],active?.held??null);
   const current=detail && currentStatistics(detail,now()) && detail.order_epoch===row.order_epoch ? detail : null;
+  const queue={total,active:activeTotal,staged:stagedTotal,...(states?{states}:{}),zones:combinedZones,zone_states:zoneStates};
   return {...(current??{}),ok:true,v:1,at:row.counts_at,counts_at:row.counts_at,expires_at:statisticsExpiresAt(row.counts_at),
-    order_epoch:row.order_epoch,queue:{total,zones:row.zones},orders,per_hour:active?.per_hour??null,computing:active?.devices??null,
-    clear_hours:queueHours(row,total,prices,now()),now:active?.reading ? {...active.reading,starved:active.held?starvedOf(active.reading,orders):null} : null,
+    order_epoch:row.order_epoch,queue,orders,per_hour:active?.per_hour??null,computing:active?.devices??null,
+    clear_hours:queueHours(row,total,prices,now()),
+    now:active?.reading ? {...active.reading,starved:active.held?starvedOf(active.reading,activeOrders):null} : null,
     fleet_at:active?.at??null,...(current?{details_at:current.counts_at}:{})};
 }
 

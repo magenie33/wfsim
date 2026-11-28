@@ -1833,14 +1833,22 @@ and bounds its cache lifetime by their remaining validity, without querying work
   Each row's `sources` sums to its total and separates recorded user requests,
   system generation and missing provenance. `sweep` includes background scene
   measurements of new builds as well as older builds.
-- `per_hour`: scores written over the last 24 hours, per hour, by who
-  computed them. One hour swings five-fold between two quiet ones and a
-  stopped hour reads as never; anything under a day reads the time of day,
-  since who is online follows the clock round the world.
+- `queue`: total pending tasks across both the active dispatch pool (`active`)
+  and server-staged board orders (`staged`), with ascending `[zone, total]`
+  pairs in `zones` and per-zone/overall pipeline counts (`computing`,
+  `verifying`, `ready`, `staged`) in `states` and `zone_states` when the fleet
+  reading is fresh.
+- `per_hour`: scores written over the last 24 hours, per hour. The compute page
+  shows the volunteer pace without an official-machine ratio bar. One hour
+  swings five-fold between two quiet ones and a stopped hour reads as never;
+  anything under a day reads the time of day, since who is online follows the
+  clock round the world.
 - `clear_hours`: the effective queue keeps signed balances by zone and execution
-  verb in the same transaction as membership changes. An indexed, paginated
-  snapshot initializes those balances. Each verb's price is the mean volunteer
-  compute time spent on a completed round, including its independent answers.
+  verb in the same transaction as membership changes, and adds server-staged
+  board-order simulations (`entity_board_orders`) in the same snapshot. An
+  indexed, paginated snapshot initializes the active balances. Each verb's price
+  is the mean volunteer compute time spent on a completed round, including its
+  independent answers.
   The publisher samples up to 16 matched rounds per verb per complete
   UTC hour over the past day. A verb without a measured round in that sample
   uses up to 256 recent rounds from the preceding seven days. Remaining counts times their respective prices give
