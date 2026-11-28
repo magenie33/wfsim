@@ -67,6 +67,7 @@ attack:
   status_chance: 0.21
   # AN AoE ATTACK TAKES NO PUNCH THROUGH (MECHANICS §13).
   punch_through_m: 0.0
+  projectile_speed_mps: 50
   # NO RANGE ROW on the Charged Shot block — the page states none. The 8.3 m
   # below is the explosion's RADIUS and not a reach.
   # PRIMARY COMPRESSION — the published table names this attack. Verbatim
@@ -89,7 +90,6 @@ attack:
     crit_chance: 0.35
     crit_multiplier: 2.1
     status_chance: 0.21
-    takes_multishot: false
     # "Compatible with Firestorm, Primed Firestorm."
     takes_blast_radius_mods: true
     damage: { blast: 839.0 }   # total 839

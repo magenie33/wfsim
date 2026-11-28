@@ -505,6 +505,7 @@ fn the_vigilante_promotion_reaches_an_explosion_too() {
         forced_procs: Default::default(),
         takes_condition_overload: false,
         takes_multishot: true,
+        on_direct_hit: true,
         co_base: crate::model::CoBase::whole_for(crate::model::CoStage::Radial),
         extra_hit_reads_shift: 0.0,
     };

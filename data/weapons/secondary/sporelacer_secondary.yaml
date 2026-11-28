@@ -59,6 +59,7 @@ attack:
   crit_multiplier: 3
   status_chance: 0.21
   punch_through_m: 0.0
+  projectile_speed_mps: 57
   damage: {}
 
   # THE EXPLOSION: "Shots explode in a 4.7 meter radius on impact", "linear

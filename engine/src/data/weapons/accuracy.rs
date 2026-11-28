@@ -3,19 +3,42 @@
 use crate::model::{
     BeamSpreadMode, ExtraSpread, MultishotCone, SpreadFan, SpreadRuntime, SpreadSpec, SpreadTiming,
 };
-use serde::Deserialize;
-use std::{collections::BTreeMap, sync::OnceLock};
+use serde::{Deserialize, Deserializer, de::MapAccess, de::Visitor};
+use std::{fmt, sync::OnceLock};
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 pub(super) struct Profile {
     pub runtime: [SpreadRuntime; 2],
     pub resting: Option<SpreadSpec>,
 }
 
+struct BorrowedAttacks<'a>(Vec<(&'a str, Attack)>);
+
+impl<'de: 'a, 'a> Deserialize<'de> for BorrowedAttacks<'a> {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        struct MapVis;
+        impl<'de> Visitor<'de> for MapVis {
+            type Value = Vec<(&'de str, Attack)>;
+            fn expecting(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                f.write_str("attack id to accuracy profile map")
+            }
+            fn visit_map<M: MapAccess<'de>>(self, mut map: M) -> Result<Self::Value, M::Error> {
+                let mut out = Vec::with_capacity(map.size_hint().unwrap_or(530));
+                while let Some((k, v)) = map.next_entry::<&'de str, Attack>()? {
+                    out.push((k, v));
+                }
+                Ok(out)
+            }
+        }
+        deserializer.deserialize_map(MapVis).map(BorrowedAttacks)
+    }
+}
+
 #[derive(Deserialize)]
-struct Source {
+struct Source<'a> {
     profiles: Vec<SpreadTiming>,
-    attacks: BTreeMap<String, Attack>,
+    #[serde(borrow)]
+    attacks: BorrowedAttacks<'a>,
 }
 
 #[derive(Deserialize)]
@@ -114,9 +137,8 @@ impl RawBeamSpreadMode {
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Default, Deserialize)]
 #[serde(default)]
-#[derive(Default)]
 struct Attack {
     aimed: Option<usize>,
     hip: Option<usize>,
@@ -131,46 +153,61 @@ struct Attack {
     resting: Option<SpreadSpec>,
 }
 
-type ProfileTable = Box<[(Box<str>, Profile)]>;
+struct Store {
+    profiles: Box<[Profile]>,
+    attacks: Box<[(&'static str, u16)]>,
+}
 
 pub(super) fn profile(id: &str) -> Option<Profile> {
-    static PROFILES: OnceLock<ProfileTable> = OnceLock::new();
-    let table = PROFILES.get_or_init(|| {
+    static STORE: OnceLock<Store> = OnceLock::new();
+    let store = STORE.get_or_init(|| {
         let Some(text) = crate::data::file("geometry/accuracy-runtime.yaml") else {
-            return Box::new([]);
+            return Store {
+                profiles: Box::new([]),
+                attacks: Box::new([]),
+            };
         };
-        let source: Source = serde_json::from_str(text).expect("geometry/accuracy-runtime.yaml");
-        let mut rows: Vec<(Box<str>, Profile)> = source
-            .attacks
-            .into_iter()
-            .map(|(id, attack)| {
-                let extra_spread = attack.extra_spread.map(RawExtraSpread::into_model);
-                let beam_mode = attack.beam_mode.map(RawBeamSpreadMode::into_model);
-                let runtime = [attack.aimed, attack.hip].map(|idx| SpreadRuntime {
-                    timing: idx.map(|idx| source.profiles[idx]),
-                    inverse: attack.inverse,
-                    fan: attack.fan,
-                    charge_attenuation: attack.charge_attenuation,
-                    extra_floor: attack.extra_floor,
-                    multishot_cone: attack.multishot_cone,
-                    first_pellet_pinpoint: attack.first_pellet_pinpoint,
-                    extra_spread,
-                    beam_mode,
-                });
-                (
-                    id.into_boxed_str(),
-                    Profile {
-                        runtime,
-                        resting: attack.resting,
-                    },
-                )
-            })
-            .collect();
-        rows.sort_unstable_by(|a, b| a.0.cmp(&b.0));
-        rows.into_boxed_slice()
+        let source: Source<'static> =
+            serde_json::from_str(text).expect("geometry/accuracy-runtime.yaml");
+        let timings = source.profiles;
+        let mut unique_profiles: Vec<Profile> = Vec::new();
+        let mut attacks: Vec<(&'static str, u16)> = Vec::with_capacity(source.attacks.0.len());
+        for (id, attack) in source.attacks.0 {
+            let extra_spread = attack.extra_spread.map(RawExtraSpread::into_model);
+            let beam_mode = attack.beam_mode.map(RawBeamSpreadMode::into_model);
+            let runtime = [attack.aimed, attack.hip].map(|t_idx| SpreadRuntime {
+                timing: t_idx.map(|i| timings[i]),
+                inverse: attack.inverse,
+                fan: attack.fan,
+                charge_attenuation: attack.charge_attenuation,
+                extra_floor: attack.extra_floor,
+                multishot_cone: attack.multishot_cone,
+                first_pellet_pinpoint: attack.first_pellet_pinpoint,
+                extra_spread,
+                beam_mode,
+            });
+            let candidate = Profile {
+                runtime,
+                resting: attack.resting,
+            };
+            let idx = if let Some(pos) = unique_profiles.iter().position(|p| *p == candidate) {
+                pos as u16
+            } else {
+                let pos = unique_profiles.len() as u16;
+                unique_profiles.push(candidate);
+                pos
+            };
+            attacks.push((id, idx));
+        }
+        attacks.sort_unstable_by(|a, b| a.0.cmp(b.0));
+        Store {
+            profiles: unique_profiles.into_boxed_slice(),
+            attacks: attacks.into_boxed_slice(),
+        }
     });
-    table
-        .binary_search_by(|(key, _)| key.as_ref().cmp(id))
+    store
+        .attacks
+        .binary_search_by(|&(key, _)| key.cmp(id))
         .ok()
-        .map(|i| table[i].1)
+        .map(|i| store.profiles[store.attacks[i].1 as usize])
 }

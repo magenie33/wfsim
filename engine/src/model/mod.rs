@@ -24,6 +24,7 @@ mod weapon;
 mod scene;
 
 pub use arcane::*;
+pub use crate::rules::geometry::ballistics::{BallisticsRuntime, BounceSeek, WaveResize};
 pub use buff::*;
 pub use damage_data::*;
 pub use native_upgrade::*;

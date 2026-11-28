@@ -53,6 +53,7 @@ attack:
   crit_multiplier: 2.4
   status_chance: 0.167
   punch_through_m: 0.0
+  projectile_speed_mps: 30
   # PRIMARY COMPRESSION, verbatim:
   #   Cortege | Alt-Fire + AoE | 0% | Doesn't Work | N/A
   # `stacking` BELOW IS A PLACEHOLDER, not a transcription. The catalog's

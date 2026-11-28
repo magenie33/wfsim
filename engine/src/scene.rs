@@ -841,6 +841,25 @@ impl Scene {
             .map_or(center, |p| p.center)
     }
 
+    /// Uniform random hitbox proxy center on `actor` (`0x1ae620`), falling back to AABB midpoint (`0x1ae855`).
+    pub(crate) fn random_part_anchor(&self, actor: usize, u: f64) -> Vec3 {
+        let body = &self.bodies[actor];
+        let count = body.proxies.iter().filter(|p| p.proxy.ray_enabled).count();
+        if count == 0 {
+            return Vec3([
+                0.5 * (body.low.0[0] + body.high.0[0]),
+                0.5 * (body.low.0[1] + body.high.0[1]),
+                0.5 * (body.low.0[2] + body.high.0[2]),
+            ]);
+        }
+        let pick = ((u.clamp(0.0, 1.0 - f64::EPSILON) * count as f64) as usize).min(count - 1);
+        body.proxies
+            .iter()
+            .filter(|p| p.proxy.ray_enabled)
+            .nth(pick)
+            .map_or_else(|| self.beam_center(actor), |p| p.center)
+    }
+
     pub(crate) fn beam_center(&self, index: usize) -> Vec3 {
         Vec3(self.bodies[index].center.map(f64::from))
     }

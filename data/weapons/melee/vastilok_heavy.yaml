@@ -25,7 +25,7 @@ attack:
   falloff:
     start_m: 23
     end_m: 49
-    reduction: 0.9565
+    reduction: 0.95652173913
   spends_combo: true
   damage:
     impact: 8.97

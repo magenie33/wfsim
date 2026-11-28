@@ -56,7 +56,7 @@ attack:
   # …AND NO PUNCH-THROUGH MODS, same page: "Punch Through is ignored in
   # Incarnon Form and will not cause projectiles to home in on additional
   # targets."
-  punch_through_mods: false
+  punch_through_mods: true
   ammo_cost: 1                  # of the 20-round charge pool
   crit_chance: 0.14
   crit_multiplier: 2

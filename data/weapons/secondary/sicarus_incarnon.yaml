@@ -61,6 +61,10 @@ attack:
   punch_through_m: 0.0
   # see notes: wall_ramp_full_damage_4
   range_m: 300.0
+  ricochet:
+    bounces: 1
+    headshot_chance: 0.2
+    range_m: 6.0
   damage: { impact: 28, slash: 6, puncture: 6 }   # total 40
 
 # incarnon_evolutions: see data/weapons/secondary/sicarus.yaml (shared group)

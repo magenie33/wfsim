@@ -34,6 +34,7 @@ mod slots;
 mod traits;
 mod panel;
 mod accuracy;
+mod ballistics;
 #[cfg(test)]
 mod tests;
 

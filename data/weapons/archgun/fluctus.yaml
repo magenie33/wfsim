@@ -80,6 +80,7 @@ attack:
   # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
   # wiki, ATMOSPHERE column: "Range: 54.0 m", Projectile
   range_m: 54.0
+  projectile_speed_mps: 300
   damage: { impact: 100.0, puncture: 50.0, slash: 350.0 }   # 500 total
 unmodeled:
   - "The wave's wide, flat hitbox is not modelled; this fight has no geometry for it."

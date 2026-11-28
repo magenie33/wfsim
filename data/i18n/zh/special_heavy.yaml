@@ -60,9 +60,9 @@ ui:
     conflicting with the wiki's 1.3 s; the Prime's innate factor divides it by 1.5. Charge and motion timing are
     not calibrated in game.
   : 两段重击均使用游戏包的 GunbladeGunshot 发射事件和动画。包内蓄力为 2 秒，与 wiki 的 1.3 秒不一致；Prime 的自带系数将其除以 1.5。蓄力与动作时序尚未在游戏内校准。
-  ? The shockwave's width is unpublished. The listed multi-stage distance falloff is applied; the effective hitbox
-    and its flight are not calibrated in game.
-  : 冲击波宽度未公布。已应用列出的多段距离衰减；有效命中体积及飞行尚未在游戏内校准。
+  ? The shockwave applies its client two-endpoint distance falloff and wave expansion parameters; animated melee contact
+    and terrain obstacle interactions are not calibrated in game.
+  : 冲击波已应用客户端两端点距离衰减与波面扩散参数；近战动作接触与地形障碍交互尚未在游戏内校准。
   ? The disk launches on the second standing heavy only. Heavy-slide activation, combo-scaled lifetime, surface
     ricochets and repeat disk hits are not modelled. This profile follows the infobox one-metre-per-second flight
     speed and fixed ten-metre range.

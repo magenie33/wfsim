@@ -45,6 +45,7 @@ attack:
   crit_multiplier: 2.3
   status_chance: 0.15
   punch_through_m: 0.0
+  projectile_speed_mps: 40
   damage: { impact: 2.5, puncture: 21.25, slash: 1.25 }   # 25 total
   spread:
     min_deg: 0.0

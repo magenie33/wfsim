@@ -74,6 +74,7 @@ attack:
   infinite_body_punch_through: true
   # "Limited range of 42 meters."
   range_m: 42
+  projectile_speed_mps: 100
   # "linear damage falloff from 100% to 5.84% from 20m to 40m" — the module's
   # 0.9416 is the share removed.
   falloff:

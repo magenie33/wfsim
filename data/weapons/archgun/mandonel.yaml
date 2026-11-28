@@ -66,6 +66,7 @@ attack:
   # UNQUALIFIED on the infinite list, where the finite list says "Charged Shot
   # only" — so the restriction the page wanted, it wrote.
   punch_through_m: 2.4
+  projectile_width_m: 1.0
   infinite_body_punch_through: true
   damage: { puncture: 400.0, heat: 600.0, radiation: 800.0 }   # 1800
 

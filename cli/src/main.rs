@@ -31,6 +31,7 @@ fn dual_toxocyst_baseline() -> FightParams {
         projectile_reverse_query: false,
         scene_3d: None,
         rebound_blast: None,
+        ballistics: None,
         additional_projectile: None,
         critical_inputs: None,
         weakness_bonus: None,

@@ -36,6 +36,7 @@ attack:
   # 1.6 m — three whole bodies of material (`space::BODY_MATERIAL_M` is 0.5).
   # It keeps this where the cannon cannot, because an AoE attack takes none.
   punch_through_m: 1.6
+  projectile_speed_mps: 120
   # NO RANGE ROW on this block either.
   falloff:
     start_m: 20.0

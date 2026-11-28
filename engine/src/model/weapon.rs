@@ -119,7 +119,7 @@ pub struct FalloffPoint {
 /// Per-form resting and sustained spread parameters. Native profiles select
 /// hip/aimed ranges and emission geometry.
 /// Legacy profiles interpret the resting value as an off-axis cone angle.
-#[derive(Debug, Clone, Copy, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Deserialize)]
 pub struct SpreadSpec {
     /// Lower bound of the declared aiming envelope.
     pub min_deg: f64,
@@ -1475,6 +1475,7 @@ pub struct WeaponBase {
     /// Ricochet geometry, when this form's projectile bounces.
     pub ricochet: Option<Ricochet>,
     pub rebound_blast: Option<crate::model::ReboundBlast>,
+    pub ballistics: Option<&'static crate::model::BallisticsRuntime>,
     /// A thrown glaive's bounces — a throw form's, and nothing else's.
     pub thrown_bounce: Option<ThrownBounceBase>,
     /// Final Fusillade: a FLAT multishot add on the LAST round of the magazine

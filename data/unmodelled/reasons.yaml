@@ -257,7 +257,7 @@ reasons:
   gunblade_sarpa_burst_limits:
     text: "Sarpa's burst uses five rounds 0.05 s apart, with the package's 3x shot multiplier and 1.25x physical modifier. The wiki's heavy totals disagree. Attack-speed scaling inside the burst is not calibrated."
   gunblade_stropha_geometry:
-    text: "The shockwave's width is unpublished. The listed multi-stage distance falloff is applied; the effective hitbox and its flight are not calibrated in game."
+    text: "The shockwave applies its client two-endpoint distance falloff and wave expansion parameters; animated melee contact and terrain obstacle interactions are not calibrated in game."
   heavy_status_detonation_unmeasured:
     text: "Direct heavy-hit detonation includes the hit's own Slash, Heat, Toxin, Electricity and Gas procs. Its retained damage types, mitigation and headshot cap are not calibrated in game. Radial and heavy-slam detonation, the allied duration grant and Jade's Ensemble are not modelled. Heavy kills grant the wielder's ordinary weapon status procs +30% duration for 30 s."
   wolf_sledge_throw_limits:

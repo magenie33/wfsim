@@ -207,6 +207,7 @@ pub struct ResolvedRadial {
     pub takes_condition_overload: bool,
     /// See [`RadialBase::takes_multishot`].
     pub takes_multishot: bool,
+    pub on_direct_hit: bool,
     /// See [`RadialBase::co_base_pair`].
     pub co_base: CoBase,
     /// See [`ResolvedPanel::extra_hit_reads_shift`] — an Extra Hit off this
@@ -562,6 +563,7 @@ pub struct ResolvedPanel {
     pub meter: Option<ResolvedMeter>,
     pub ricochet: Option<Ricochet>,
     pub rebound_blast: Option<crate::model::ReboundBlast>,
+    pub ballistics: Option<&'static crate::model::BallisticsRuntime>,
     /// A thrown glaive's bounces, with what its cards did to them.
     pub thrown_bounce: Option<ThrownBounce>,
     /// Additive headshot-damage bonus from evolutions (Caput Mortuum).

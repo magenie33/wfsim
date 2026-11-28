@@ -54,6 +54,7 @@ attack:
   crit_multiplier: 2
   status_chance: 0.2
   punch_through_m: 0.0
+  punch_through_mods: false
   damage: { corrosive: 50 }   # total 50
   # THE BLOB ECONOMY at five stacks — docs/MECHANICS.md §7.3, M109: "explode
   # after 1.5 seconds or reaching max stacks", "can stack up to 5 times before

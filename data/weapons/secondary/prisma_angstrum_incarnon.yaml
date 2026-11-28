@@ -59,6 +59,7 @@ attack:
   crit_multiplier: 2.2
   status_chance: 0.2
   punch_through_m: 0.0
+  punch_through_mods: false
   damage: { heat: 50 }   # total 50
 
 # incarnon_evolutions: see data/weapons/secondary/prisma_angstrum.yaml (shared group)

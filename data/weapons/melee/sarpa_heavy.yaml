@@ -23,12 +23,12 @@ attack:
   crit_chance: 0.14
   crit_multiplier: 2
   status_chance: 0.28
-  punch_through_m: 0
+  punch_through_m: 1
   range_m: 300
   falloff:
     start_m: 20
     end_m: 40
-    reduction: 0.8571
+    reduction: 0.857142857143
   spends_combo: true
   damage:
     impact: 3.5

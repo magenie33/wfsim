@@ -66,6 +66,7 @@ attack:
   crit_multiplier: 2.6
   status_chance: 0.04
   punch_through_m: 2.0
+  punch_through_mods: false
   # A GUARANTEED IMPACT PROC — the module's ForcedProcs.
   forced_procs: [impact]
   # see notes: no_range_row_attack

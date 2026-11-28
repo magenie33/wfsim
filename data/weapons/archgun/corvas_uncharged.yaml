@@ -37,6 +37,10 @@ attack:
   # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
   # wiki, ATMOSPHERE column, uncharged block: "Range: 300.0 m", Hit-Scan
   range_m: 300.0
+  falloff:
+    start_m: 60.0
+    end_m: 120.0
+    reduction: 0.75
   damage: { impact: 64.0, puncture: 8.0, slash: 8.0 }   # 80 each, 880 a shell
 
 unmodeled:

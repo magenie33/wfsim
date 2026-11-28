@@ -69,6 +69,11 @@ attack:
     reduction: 0.545454522727
   # see notes: wall_ramp_full_damage_4
   range_m: 300.0
+  ricochet:
+    chance: 0.5
+    bounces: 1
+    headshot_chance: 0.2
+    range_m: 6.0
   damage: { impact: 13.2, slash: 6.6, puncture: 2.2 }   # total 22.0
 
 # incarnon_evolutions: see data/weapons/secondary/bronco.yaml (shared group)

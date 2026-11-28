@@ -55,6 +55,7 @@ attack:
   # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
   # wiki: "Range: 12.0 m" on this attack.
   range_m: 12.0
+  projectile_speed_mps: 80
   # see notes: primary_compression_published_table
   #
   #   Simulor (Synoid Simulor) | Orb Explosion AoE | 100% | Multiplies |

@@ -42,6 +42,7 @@ attack:
   crit_multiplier: 2.0
   status_chance: 0.10
   punch_through_m: 0.0
+  projectile_speed_mps: 40
   # The page's own words for this weapon: it "accepts Rifle Mods".
   damage: { impact: 5.5, puncture: 38.5, slash: 11.0 }   # 55 total
   spread:

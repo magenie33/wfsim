@@ -59,6 +59,7 @@ attack:
   crit_multiplier: 1.8
   status_chance: 0.18
   punch_through_m: 0.0
+  punch_through_mods: false
   damage: { heat: 30 }   # total 30
 
 # incarnon_evolutions: see data/weapons/secondary/angstrum.yaml (shared group)

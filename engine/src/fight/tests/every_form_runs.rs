@@ -74,8 +74,9 @@ fn a_shotgun_loses_exactly_its_published_share_over_its_published_window() {
     assert!(full > 0.0, "the fixture fired nothing");
     // Inside the window: nothing is lost yet.
     assert_eq!(direct_at(15.0), full, "full damage out to the start");
-    // Half way across it: half the loss.
-    assert!((direct_at(20.0) / full - 0.75).abs() < 1e-12, "linear across the window");
+    // Quarter way across [15, 25]: 1 - 0.25 = 0.75; half way reaches the 0.5 floor.
+    assert!((direct_at(17.5) / full - 0.75).abs() < 1e-12, "unit-slope ramp across the window");
+    assert!((direct_at(20.0) / full - 0.5).abs() < 1e-12, "clamped at the floor");
     // At the end, and flat beyond it — a floor, not a slope that continues.
     assert!((direct_at(25.0) / full - 0.5).abs() < 1e-12, "the published floor");
     assert!((direct_at(120.0) / full - 0.5).abs() < 1e-12, "flat past the end");
@@ -101,7 +102,7 @@ fn a_falloff_floor_is_what_remains_not_what_is_removed() {
     };
     let full = direct_at(0.0);
     assert!(full > 0.0, "the fixture fired nothing");
-    assert!((direct_at(15.0) / full - 0.6).abs() < 1e-12, "half way: 100% to 20%");
+    assert!((direct_at(15.0) / full - 0.5).abs() < 1e-12, "half way on 1 - t before the 20% floor");
     assert!((direct_at(30.0) / full - 0.2).abs() < 1e-12, "the page's floor");
 }
 

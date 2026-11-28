@@ -50,7 +50,7 @@ attack:
     - viral
     takes_multishot: false
   thrown_bounce:
-    bounces: 3
+    bounces: 4
     explosion:
       damage:
         viral: 393

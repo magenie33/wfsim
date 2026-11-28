@@ -47,6 +47,7 @@ attack:
   status_chance: 0.5
   # AN AoE ATTACK TAKES NO PUNCH THROUGH (MECHANICS §13).
   punch_through_m: 0.0
+  projectile_speed_mps: 50
   # see notes: no_range_row_attack
   damage: { impact: 100 }   # total 100
   # THE EXPLOSION — rules in MECHANICS §7.

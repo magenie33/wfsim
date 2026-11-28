@@ -48,7 +48,7 @@ attack:
     - slash
     takes_multishot: false
   thrown_bounce:
-    bounces: 3
+    bounces: 4
     explosion:
       damage:
         blast: 296

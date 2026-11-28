@@ -74,6 +74,7 @@ attack:
   crit_multiplier: 2
   status_chance: 0.24
   punch_through_m: 0.0
+  projectile_speed_mps: 180
   # A GUARANTEED IMPACT PROC on the direct hit: the infobox module's Normal
   # Attack carries `ForcedProcs = { "Impact" }`, as the secondary's does. The
   # PAGE names the proc for the secondary alone and says nothing either way

@@ -63,6 +63,8 @@ attack:
   crit_multiplier: 2.1
   status_chance: 0.35
   punch_through_m: 0.0
+  punch_through_mods: true
+  projectile_speed_mps: 250
   # see notes: primary_compression_published_table
   #
   #   Komorex | Primary Fire + AoE | 0% | Doesn't Work | N/A

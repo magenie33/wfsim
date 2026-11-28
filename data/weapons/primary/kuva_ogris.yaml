@@ -64,6 +64,7 @@ attack:
   # punch-through page's own class rule, applied because this attack carries a
   # `radial:` (MECHANICS §13).
   punch_through_m: 0.0
+  projectile_speed_mps: 60
   # NO RANGE ROW on the Rocket Impact block — the page states none. The 7.9 m
   # below is the explosion's RADIUS and not a reach.
   # PRIMARY COMPRESSION — the published table names this attack. Verbatim

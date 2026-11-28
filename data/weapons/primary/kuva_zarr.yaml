@@ -68,6 +68,7 @@ attack:
   # AN AoE ATTACK TAKES NO PUNCH THROUGH (MECHANICS §13) — the BARRAGE mode's
   # 1.6 m is that form's, and it has no explosion.
   punch_through_m: 0.0
+  projectile_speed_mps: 75
   # NO RANGE ROW on the Cannon Mode Projectile block — the page states none.
   # PRIMARY COMPRESSION — the published table names this attack. Verbatim
   # (docs/CATALOGS.md §2):
@@ -88,7 +89,6 @@ attack:
     crit_chance: 0.25
     crit_multiplier: 2.5
     status_chance: 0.31
-    takes_multishot: false
     takes_blast_radius_mods: true
     damage: { blast: 673.0 }   # total 673
 

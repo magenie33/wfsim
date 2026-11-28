@@ -32,11 +32,12 @@ fn projectile_speed_scales_every_falloff_point() {
 }
 
 #[test]
-fn ordinary_falloff_keeps_its_linear_rule() {
+fn ordinary_falloff_clamps_a_full_width_ramp_at_its_floor() {
     let source = FalloffSpec { start_m: 10.0, end_m: 20.0, reduction: 0.8, points: Vec::new() };
     let falloff = Falloff::from_spec(&source, 1.0);
     assert_eq!(falloff.factor(9.0), 1.0);
-    assert!((falloff.factor(15.0) - 0.6).abs() < 1e-12);
+    assert!((falloff.factor(15.0) - 0.5).abs() < 1e-12);
+    assert!((falloff.factor(19.0) - 0.2).abs() < 1e-12);
     assert!((falloff.factor(20.0) - 0.2).abs() < 1e-12);
 }
 

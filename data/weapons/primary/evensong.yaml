@@ -63,6 +63,7 @@ attack:
   status_chance: 0.38
   # AN AoE ATTACK TAKES NO PUNCH THROUGH (MECHANICS §13).
   punch_through_m: 0.0
+  punch_through_mods: true
   # see notes: no_range_row_attack_2
   #
   #   Evensong | Charged Shot + AoE | 100% | Multiplies | Snapshot | 4.0 m |

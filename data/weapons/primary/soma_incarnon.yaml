@@ -56,6 +56,11 @@ attack:
   punch_through_m: 0.8
   # see notes: wall_ramp_full_damage_4
   range_m: 300.0
+  ricochet:
+    chance: 0.2
+    bounces: 1
+    headshot_chance: 0.2
+    range_m: 4.0
   damage: { impact: 0.48, slash: 5.28, puncture: 2.24 }   # total 8.0
 
 # incarnon_evolutions: see data/weapons/primary/soma.yaml (shared group)

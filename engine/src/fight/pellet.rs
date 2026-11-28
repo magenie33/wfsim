@@ -828,7 +828,18 @@ pub(super) fn settle_pellet(
     // `gap` is what the shot flies and what the arena prints, so "20 m"
     // is the number on the scene. `INFINITY` where none is declared.
     let contact = active.target_preference.is_some();
-    let in_range = contact || gap_m <= active.range_m;
+    let effective_range_m = active
+        .ballistics
+        .filter(|b| {
+            active.orb.is_none()
+                && b.explode_on_expiry
+                && !b.explode_on_impact
+                && b.max_life_seconds > 0.0
+                && !active.range_m.is_finite()
+        })
+        .and_then(|b| active.projectile_speed_mps.map(|v| v * f64::from(b.max_life_seconds)))
+        .unwrap_or(active.range_m);
+    let in_range = contact || gap_m <= effective_range_m;
     let pellet_lands = spatial.is_some() || contact || (aim_offset <= crate::rules::space::BODY_RADIUS_M && in_range && !round_aim.lock_miss);
     // WHERE THE ROUND WENT OFF — ONE EPICENTRE FOR THE WHOLE
     // EXPLOSION.
@@ -1050,8 +1061,33 @@ pub(super) fn settle_pellet(
             None => None,
         },
     };
+    let expiry_only_fuse_m = active
+        .ballistics
+        .filter(|b| active.orb.is_none() && b.explode_on_expiry && !b.explode_on_impact && b.max_life_seconds > 0.0)
+        .and_then(|b| active.projectile_speed_mps.map(|v| v * f64::from(b.max_life_seconds)));
+    let det = match (expiry_only_fuse_m, spatial) {
+        (Some(fuse_m), None) if !pellet_lands => {
+            let aim = params.aim_point();
+            let muz = crate::rules::space::muzzle(params.player_at, aim);
+            crate::rules::space::Detonation {
+                at: muz.toward(aim, fuse_m),
+                height_m: 0.0,
+            }
+        }
+        _ => det,
+    };
+    let under_arming = active.ballistics.is_some_and(|b| {
+        b.arming_distance_m > 0.0 && spatial.map_or_else(
+            || params.range_to(det.at) < f64::from(b.arming_distance_m),
+            |s| s.impact.travel < f64::from(b.arming_distance_m),
+        )
+    });
+    let early_impact_dud = expiry_only_fuse_m.is_some_and(|fuse_m| {
+        spatial.map_or(pellet_lands && params.gap() < fuse_m, |s| s.impact.travel + 1e-6 < fuse_m)
+    });
     let radial_stage = match attack_radial {
-        _ if skip_radial => None,
+        _ if skip_radial || under_arming || early_impact_dud => None,
+        Some(r) if pellet_lands && !r.on_direct_hit && spatial.is_none_or(|s| !s.splash) => None,
         Some(r) if !r.takes_multishot && multishot_copy => None,
         // A THROW NOBODY DETONATES explodes not at all.
         Some(r) if r.blast_kind == crate::model::BlastKind::InFlight && !detonates => None,
@@ -1103,13 +1139,15 @@ pub(super) fn settle_pellet(
     // `Vec` of stages is an allocation every pellet fires — the list is
     // `[direct, radial, (contact, blast) x count]`, which an index
     // answers for free.
-    let cluster = if pellet_idx == 0 && radial_stage.is_some() {
+    // ClusterBombProjectile::SpawnClusters (0x4976c0): each detonating parent
+    // spawns min(NumClusterProjectiles, 20) children without re-querying multishot.
+    let cluster = if radial_stage.is_some() {
         active.cluster
     } else {
         None
     };
     let bomblets = match cluster {
-        Some(c) => c.count.round().max(0.0) as usize,
+        Some(c) => c.count.round().clamp(0.0, 20.0) as usize,
         None => 0,
     };
     // …AND THEN THE SHOCKWAVE, the slam again at each point down the ground:
@@ -1267,7 +1305,7 @@ pub(super) fn settle_pellet(
         // invented here: no weapon in the roster declares both a
         // `range_m` and a `radial:`, so this is the honest answer
         // rather than the convenient one.
-        if !in_range {
+        if !in_range && expiry_only_fuse_m.is_none() {
             continue;
         }
         // …AND THE EXPLOSION STILL GOES OFF. A missed grenade lands
@@ -1276,6 +1314,11 @@ pub(super) fn settle_pellet(
         // the first thing in this engine that ever gave the explosion's
         // own falloff a distance to read. Past the blast
         // radius there is no explosion to resolve at all.
+        if let Some((s, r)) = spatial.zip(rad) {
+            if r.falloff_at(s.impact.radial_distance) <= 0.0 {
+                continue;
+            }
+        }
         if let Some(r) = rad.filter(|_| spatial.is_none()) {
             // DOES IT REACH ANYBODY? Asked of the whole formation
             // and not of the AIMED body: a wide shot that leaves that
@@ -1862,7 +1905,9 @@ pub(super) fn settle_pellet(
                 //     geometry.
                 // `range_m` is INFINITY when the data states none, and
                 // stating none is exactly what a BOUNCE weapon does.
-                let hops = if rc.range_m.is_finite() {
+                let hops = if !rc.reflects_from_surfaces && rc.chance < 1.0 && !d.spine.chance(rc.chance) {
+                    Vec::new()
+                } else if rc.range_m.is_finite() {
                     match ricochet_layout.as_ref() {
                         Some(l) => crate::rules::chain::bounce_path(l, n, from, rc.bounces),
                         None => Vec::new(),
@@ -2261,6 +2306,10 @@ pub(super) fn settle_pellet(
                 part.duration_seconds *= boost;
                 if part.melee_scaling.is_some_and(|s| s.duration_per_combo) {
                     part.duration_seconds *= shot.combo_multiplier;
+                }
+                if part.melee_scaling.is_some_and(|s| s.damage_per_combo) {
+                    part.damage = part.damage.scale(shot.combo_multiplier);
+                    part.modified_base *= shot.combo_multiplier;
                 }
                 let fresh = FieldState {
                     expires_at: part.melee_scaling.map(|_| t + part.duration_seconds),

@@ -1325,6 +1325,7 @@ impl FightParams {
             beam: panel.beam,
             ricochet: panel.ricochet,
             rebound_blast: panel.rebound_blast,
+            ballistics: panel.ballistics,
             thrown_bounce: panel.thrown_bounce,
             unaimed_headshot_chance: panel.unaimed_headshot_chance,
             windup_seconds: panel.windup_seconds,

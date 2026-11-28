@@ -1495,6 +1495,7 @@ fn a_radial_takes_condition_overload_only_where_the_weapon_declares_it() {
         forced_procs: Default::default(),
         takes_condition_overload: takes,
         takes_multishot: true,
+        on_direct_hit: true,
         co_base: crate::model::CoBase::whole_for(crate::model::CoStage::Radial),
         extra_hit_reads_shift: 0.0,
     };

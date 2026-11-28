@@ -49,7 +49,7 @@ attack:
     - electricity
     takes_multishot: false
   thrown_bounce:
-    bounces: 3
+    bounces: 4
     explosion:
       damage:
         electricity: 345

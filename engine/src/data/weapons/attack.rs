@@ -883,6 +883,9 @@ pub struct RadialSpec {
     /// Declared per entry, never inferred.
     #[serde(default = "yes")]
     pub takes_multishot: bool,
+    /// Whether this radial executes when the trace or projectile hits an enemy directly.
+    #[serde(default = "yes")]
+    pub on_direct_hit: bool,
     /// See [`ExtraHitReads`] — the shares an Extra Hit off THIS explosion reads.
     /// Absent, it reads the base attack's, as every explosion did before.
     #[serde(default)]
@@ -1071,6 +1074,9 @@ pub struct GrenadeThrowSpec {
 pub struct RicochetSpec {
     #[serde(default)]
     pub reflects_from_surfaces: bool,
+    /// Per-hop activation probability (`RicochetChance` at `0x1ae3c0`).
+    #[serde(default = "one")]
+    pub chance: f64,
     /// Bounces AFTER the first collision.
     ///
     /// SIX EXPLOSIONS IS FIVE BOUNCES: *"exploding up to 6 times"*, and the

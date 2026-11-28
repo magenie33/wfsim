@@ -51,6 +51,10 @@ attack:
   punch_through_m: 0.4
   # see notes: wall_ramp_full_damage_4
   range_m: 300.0
+  ricochet:
+    bounces: 1
+    headshot_chance: 0.2
+    range_m: 10.0
   damage: { impact: 16, slash: 32, puncture: 16 }   # total 64
 
 # incarnon_evolutions: see data/weapons/secondary/lato.yaml (shared group)

@@ -50,6 +50,7 @@ attack:
   # see notes: guaranteed_impact_every_shot
   forced_procs: [impact]
   punch_through_m: 0.0
+  projectile_speed_mps: 50
   damage: { impact: 100 }   # total 100
   # The radial part — rules in MECHANICS §7.
   radial:

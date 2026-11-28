@@ -52,6 +52,7 @@ attack:
   # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
   # wiki: "Range: 4.0 m" on this attack.
   range_m: 4.0
+  punch_through_mods: false
   falloff:
     start_m: 0.0
     end_m: 4.0

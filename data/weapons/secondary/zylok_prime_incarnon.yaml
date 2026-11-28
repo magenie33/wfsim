@@ -98,6 +98,7 @@ attack:
 # incarnon_evolutions: see data/weapons/secondary/zylok_prime.yaml (shared group)
 
   range_m: 300
+  punch_through_mods: true
 source:
   url: https://wiki.warframe.com/w/Zylok_Incarnon_Genesis
   # wiki module Attacks[].AttackName: "Incarnon Form" and "Incarnon Form Radial Attack"

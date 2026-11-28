@@ -222,10 +222,17 @@ pub(super) fn launch(
             );
             (path, reflected)
         } else {
+            let every_body = active.infinite_body_punch_through
+                || active.ballistics.is_some_and(|b| b.free_avatar_pierce);
+            let max_range = active
+                .ballistics
+                .filter(|b| b.max_life_seconds > 0.0 && !active.range_m.is_finite())
+                .and_then(|b| active.projectile_speed_mps.map(|v| v * f64::from(b.max_life_seconds)))
+                .unwrap_or(active.range_m);
             let mut path = scene.trace(
                 head, dev, phi, active.projectile_speed_mps, active.homing, pierce,
-                active.infinite_body_punch_through, active.projectile_reverse_query,
-                active.projectile_width_m, active.range_m, &eligible, fire_origin,
+                every_body, active.projectile_reverse_query,
+                active.projectile_width_m, max_range, &eligible, fire_origin,
             );
             if let Some(lock) = active.lock_on {
                 lock_shot(&scene, active, lock, &eligible, head, me, &mut path);
@@ -233,14 +240,25 @@ pub(super) fn launch(
             let reflected = active.ricochet.filter(|r| r.reflects_from_surfaces)
                 .map_or(usize::MAX, |r| scene.reflect_path(&mut path, r.bounces,
                     active.projectile_speed_mps, active.projectile_width_m * 0.5,
-                    active.range_m, pierce, &eligible));
+                    max_range, pierce, &eligible));
             (path, reflected)
         };
         let mut seeds = beam::seeds(&scene, &mut path, active, &eligible, me.tendril.count);
         let mut contact_blasts = Vec::new();
         let mut surface_blasts = Vec::new();
+        let arming_m = active.ballistics.map_or(0.0, |b| f64::from(b.arming_distance_m));
+        let expiry_only_fuse_m = active
+            .ballistics
+            .filter(|b| active.orb.is_none() && b.explode_on_expiry && !b.explode_on_impact && b.max_life_seconds > 0.0)
+            .and_then(|b| active.projectile_speed_mps.map(|v| v * f64::from(b.max_life_seconds)));
         if let Some(radial) = active.radial.filter(|_| rebound.is_some()) {
             for det in &path.detonations {
+                if det.travel < arming_m {
+                    if det.body.is_some() {
+                        contact_blasts.push(Vec::new());
+                    }
+                    continue;
+                }
                 let hits: Vec<_> = eligible.iter().enumerate().filter_map(|(body, &present)| {
                     if !present {
                         return None;
@@ -260,23 +278,53 @@ pub(super) fn launch(
                 }
             }
         } else if let (Some(hit), Some(radial)) = (path.impacts.first().copied(), active.radial) {
-            if let Some(center) = path.blast_center {
-                path.radial_impacts = scene.blast_hits(hit, center, f64::from(radial.radius_m as f32), &eligible);
-            } else if active.homing.is_none() {
-                path.radial_impacts = eligible.iter().enumerate().filter_map(|(body, &present)| {
-                    if !present {
-                        return None;
-                    }
-                    let distance = scene.distance_to_body(hit.point, body);
-                    (radial.falloff_at(distance) > 0.).then_some(crate::scene::Impact {
-                        body, part: 0, radial: true, radial_distance: distance, ..hit
-                    })
-                }).collect();
+            if radial.on_direct_hit
+                && hit.travel >= arming_m
+                && expiry_only_fuse_m.is_none_or(|fuse_m| hit.travel + 1e-6 >= fuse_m)
+            {
+                if let Some(center) = path.blast_center {
+                    path.radial_impacts = scene.blast_hits(hit, center, f64::from(radial.radius_m as f32), &eligible);
+                } else if active.homing.is_none() {
+                    path.radial_impacts = eligible.iter().enumerate().filter_map(|(body, &present)| {
+                        if !present {
+                            return None;
+                        }
+                        let distance = scene.distance_to_body(hit.point, body);
+                        (radial.falloff_at(distance) > 0.).then_some(crate::scene::Impact {
+                            body, part: 0, radial: true, radial_distance: distance, ..hit
+                        })
+                    }).collect();
+                }
             }
         } else if let Some(radial) = active.radial.filter(|_| rebound.is_none() && active.homing.is_none()) {
-            if let Some((point, travel, seconds)) = scene.floor_contact(
+            let floor_hit = scene.floor_contact(
                 path.muzzle, path.direction, active.projectile_speed_mps, active.range_m,
-            ) {
+            );
+            if let Some(fuse_m) = expiry_only_fuse_m {
+                if floor_hit.is_none_or(|(_, dist, _)| dist >= fuse_m) {
+                    if let Some(line) = path.direction.normalized() {
+                        let point = path.muzzle.along(line, fuse_m);
+                        let seconds = active.projectile_speed_mps.map_or(0., |v| fuse_m / v);
+                        path.detonations.push(crate::scene::DetonationTrace {
+                            point, seconds, travel: fuse_m, body: None, expired: true,
+                        });
+                        path.stopped_at = Some(point);
+                        let hits: Vec<_> = eligible.iter().enumerate().filter_map(|(body, &present)| {
+                            if !present {
+                                return None;
+                            }
+                            let distance = scene.distance_to_body(point, body);
+                            (radial.falloff_at(distance) > 0.).then_some(crate::scene::Impact {
+                                body, proxy: 0, part: 0, point, exit: point,
+                                seconds, travel: fuse_m, material: 0., remaining: 0.,
+                                radial: true, radial_distance: distance,
+                            })
+                        }).collect();
+                        path.radial_impacts.extend_from_slice(&hits);
+                        surface_blasts.extend(hits);
+                    }
+                }
+            } else if let Some((point, travel, seconds)) = floor_hit.filter(|&(_, travel, _)| travel >= arming_m) {
                 path.detonations.push(crate::scene::DetonationTrace {
                     point, seconds, travel, body: None, expired: false,
                 });
@@ -661,14 +709,28 @@ fn redirects(
     let mut current = seed;
     let mut path = Vec::new();
     for _ in 0..rc.bounces {
+        if rc.chance <= 0.0 || (rc.chance < 1.0 && !rng.chance(rc.chance)) {
+            break;
+        }
         eligible[current.body] = false;
-        let root = scene.root(current.body);
-        let near = eligible.iter().enumerate().filter_map(|(body, &present)| {
-            let gap = scene.root(body).minus(root).length();
-            (present && gap <= rc.range_m).then_some((body, gap))
-        }).min_by(|a, b| a.1.total_cmp(&b.1));
-        let Some((target, _)) = near else { break };
-        let anchor = scene.target_anchor(target, rng.chance(rc.headshot_chance));
+        let candidates: Vec<usize> = eligible
+            .iter()
+            .enumerate()
+            .filter_map(|(body, &present)| {
+                (present && scene.distance_to_radial_body(current.point, body) <= rc.range_m)
+                    .then_some(body)
+            })
+            .collect();
+        if candidates.is_empty() {
+            break;
+        }
+        let target = if candidates.len() == 1 {
+            candidates[0]
+        } else {
+            let pick = ((rng.next_f64() * candidates.len() as f64) as usize).min(candidates.len() - 1);
+            candidates[pick]
+        };
+        let anchor = scene.random_part_anchor(target, rng.next_f64());
         let Some(direction) = anchor.minus(current.point).normalized() else { break };
         let reach = anchor.minus(current.point).length() + 1e-6;
         let Some(hit) = scene.contact_impact(current.point, direction, reach, 0., &eligible) else { break };

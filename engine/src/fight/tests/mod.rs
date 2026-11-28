@@ -329,6 +329,7 @@ impl Default for FightParams {
             beam: None,
             ricochet: None,
             rebound_blast: None,
+            ballistics: None,
             thrown_bounce: None,
             // AIMED, like every fixture but the one weapon that is not.
             unaimed_headshot_chance: None,
@@ -463,6 +464,7 @@ fn a_bouncing_projectile_in_a_crowd(n: usize, head_chance: f64) -> FightParams {
     }];
     p.ricochet = Some(crate::model::Ricochet {
         reflects_from_surfaces: false,
+        chance: 1.0,
         bounces: 5,
         headshot_chance: head_chance,
         range_m: f64::INFINITY,
@@ -752,6 +754,7 @@ fn radial_of(status_chance: f64, crit_chance: f64) -> crate::build::loadout::Res
         forced_procs: Default::default(),
         takes_condition_overload: false,
         takes_multishot: true,
+        on_direct_hit: true,
         co_base: crate::model::CoBase::whole_for(crate::model::CoStage::Radial),
         extra_hit_reads_shift: 0.0,
     }

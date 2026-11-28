@@ -57,6 +57,7 @@ attack:
   crit_multiplier: 1.5
   status_chance: 0.1
   punch_through_m: 0.0
+  punch_through_mods: false
   damage: { corrosive: 4 }   # total 4
   # THE BLOB ECONOMY — docs/MECHANICS.md §7.3, M109. Verbatim (wiki Stug):
   # "After reaching 10 stacks or the lifespan running out, the blob will

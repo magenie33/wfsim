@@ -1000,24 +1000,25 @@ while the glaive is in flight and add no input delay (M129).
 the body it struck and inside its flight range, that catches the most bodies —
 and no further than the first body it cannot pass, where it turns.
 
-**A BOUNCE IS A BODY IT CANNOT PASS.** *"can bounce up to three times or
-travels up to 30 meters before returning"* (wiki, Glaive; eight on Kestrel
+**A BOUNCE IS A BODY IT CANNOT PASS.** Standard glaives declare four bounces
+(`MaxReflections = 4`; three on Xoris, Halikar and Kestrel; eight on Kestrel
 Prime). The body the punch through runs out in is the first bounce; from there
-it reflects at the angle it arrived (`rules::space::bounce_path`, the bounce
-the Latron Incarnon uses) off one body after another, each a full strike, and
-turns for home at the last its count allows (`ThrownBounceSpec`). This arena
-has no walls, so a glaive whose punch through passes every body bounces off
-nothing and flies its whole range. A detonated glaive is called home at its
-first bounce.
+it reflects (`rules::space::bounce_path`) or seeks inside its bounce cone off
+one body after another, each a full strike, and turns for home at the last its
+count allows (`ThrownBounceSpec`). This arena has no walls, so a glaive whose
+punch through passes every body bounces off nothing and flies its whole range.
+A detonated glaive is called home at its first bounce.
 
 **THE CARDS:** Rebound and Quick Return move the count; Volatile Rebound and
-Volatile Quick Return take the punch through away and give each bounce a chance
-to set off the Bounce Explosion row — no counter, no heavy-attack card, Volatile
-Quick Return's +3 m on it alone. Power Throw's +100% a consecutive throw (three
-stacks) is its own multiplier on the thrown strike, never on an explosion, and a
-loop buffers every throw. Whirlwind speeds the flight and, *"as a direct
-result"*, stretches the range with it. Combo Fury and Mark of the Beast buff the
-secondary weapon and are out of this arena.
+Volatile Quick Return apply `WEAPON_PUNCTURE_DEPTH SET 0` regardless of slot
+order (overriding Power Throw's punch-through grant while keeping Power Throw's
+consecutive-throw damage stacks) and give each bounce a chance to set off the
+Bounce Explosion row — no counter, no heavy-attack card, Volatile Quick Return's
++3 m on it alone. Power Throw's +100% a consecutive throw (three stacks) is its
+own multiplier on the thrown strike, never on an explosion, and a loop buffers
+every throw. Whirlwind speeds the flight and, *"as a direct result"*, stretches
+the range with it. Combo Fury and Mark of the Beast buff the secondary weapon
+and are out of this arena.
 
 **THE GLAIVE IN THE AIR HOLDS THE NEXT THROW** — out to the target and back
 when recalled or detonated; out to where it turns and back otherwise

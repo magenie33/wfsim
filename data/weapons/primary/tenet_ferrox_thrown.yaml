@@ -51,6 +51,7 @@ attack:
   crit_multiplier: 2.0
   status_chance: 0.40
   punch_through_m: 0.0
+  punch_through_mods: true
   # NO RANGE ROW on the Spear Throw block — Projectile at 90 m/s, and the page
   # states no reach. The 10.0 m belongs to the Attraction Field block and is
   # that field's RADIUS. See data/surveys/weapon_range.yaml.

@@ -62,6 +62,7 @@ attack:
   status_chance: 0.5
   # "Charged shots have innate 2.5 meter punch through" (wiki).
   punch_through_m: 2.5
+  punch_through_mods: false
   # PRIMARY COMPRESSION's row (docs/CATALOGS.md §2), verbatim:
   #   Miter | Charged Shot | 100% | Multiplies | Snapshot | 0.2 m | +16% | +23.04%
   #   "Wide projectile, not traditional AoE explosion"

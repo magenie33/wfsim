@@ -57,6 +57,7 @@ attack:
   status_chance: 0.17
   # AN AoE ATTACK TAKES NO PUNCH THROUGH (MECHANICS §13).
   punch_through_m: 0.0
+  projectile_speed_mps: 40
   # NO RANGE ROW on the Grenade Impact block — the page states none. The 7 m
   # below is the explosion's RADIUS and not a reach.
   # PRIMARY COMPRESSION — the published table names this attack. Verbatim

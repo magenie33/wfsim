@@ -3969,10 +3969,13 @@ A catalog rule, and the page states both halves:
 > opposed to hit-scan projectiles) cannot have their Punch Through stat
 > modified."
 
-The shape rule below still locks a HITSCAN attack with a contact radial, and an
-entry unlocks one only on its page's word: the Trumna's primary fire, whose
-page says its explosions stay on the first object hit with punch through
-modded on (`punch_through_mods: true`).
+The shape rule below still locks a HITSCAN attack with a contact radial whose
+fire behavior declares `mRadius > 0` (`battacor_charged`, `mausolon`,
+`mausolon_charged`), while zero-`mRadius` `RadialOnMissTraceFireBehavior`
+attacks (`ambassador_charged`, `opticor`, `opticor_quick`, `opticor_vandal`,
+`opticor_vandal_quick`, `trumna`, `trumna_prime`, `vulcax`, `zylok_incarnon`,
+`zylok_prime_incarnon`) pass the `0x2d5a30` gate and accept punch-through mods
+(`punch_through_mods: true`), exploding on their terminal hit or miss.
 
 So a Shred on a grenade launcher is worth **literally nothing**. "An area of
 effect component" is both shapes this engine models — a `radial` (one explosion
@@ -3980,10 +3983,9 @@ at impact) and a `lingering` cloud (an explosion that stays and ticks): the
 Torid is the second kind and carries no `radial:` at all, so a rule naming only
 radials would have let a grenade launcher take Primed Shred.
 
-The page's *"very few exceptions"* announce themselves in the DATA: an exception
-is an entry whose own infobox carries a punch-through figure, and the roster has
-exactly one attack with both (the Vulcax's 2 m). It keeps its innate depth and
-takes nothing from mods, which never invents a number the wiki did not print.
+`Vulcax` declares `PunchthroughIgnoresAvatars = 1` (`infinite_body_punch_through: true`)
+alongside `2 m` innate geometry punch through and `mRadius = 0`, so it pierces
+bodies at zero depth cost and accepts punch-through mods for world geometry.
 
 ### …and native `Radius > 0` locks beam punch through
 

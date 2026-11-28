@@ -25,6 +25,12 @@ deployments:
     no_resupply: false      # a regenerating magazine, so no reserve to dry
     # see notes: other_tab_transcribed_rather
     damage: { impact: 14.0, puncture: 36.4, slash: 5.6 }   # 56 total
+    shot_type: projectile
+    projectile_speed_mps: 220.0
+    falloff:
+      start_m: 1500.0
+      end_m: 3000.0
+      reduction: 0.911111111111
 mod_pools: [archgun]
 mastery_rank: 3
 max_rank: 30

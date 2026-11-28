@@ -66,7 +66,7 @@ attack:
   # would have let it hold Primed Shred — this form is neither `radial:`
   # nor `lingering:` — so it has to be said per entry, which is what the
   # field is for (the Torid's Incarnon beam is the other one).
-  punch_through_mods: false
+  punch_through_mods: true
   ammo_cost: 1                  # of the 20-round charge pool
   crit_chance: 0.18
   crit_multiplier: 2

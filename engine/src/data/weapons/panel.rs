@@ -299,6 +299,7 @@ fn panel_for_spec(s: &WeaponSpec, metadata: &'static WeaponSpec, frenzy_active: 
             ),
             takes_condition_overload: r.takes_condition_overload,
             takes_multishot: r.takes_multishot,
+            on_direct_hit: r.on_direct_hit,
             extra_hit_reads: r.extra_hit_reads.map(|x| x.0),
             // AN EXPLOSION STARTS WITH ITS OWN BASE as the CO base, and stays
             // there — see `WeaponBase::add_flat_base_damage`, where the radial's
@@ -369,6 +370,7 @@ fn panel_for_spec(s: &WeaponSpec, metadata: &'static WeaponSpec, frenzy_active: 
             forced_procs: c.forced_procs.clone(),
             takes_condition_overload: false,
             takes_multishot: false,
+            on_direct_hit: true,
         });
         crate::model::ClusterBase {
             count: c.count,
@@ -406,6 +408,7 @@ fn panel_for_spec(s: &WeaponSpec, metadata: &'static WeaponSpec, frenzy_active: 
             forced_procs: Vec::new(),
             takes_condition_overload: false,
             takes_multishot: false,
+            on_direct_hit: true,
         }),
         blast: a_radial(&RadialSpec { takes_multishot: false, ..t.radial.clone() }),
     };
@@ -439,6 +442,7 @@ fn panel_for_spec(s: &WeaponSpec, metadata: &'static WeaponSpec, frenzy_active: 
             forced_procs: Vec::new(),
             takes_condition_overload: true,
             takes_multishot: false,
+            on_direct_hit: true,
         }),
         blast: a_radial(&RadialSpec { takes_multishot: false, takes_condition_overload: false, ..g.blast.clone() }),
         speed_mps: g.speed_mps,
@@ -812,6 +816,7 @@ fn panel_for_spec(s: &WeaponSpec, metadata: &'static WeaponSpec, frenzy_active: 
         meter: s.attack.meter,
         ricochet: s.attack.ricochet.as_ref().map(|r| crate::model::Ricochet {
             reflects_from_surfaces: r.reflects_from_surfaces,
+            chance: r.chance,
             bounces: r.bounces,
             headshot_chance: r.headshot_chance,
             // NO RANGE IS NOT ZERO RANGE — it is the page stating no limit but
@@ -820,6 +825,7 @@ fn panel_for_spec(s: &WeaponSpec, metadata: &'static WeaponSpec, frenzy_active: 
             range_m: r.range_m.unwrap_or(f64::INFINITY),
         }),
         rebound_blast: s.attack.rebound_blast,
+        ballistics: super::ballistics::profile(id),
         thrown_bounce: s.attack.thrown_bounce.as_ref().map(|b| crate::model::ThrownBounceBase {
             bounces: b.bounces,
             explosion_chance: b.explosion_chance,

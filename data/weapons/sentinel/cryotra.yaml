@@ -47,6 +47,8 @@ attack:
   crit_multiplier: 1.75
   status_chance: 0.10
   punch_through_m: 0.0
+  punch_through_mods: false
+  projectile_speed_mps: 20
   # THE GRENADE ONLY. The COLD FIELD it leaves is the rest of this weapon —
   # 20 Cold a tick at 1/s in a 1.5 m radius with its own 30% status chance —
   # and it is NOT carried, because the page gives no DURATION for it and a

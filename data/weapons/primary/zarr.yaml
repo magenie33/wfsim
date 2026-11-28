@@ -69,7 +69,6 @@ attack:
     crit_chance: 0.17
     crit_multiplier: 2.5
     status_chance: 0.29
-    takes_multishot: false
     takes_blast_radius_mods: true
     damage: { blast: 175 }   # total 175
 

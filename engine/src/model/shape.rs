@@ -38,6 +38,7 @@ pub struct MeleeFieldScaling {
     pub duration_per_combo: bool,
     pub tick_rate_from_attack_speed: bool,
     pub radius_from_melee_range: bool,
+    pub damage_per_combo: bool,
 }
 
 /// A persistent field's base stats and damage rules.
@@ -116,6 +117,9 @@ pub struct RadialBase {
     pub takes_multishot: bool,
     /// See [`crate::data::weapons::ExtraHitReads`].
     pub extra_hit_reads: Option<[f64; 3]>,
+    /// Whether this radial triggers when the trace or projectile hits an enemy directly.
+    /// `RadialOnMissTraceFireBehavior` (`0x12e74b0`) gates direct-hit radial execution on `onHit`.
+    pub on_direct_hit: bool,
     /// THE ORIGINAL BASE of this explosion — the radial's own [`WeaponBase::co_base`],
     /// and it needs its own because an evolution can raise what the explosion
     /// DEALS without raising what its CO term reads.
@@ -588,6 +592,8 @@ pub struct Falloff {
     pub end_m: f64,
     /// Fraction of damage KEPT at `end_m` and beyond.
     pub keep: f64,
+    /// Non-positive projectile speed multiplier collapses the ramp to `keep` (`0x703bd5`, `0x8c8fd7`).
+    pub zero_speed: bool,
     pub points: [Option<super::FalloffPoint>; 4],
 }
 
@@ -595,6 +601,8 @@ pub struct Falloff {
 impl Falloff {
     pub fn from_spec(spec: &super::FalloffSpec, projectile_speed_multiplier: f64) -> Self {
         assert!(spec.points.len() <= 4, "falloff supports at most four intermediate points");
+        let zero_speed = projectile_speed_multiplier <= 0.0;
+        let ps = projectile_speed_multiplier.max(0.0);
         let mut points = [None; 4];
         let mut distance = spec.start_m;
         let mut multiplier = 1.0;
@@ -606,22 +614,39 @@ impl Falloff {
                 && point.damage_multiplier >= 1.0 - spec.reduction,
                 "falloff points must descend inside their endpoints");
             points[index] = Some(super::FalloffPoint {
-                distance_m: point.distance_m * projectile_speed_multiplier,
+                distance_m: point.distance_m * ps,
                 damage_multiplier: point.damage_multiplier,
             });
             distance = point.distance_m;
             multiplier = point.damage_multiplier;
         }
         Self {
-            start_m: spec.start_m * projectile_speed_multiplier,
-            end_m: spec.end_m * projectile_speed_multiplier,
+            start_m: spec.start_m * ps,
+            end_m: spec.end_m * ps,
             keep: 1.0 - spec.reduction,
+            zero_speed,
             points,
         }
     }
 
-    /// The multiplier on a direct hit that travelled `d` metres.
+    /// The multiplier on a direct hit that travelled `d` metres (`0x703bd2`, `0x8c8f45`).
     pub fn factor(&self, d: f64) -> f64 {
+        if self.zero_speed {
+            return self.keep;
+        }
+        if self.points[0].is_none() {
+            if d <= self.start_m {
+                return self.keep.max(1.0);
+            }
+            if d >= self.end_m {
+                return self.keep;
+            }
+            if self.end_m <= self.start_m {
+                return self.keep.max(1.0 - self.start_m);
+            }
+            let t = (d - self.start_m) / (self.end_m - self.start_m);
+            return self.keep.max(1.0 - t);
+        }
         if d <= self.start_m {
             return 1.0;
         }
@@ -659,6 +684,8 @@ pub struct ThrownBounceBase {
 #[derive(Debug, Clone, Copy)]
 pub struct Ricochet {
     pub reflects_from_surfaces: bool,
+    /// Per-hop activation probability (`RicochetChance` at `0x1ae3c0`).
+    pub chance: f64,
     /// Bounces after the first collision — one on the Drakgoon, whose page
     /// gives *"Shots bounce once"*.
     pub bounces: u32,

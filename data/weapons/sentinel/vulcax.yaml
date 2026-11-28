@@ -49,6 +49,9 @@ attack:
   crit_multiplier: 2.5
   status_chance: 0.10
   punch_through_m: 2.0
+  punch_through_mods: true
+  infinite_body_punch_through: true
+  projectile_width_m: 0.24
   damage: { heat: 500.0 }
   radial:
     damage: { blast: 100.0 }

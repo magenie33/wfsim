@@ -64,6 +64,12 @@ pub struct DeploymentSpec {
     pub radial_crit_multiplier: Option<f64>,
     #[serde(default)]
     pub status_chance: Option<f64>,
+    #[serde(default)]
+    pub shot_type: Option<super::attack::ShotType>,
+    #[serde(default)]
+    pub projectile_speed_mps: Option<f64>,
+    #[serde(default)]
+    pub falloff: Option<crate::model::FalloffSpec>,
 }
 
 /// THE VALENCE BONUS an ADVERSARY weapon carries — a Kuva Lich's, a Sister's, a
@@ -236,6 +242,18 @@ pub fn apply_deployment(base: &mut WeaponBase, id: &str, deployment: &str) {
     }
     if let Some((r, v)) = base.radial.as_mut().zip(d.radial_crit_multiplier) {
         r.base_crit_damage = v;
+    }
+    if let Some(st) = d.shot_type {
+        if !st.flies() {
+            base.projectile_speed_mps = None;
+        } else if let Some(v) = d.projectile_speed_mps {
+            base.projectile_speed_mps = Some(v);
+        }
+    } else if let Some(v) = d.projectile_speed_mps {
+        base.projectile_speed_mps = Some(v);
+    }
+    if let Some(fo) = d.falloff.as_ref() {
+        base.falloff = Some(fo.clone());
     }
     if let Some(spec) = &d.additional_projectile {
         base.additional_projectile = Some(Box::new(spec.apply_to(base)));

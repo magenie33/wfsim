@@ -58,6 +58,7 @@ attack:
   crit_multiplier: 2
   status_chance: 0.24
   punch_through_m: 0.0
+  projectile_speed_mps: 180
   # A GUARANTEED IMPACT PROC on the direct hit — "dealing Impact, Puncture and
   # Radiation damage with a guaranteed Impact proc" (wiki Tombfinger, verbatim),
   # and the infobox module's `ForcedProcs`; Module:Modular/data omits it.

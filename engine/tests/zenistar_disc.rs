@@ -45,23 +45,23 @@ fn the_disc_and_aura_ignore_heavy_damage_and_co_but_keep_melee_mods() {
 }
 
 #[test]
-fn a_deployment_waits_for_expiry_and_combo_extends_lifetime_without_scaling_pulses() {
+fn a_deployment_waits_for_expiry_and_combo_scales_lifetime_and_pulses() {
     let (bursts, pulses) = events(&[], 25.0);
     assert!(bursts.len() >= 2, "{bursts:?}");
     assert!(bursts.windows(2).all(|w| w[1] - w[0] >= 10.0));
     let (charged, charged_pulses) = events(&["corrupt_charge"], 45.0);
     assert!(charged.len() >= 2, "{charged:?}");
     assert!(charged.windows(2).all(|w| w[1] - w[0] >= 20.0), "{charged:?}");
-    assert_eq!(pulses[0].1, charged_pulses[0].1);
+    assert_eq!(charged_pulses[0].1, 2.0 * pulses[0].1);
     assert!(charged_pulses.iter().any(|p| p.0 > charged[0] + 10.0 && p.0 < charged[0] + 20.0));
 }
 
 #[test]
 fn attack_speed_accelerates_pulses_and_reach_grows_the_aura() {
-    let (_, plain) = events(&[], 3.0);
-    let (_, faster) = events(&["fury"], 3.0);
-    assert!((plain[1].0 - plain[0].0 - 0.8).abs() < 1e-8);
-    assert!((faster[1].0 - faster[0].0 - 0.8 / 1.3).abs() < 1e-8);
+    let (_, plain) = events(&[], 4.0);
+    let (_, faster) = events(&["fury"], 4.0);
+    assert!((plain[1].0 - plain[0].0 - 1.0).abs() < 1e-8);
+    assert!((faster[1].0 - faster[0].0 - 1.0 / 1.3).abs() < 1e-8);
     let ranged = panel(&["primed_reach"]);
     let plain = panel(&[]);
     let added_range = ranged.range_m - plain.range_m;

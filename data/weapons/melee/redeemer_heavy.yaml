@@ -29,7 +29,7 @@ attack:
   falloff:
     start_m: 10
     end_m: 20
-    reduction: 0.8333
+    reduction: 0.966666666667
   spends_combo: true
   damage:
     blast: 30

@@ -39,6 +39,7 @@ attack:
   crit_multiplier: 1.5
   status_chance: 0.20
   punch_through_m: 0.0
+  projectile_speed_mps: 65
   # GUARANTEED TOXIN on every hit (wiki: "Guaranteed Toxin status effect on
   # hit"). A type that always lands is also a permanent +1 to Condition
   # Overload's count.

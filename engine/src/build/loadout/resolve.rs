@@ -1352,6 +1352,7 @@ pub fn resolve_for(
             falloff_reduction: r.falloff_reduction,
             takes_condition_overload: r.takes_condition_overload,
             takes_multishot: r.takes_multishot,
+            on_direct_hit: r.on_direct_hit,
             co_base: r.co_base_pair(),
             extra_hit_reads_shift: reads_shift(r.extra_hit_reads),
         }
@@ -1658,8 +1659,13 @@ pub fn resolve_for(
     // A CHANCE TO EXPLODE ON A BOUNCE TAKES IT ALL AWAY — the Volatile cards'
     // own *"(Disables Punch Through)"*: a glaive that passed through bodies
     // would never bounce off one.
-    let punch_through_m = if thrown_bounce.is_some_and(|b| b.explosion_chance > 0.0) || beam_radius_locks_pt {
+    let punch_through_m = if explode_on_bounce > 0.0
+        || thrown_bounce.is_some_and(|b| b.explosion_chance > 0.0)
+        || beam_radius_locks_pt
+    {
         0.0
+    } else if base.ballistics.is_some_and(|b| b.infinite_puncture_depth) {
+        crate::rules::space::INFINITE_PUNCH_THROUGH_M
     } else if !takes_mods {
         base.punch_through_m
     } else {
@@ -1688,6 +1694,11 @@ pub fn resolve_for(
     });
     let projectile_speed_mps = base.projectile_speed_mps
         .map(|v| crate::rules::sim::projectile_initial_speed(v, v * ps));
+    let projectile_range_scale = match (base.projectile_speed_mps, projectile_speed_mps) {
+        (Some(base_v), Some(eff_v)) if base_v > 0.0 => eff_v / base_v,
+        _ if base.form.is_throw() => ps,
+        _ => 1.0,
+    };
 
     let melee_heavy = base.melee_heavy.as_ref().map(|b| Box::new(resolve_for(b, mods, policy, tenno)));
     let stance_heavy = mods.iter().find_map(|m| m.stance)
@@ -1739,9 +1750,9 @@ pub fn resolve_for(
         projectile_speed_mps,
         homing: base.homing,
         projectile_reverse_query: base.projectile_reverse_query,
-        // A THROWN GLAIVE FLIES FURTHER AS IT FLIES FASTER — Whirlwind's page:
-        // *"As a direct result, this mod also increases throwing distance."*
-        range_m: if base.form.is_throw() { beam_range_m * ps } else { beam_range_m },
+        // A THROWN GLAIVE OR FINITE-LIVED PROJECTILE FLIES FURTHER AS IT FLIES FASTER
+        // (`MaxLife` is invariant to `WEAPON_PROJECTILE_SPEED` at `0xb94f40`).
+        range_m: beam_range_m * projectile_range_scale,
         damage,
         adaptive_element,
         resting,
@@ -1792,6 +1803,7 @@ pub fn resolve_for(
         }),
         ricochet: base.ricochet,
         rebound_blast: base.rebound_blast,
+        ballistics: base.ballistics,
         thrown_bounce,
         unaimed_headshot_chance: base.unaimed_headshot_chance,
         // A FIRE-RATE MOD SHORTENS THE WIND-UP, the same bucket and the same

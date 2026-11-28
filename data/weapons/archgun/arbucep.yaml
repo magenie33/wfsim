@@ -77,6 +77,7 @@ attack:
   crit_multiplier: 2.9
   status_chance: 0.349
   punch_through_m: 0.0
+  projectile_speed_mps: 11
   # PER MISSILE. The element below is only the FIRST one's — the other five
   # come from `pellet_elements` above, each resolved through the elemental
   # hierarchy in its own right.

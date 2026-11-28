@@ -302,13 +302,23 @@ angle. The lock retains the declared miss and head estimates, and the
 round's physical segment resolves the struck part. Installed lock order
 and shot poses remain open.
 
-Hitscan ricochets choose the next eligible root inside the declared range
-and run a new contact from the previous impact. Dual Toxocyst retains the
-observed head-aim share from M111. Kuva Drakgoon uses reflection at posed
-blocking surfaces and the open-arena floor. Its package declares launch
-speed 130 and equal normal/tangent restitution, which preserve the mirror
-direction. The model uses the catalog rebound count and straight legs.
-Installed gravity, speed clamps, terrain and collision gates are open.
+Hitscan auto-ricochet Incarnon forms (`ProcessRicochets`, `0x1ae090`: `Bronco`,
+`Bronco Prime`, `Dual Toxocyst`, `Lato`, `Lato Prime`, `Lato Vandal`, `Sicarus`,
+`Sicarus Prime`, `Soma`) roll their per-form `chance` on direct avatar contact,
+gather live enemies whose radial body overlaps the declared `range_m` sphere,
+pick one candidate uniformly at random, aim at a uniformly chosen hitbox proxy
+center (`0x1ae620`, AABB midpoint fallback), and trace the redirected segment.
+Dual Toxocyst retains the observed head-aim share from M111 in planar mode.
+Client projectile and hitscan ballistics parameters in
+`data/geometry/ballistics-runtime.yaml` (`scripts/import_ballistics_runtime.py`)
+supply `StepKinematicFlight` (`0x1585e40`), `WaveProjectile::SweepAndResize`
+(`0xf18c90`), `ArmingDistance`, `ExplodeOnLifeExpired` mid-air fuses (`Corinth`
+airburst), decomposed `(e_n, e_t)` bounce restitution (`0x13c58d9`), cone-gated
+`dist / cos(theta)` bounce target seeking (`0x136bab0`), `ClusterBombProjectile`
+`min(K, 20)` submunitions per detonating parent (`0x4976c0`), and `Zenith`
+`InfinitePunctureDepth`. Kuva Drakgoon uses reflection at posed blocking
+surfaces and the open-arena floor with launch speed 130 and equal
+normal/tangent restitution.
 
 Latron Incarnon uses stationary posed surfaces and the open floor.
 [M103](measurements/M103-latron-bounces-punch-through-and-the-gauge.md)

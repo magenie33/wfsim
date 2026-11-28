@@ -86,7 +86,7 @@ attack:
       lingering:
         damage:
           heat: 50
-        tick_rate: 1.25
+        tick_rate: 1.0
         duration_seconds: 10
         radius_m: 4
         crit_chance: 0.1
@@ -96,6 +96,7 @@ attack:
         takes_condition_overload: false
         melee_scaling:
           duration_per_combo: true
+          damage_per_combo: true
           tick_rate_from_attack_speed: true
           radius_from_melee_range: true
       combo_script: []

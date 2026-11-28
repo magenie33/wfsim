@@ -69,6 +69,7 @@ attack:
   crit_multiplier: 1.9
   status_chance: 0.33
   punch_through_m: 0.0
+  projectile_speed_mps: 200
   # NO RANGE ROW on the Projectile Impact block — the page states none, which
   # is a fact rather than a gap (docs/DATA_SOURCES.md). The 2.3 m below is the
   # explosion's RADIUS and not a reach.

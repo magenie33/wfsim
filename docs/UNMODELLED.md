@@ -919,13 +919,15 @@ Corufell and Corufell Prime have a Charged Projectile heavy mode with their own 
 
 Gunblade B actions contain a second firing marker whose handler behavior is
 unknown; only the first emits a shot. Sarpa's internal burst spacing, package
-damage and charge conflicts, and Stropha's projectile width remain disclosed.
-Stropha's piecewise falloff is applied. Warfan release offsets and spread,
-Syam's two wave shapes and flight speed, and the thrown shield's exact radial
-geometry are not calibrated. Tenet disks retain their per-source damage-mod
-exclusions and CO brackets; Grigori's lifetime, bounces and heavy-slide trigger
-are not modelled. Wolf Sledge's second-target seeking and return-flight hits
-are absent, and its throw cadence is a disclosed stand-in.
+damage and charge conflicts, and Stropha's animated melee contact remain
+disclosed. Stropha's client two-endpoint falloff and wave expansion parameters
+and Quassus / Quassus Prime's horizontal fan spread and first-dagger pinpoint
+rule are applied; warfan animation release offsets, Syam's two wave shapes and
+flight speed, and the thrown shield's exact radial geometry are not calibrated.
+Tenet disks retain their per-source damage-mod exclusions and CO brackets;
+Grigori's lifetime, bounces and heavy-slide trigger are not modelled. Wolf
+Sledge's second-target seeking and return-flight hits are absent, and its throw
+cadence is a disclosed stand-in.
 
 Caustacyst's wave travels separately from its blade, with distance and body
 decay and its own melee/universal damage rules. Its persistent rectangular
@@ -933,9 +935,11 @@ corrosive trail, pool contacts and blindness are not modelled. Coda's wave
 stats follow its published page without an in-game calibration.
 
 Zenistar's heavy mode deploys one disc, waits for its aura to expire and deploys
-again. Combo scales lifetime rather than disc damage; attack speed scales aura
-pulses, and melee range grows its radius. Early recall, floor placement,
-collision stopping and the deployed blade's light-combo cycle are absent.
+again. Combo scales both aura lifetime and periodic fire pulse damage without
+being consumed by pulses (`HoverMineProjectile`, `0xb80260`); attack speed
+scales the `1.0 s` base pulse interval (`0xf0553a`), and melee range grows its
+radius. Early recall, floor placement, collision stopping and the deployed
+blade's light-combo cycle are absent.
 Tennokai conversion from light inputs is disabled for this deployment loop.
 The aura's crit snapshots, stealth and special Warframe interactions remain
 uncalibrated.

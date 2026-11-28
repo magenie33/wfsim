@@ -46,7 +46,7 @@ attack:
     - cold
     takes_multishot: false
   thrown_bounce:
-    bounces: 3
+    bounces: 4
     explosion:
       damage:
         cold: 585

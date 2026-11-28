@@ -24,6 +24,8 @@ CODA = "20261111T080715Z-coda-runtime-queue-followup"
 CODA_PIN = "1713c05a89450c02e906d56203267e1349d5b0d3960046b9706dd7a97a798931"
 ACC_SPREAD = "20261128T044717Z-negative-accuracy-beam-forking-and-weapon-classes"
 ACC_SPREAD_PIN = "63cc60005b87b3c54e00ef3243fad470a0f10ba7f3ca7899082f3bee53a935df"
+PROJ_HITSCAN = "20261128T092539Z-unified-projectile-hitscan-and-melee-ranged-calibration"
+PROJ_HITSCAN_PIN = "32e8d38cfa4879e7c58fa537b8856159895a1b1b3857f2343fbce29e8219fed7"
 
 
 def fields(text):
@@ -109,15 +111,23 @@ def catalog_forms():
         wid = m_id.group(1)
         m_form = re.search(r"(?m)^form:\s*(\S+)", text)
         m_inh = re.search(r"(?m)^inherits:\s*(\S+)", text)
+        m_int = re.search(r"(?m)^internal_name:\s*(\S+)", text)
         entries[wid] = {
             "id": wid,
             "form": m_form.group(1) if m_form else "base",
             "group": m_inh.group(1) if m_inh else wid,
+            "internal_name": m_int.group(1) if m_int else None,
         }
+    for wid, meta in entries.items():
+        if meta["internal_name"] is None and meta["group"] in entries:
+            meta["internal_name"] = entries[meta["group"]]["internal_name"]
     by_group_form = {}
+    by_internal = {}
     for wid, meta in entries.items():
         by_group_form.setdefault((meta["group"], meta["form"]), []).append(wid)
-    return entries, by_group_form
+        if meta["internal_name"]:
+            by_internal.setdefault(meta["internal_name"], []).append(wid)
+    return entries, by_group_form, by_internal
 
 
 def main():
@@ -134,6 +144,7 @@ def main():
         (SAMPLER, SAMPLER_PIN),
         (CODA, coda_pin),
         (ACC_SPREAD, ACC_SPREAD_PIN),
+        (PROJ_HITSCAN, PROJ_HITSCAN_PIN),
     ]:
         actual_sha = hashlib.sha256((batches / folder / "manifest.json").read_bytes()).hexdigest()
         assert actual_sha == expected, (folder, actual_sha, expected)
@@ -184,8 +195,10 @@ def main():
     with zipfile.ZipFile(batches / ACC_SPREAD / "evidence.zip") as zf:
         beam_modes = json.loads(zf.read("beam-spread-forking-roster.json"))["modes"]
         firearm_forms = json.loads(zf.read("firearm-multishot-cone-roster.json"))["forms"]
+    with zipfile.ZipFile(batches / PROJ_HITSCAN / "evidence.zip") as zf:
+        melee_ranged = json.loads(zf.read("track3_melee_ranged/melee-ranged-full-calibration-roster.json"))["melee_weapons"]
 
-    entries, by_group_form = catalog_forms()
+    entries, by_group_form, by_internal = catalog_forms()
     attacks = {}
     used_profiles = {}
 
@@ -393,6 +406,56 @@ def main():
             }
         if attack:
             attacks[wid] = attack
+
+    # Join PROJ-HITSCAN-01 Track 3 ranged melee fan spread and first-iteration pinpoint flags.
+    for mw in melee_ranged:
+        if not mw.get("in_w3d_forms_baseline"):
+            continue
+        owner = mw["path"]
+        wids = [w for w in by_internal.get(owner, []) if entries[w]["form"] == "heavy"]
+        if not wids or owner not in objects:
+            continue
+        beh_field = ""
+        for anc in objects[owner]["ancestry_leaf_first"]:
+            if "Behaviors" in objects[anc]["composed_fields"]:
+                beh_field = objects[anc]["composed_fields"]["Behaviors"]
+                break
+        for blk in blocks(beh_field.partition("=")[2]):
+            typed, types = roles(blk)
+            if "Projectile" not in types.get("fire:Type", ""):
+                continue
+            actual = typed["fire"]
+            fan = actual.get("UseFanSpread") == "1"
+            first_pin = actual.get("IgnoreSpreadOnFirstFireIteration") == "1"
+            if not fan and not first_pin:
+                continue
+            for wid in wids:
+                attack = dict(attacks.get(wid, {}))
+                bounds = record_timing(attack, actual)
+                if first_pin:
+                    attack["first_pellet_pinpoint"] = True
+                if fan:
+                    assert pair(actual.get("chargeRotation", "{0,0}")) == [0, 0], wid
+                    start = float(actual["StartAngle"])
+                    end = float(actual["EndAngle"])
+                    assert start != end, wid
+                    attack["fan"] = {
+                        "start_deg": start,
+                        "end_deg": end,
+                        "vertical": actual.get("FanSpreadVertical") == "1",
+                    }
+                if len(bounds) == 2:
+                    attack["resting"] = {
+                        "min_deg": bounds["aimed"][0],
+                        "max_deg": bounds["aimed"][1],
+                        "sampling": {
+                            "horizontal_ratio": float(actual.get("SpreadRatioHorizontal", "0.5")),
+                            "uniform": actual.get("spreadUniform") == "1",
+                            "hip_min_deg": bounds["hip"][0],
+                            "hip_max_deg": bounds["hip"][1],
+                        },
+                    }
+                attacks[wid] = attack
 
     profile_names = sorted({a[mode] for a in attacks.values() for mode in ("aimed", "hip") if mode in a})
     profile_index = {name: idx for idx, name in enumerate(profile_names)}

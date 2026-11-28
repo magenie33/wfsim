@@ -46,6 +46,10 @@ attack:
   punch_through_m: 0.0
   # see notes: wall_ramp_full_damage_2
   range_m: 300.0
+  falloff:
+    start_m: 20.0
+    end_m: 30.0
+    reduction: 0.911111111111
   damage: { impact: 38.25, puncture: 2.25, slash: 4.5 }   # 45 each, 270 a shell
 unmodeled:
   - "The 20-40 degree spread is not modelled; at zero distance all six pellets land."

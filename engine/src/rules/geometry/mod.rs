@@ -3,6 +3,7 @@
 pub mod penetration;
 pub mod guided;
 pub mod glaive;
+pub mod ballistics;
 pub mod eye;
 pub mod rotation;
 mod rotation_tables;

@@ -48,6 +48,7 @@ attack:
   damage: { blast: 390 }   # total 390
 
   range_m: 300
+  projectile_width_m: 0.6
 unmodeled:
   - "The gauge also fills by blocking attacks, 10% a second for 2 s (wiki); nothing attacks the wielder here, so only the kill route is modelled."
   - "Firing the alt-fire without a full gauge still drains it (wiki); the sim fires only on a full gauge, so it never wastes one."

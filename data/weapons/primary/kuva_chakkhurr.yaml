@@ -71,6 +71,7 @@ attack:
   # also a permanent +1 to Condition Overload's count.
   forced_procs: [impact]
   punch_through_m: 0.0
+  projectile_speed_mps: 200
   # NO RANGE ROW on the Normal Attack block — the page states none. The 2.9 m
   # below is the explosion's RADIUS and not a reach.
   # "Primarily Impact damage."
