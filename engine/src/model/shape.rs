@@ -477,21 +477,15 @@ impl ExtraSpread {
     }
 }
 
-const fn default_beam_horizontal_ratio() -> f32 {
-    0.5
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, serde::Deserialize)]
-#[serde(tag = "kind", rename_all = "snake_case")]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum BeamSpreadMode {
     Smoothed {
         smooth_time: f32,
-        #[serde(default = "default_beam_horizontal_ratio")]
         horizontal_ratio: f32,
     },
     ChildQuat {
         horizontal_ratio: f32,
-        quats: [[f32; 4]; 4],
+        quats: &'static [[f32; 4]; 4],
     },
     Fan {
         base_deg: f32,

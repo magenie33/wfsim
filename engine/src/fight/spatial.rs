@@ -139,11 +139,11 @@ pub(super) fn launch(
         });
         let total_emissions = if split_multishot { l.n_pellets as usize } else { groups.len() };
         let ordinary = groups.iter().copied().enumerate().filter(|(_, copies)| *copies > 0)
-            .map(|(round, copies)| (round, if split_multishot { 1 } else { copies }));
+            .map(|(round, copies)| (round, if split_multishot { 1 } else { copies }, 0u32));
         let additional_groups: &[u32] = if split_multishot { &groups } else { &[] };
         let extra = additional_groups.iter().copied().enumerate()
-            .flat_map(|(round, copies)| (1..copies).map(move |_| (round, 1)));
-        for (iteration, (round, copies)) in ordinary.chain(extra).enumerate() {
+            .flat_map(|(round, copies)| (1..copies).map(move |copy_idx| (round, 1, copy_idx)));
+        for (iteration, (round, copies, copy_offset)) in ordinary.chain(extra).enumerate() {
             let charging = me.incarnon.in_base_form && !me.params.gauge_charging_body_parts.is_empty();
             let weakpoint_aim = if charging { 1. } else { scene.weakpoint_aim.unwrap_or(head_weight / all.max(1e-20)) };
             let head = me.d.aim.next_f64() < weakpoint_aim;
@@ -305,7 +305,9 @@ pub(super) fn launch(
                 each.floor() as u32 + u32::from(me.d.extra.chance(each.fract()))
             };
             // Direct and immediate radial instances retain per-instance ordering.
-            for instance in 0..count {
+            for local in 0..count {
+                let instance = copy_offset + local;
+                let follows = instance > 0;
                 events.push(Landing {
                     spatial: Some(SpatialLanding {
                         impact: *hit,
@@ -313,7 +315,7 @@ pub(super) fn launch(
                         first: false,
                         last: false,
                         instance,
-                        follows: instance > 0,
+                        follows,
                         contact,
                         splash: false,
                         beam: seeds.direct.get_mut(contact).and_then(Option::take),
@@ -369,11 +371,11 @@ pub(super) fn launch(
                                 first: false,
                                 last: false,
                                 instance,
-                                follows: instance > 0,
+                                follows,
                                 contact,
                                 splash: impact.body != hit.body,
-                                beam: None,
                                 redirected: contact >= reflected_from,
+                                beam: None,
                                 progress: progress.clone(),
                             }),
                             t: l.t + hit.seconds + rad.delay_seconds,
@@ -390,7 +392,9 @@ pub(super) fn launch(
         }
         if let Some(rad) = active.radial {
             for &impact in &surface_blasts {
-                for instance in 0..copies {
+                for local in 0..copies {
+                    let instance = copy_offset + local;
+                    let follows = instance > 0;
                     events.push(Landing {
                         spatial: Some(SpatialLanding {
                             impact,
@@ -398,7 +402,7 @@ pub(super) fn launch(
                             first: false,
                             last: false,
                             instance,
-                            follows: instance > 0,
+                            follows,
                             contact: 0,
                             splash: true,
                             beam: None,

@@ -464,7 +464,7 @@ mod tests {
         // Phantasma stationary S=0 child-beam quaternions (Unicorn phantasma[0]).
         let phantasma = BeamSpreadMode::ChildQuat {
             horizontal_ratio: 0.7,
-            quats: [
+            quats: &[
                 [0.008_726, 0.013_089, -0.000_114, 0.999_876],
                 [0.008_726, -0.013_089, 0.000_114, 0.999_876],
                 [-0.008_726, 0.013_089, 0.000_114, 0.999_876],

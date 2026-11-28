@@ -394,9 +394,14 @@ def main():
         if attack:
             attacks[wid] = attack
 
-    referenced = {a[mode] for a in attacks.values() for mode in ("aimed", "hip") if mode in a}
-    runtime_profiles = {name: used_profiles[name] for name in referenced}
-    result = json.dumps({"profiles": runtime_profiles, "attacks": attacks}, sort_keys=True, indent=2) + "\n"
+    profile_names = sorted({a[mode] for a in attacks.values() for mode in ("aimed", "hip") if mode in a})
+    profile_index = {name: idx for idx, name in enumerate(profile_names)}
+    for attack in attacks.values():
+        for mode in ("aimed", "hip"):
+            if mode in attack:
+                attack[mode] = profile_index[attack[mode]]
+    runtime_profiles = [used_profiles[name] for name in profile_names]
+    result = json.dumps({"profiles": runtime_profiles, "attacks": attacks}, sort_keys=True, separators=(",", ":")) + "\n"
     if args.check:
         assert OUTPUT.read_text() == result, OUTPUT
     else:

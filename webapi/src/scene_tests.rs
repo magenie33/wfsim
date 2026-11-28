@@ -1486,4 +1486,23 @@ fn beam_spread_regimes_and_nonbeam_multishot_subregimes_resolve_in_3d() {
     // 6. Split Flights excludes duelistbow (Nunchasa).
     let nunchasa_sf = json!({"weapon": "nunchasa", "mods": ["split_flights"]});
     assert!(crate::simulate::ready(&nunchasa_sf, false).is_err());
+
+    // 7. Split multishot preserves Origin::Own on pellet 0 and Origin::Multishot on extra pellets.
+    let mut laetum_ms = request("laetum", 1, false);
+    laetum_ms["enemy"] = json!("crewman");
+    laetum_ms["level"] = json!(1);
+    laetum_ms["eximus"] = json!(false);
+    laetum_ms["mods"] = json!(["hornet_strike", "barrel_diffusion"]);
+    laetum_ms["scene_3d"] = json!({"preset": "source_standard"});
+    let laetum_rec = record(&params(&laetum_ms));
+    let origins: Vec<_> = laetum_rec
+        .events()
+        .iter()
+        .filter_map(|e| match &e.kind {
+            Kind::Damage(d) => Some(d.origin),
+            _ => None,
+        })
+        .collect();
+    assert!(origins.contains(&wfsim_engine::record::Origin::Own));
+    assert!(origins.contains(&wfsim_engine::record::Origin::Multishot));
 }
