@@ -101,7 +101,7 @@ mod tests {
             headshot: false, part_factor: 1.0, status_part_factor: 1.0, status_landing: 1.0 };
         spread_hit(Seat::WIELDER, &mut w, &inst, &mut bodies[1], &p.body(1).unwrap(),
             seed, shares, 1.0, 0, 1.0, seed, 0.0, &[], &composition, &p, &p,
-            &mut gal, &mut arc, &mut r, &mut rec, &mut d, 0.0, by, false, true, None);
+            &mut gal, &mut arc, &mut r, &mut rec, &mut d, 0.0, by, false, true, p.co_base, None);
         let geometry = spread::SpreadGeometry::new(&p);
         drain_echoes(Seat::WIELDER, &mut w, &mut bodies, &p, &p, &geometry,
             &mut gal, &mut arc, &mut r, &mut rec, &mut d, 0.0);

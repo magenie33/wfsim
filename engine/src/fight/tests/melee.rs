@@ -2180,4 +2180,141 @@ fn an_ability_weapon_is_multiplied_by_its_combo_and_never_spends_it() {
     assert!((got - want).abs() < 1e-6, "combo pays {got:.3}x over the fight, the counter says {want:.3}x");
 }
 
+/// Condition Overload enters the ModifiedBase bracket of status DoTs on direct
+/// hits, Follow Through hits and Melee Influence spreads, matching base-damage
+/// mods rather than scaling only direct damage.
+#[test]
+fn condition_overload_scales_status_dots_on_aimed_follow_through_and_influence() {
+    let base_params = |co_behavior: crate::model::CoBehavior, base_damage_bonus: f64, mb: f64| FightParams {
+        damage: DamageVector::new().with(DamageType::Impact, mb),
+        dot_modified_base: Some(mb),
+        base_damage_bonus,
+        co_per_type: 0.8,
+        co_base: crate::model::CoBase::whole(),
+        co_behavior,
+        forced_procs: vec![DamageType::Impact, DamageType::Puncture, DamageType::Slash],
+        status_chance: 0.0,
+        base_status_chance: 0.0,
+        base_crit_chance: 0.0,
+        unmodded_crit_chance: 0.0,
+        crit_multiplier: 1.0,
+        fire_rate: 1.0,
+        magazine_size: 1e9,
+        duration_seconds: 3.5,
+        body_parts: mono_body(1.0),
+        foe: Foe::training_dummy(),
+        ..FightParams::default()
+    };
+
+    // Additive CO: shot 1 sees 0 statuses (seed 35.0, 3 ticks); shots 2 & 3 see
+    // 3 statuses (+240% -> x3.4, seed 119.0, 2 + 1 ticks), each carrying +0.35 accumulator.
+    let add_dot = monte_carlo(&base_params(crate::model::CoBehavior::AdditiveWithBaseDamage, 0.0, 100.0), 4, 3).mean_dot_damage;
+    let want_add = 3.0 * (35.0 + 0.35) + 3.0 * (119.0 + 0.35);
+    assert!((add_dot - want_add).abs() < 1e-6, "additive CO bleed: got {add_dot:.4}, expected {want_add:.4}");
+
+    // Independent CO multiplies the modded base (265 * 3.4 * 0.35 = 315.35).
+    let ind_dot = monte_carlo(&base_params(crate::model::CoBehavior::Independent, 1.65, 265.0), 4, 3).mean_dot_damage;
+    let want_ind = 3.0 * (92.75 + 0.35) + 3.0 * (315.35 + 0.35);
+    assert!((ind_dot - want_ind).abs() < 1e-6, "independent CO bleed: got {ind_dot:.4}, expected {want_ind:.4}");
+
+    // Follow Through + Melee Influence: spread DoTs read each struck body's CO-scaled ModifiedBase.
+    let crowd = |co_rate: f64| {
+        let mut p = base_params(crate::model::CoBehavior::AdditiveWithBaseDamage, 0.0, 100.0);
+        p.damage = DamageVector::new().with(DamageType::Electricity, 100.0);
+        p.forced_procs = vec![DamageType::Impact, DamageType::Puncture, DamageType::Electricity];
+        p.co_per_type = co_rate;
+        p.follow_through = Some(0.5);
+        p.range_m = 6.0;
+        p.combo_script = vec![serde_norway::from_str::<crate::model::ComboHit>(
+            "multiplier: 1.0\ndelay_seconds: 1.0\ncombo_points: 1\ncombo_points_base: 1\nall_around: true\n",
+        ).expect("combo hit")];
+        p.arcane.influence_chance = 1.0;
+        p.arcane.influence_radius_m = 20.0;
+        p.arcane.influence_seconds = 18.0;
+        p.influence_open = Some(f64::INFINITY);
+        let dummy = p.foe.clone();
+        p.others = vec![
+            crate::formation::FoeSpec { id: "b1".into(), params: dummy.clone(), body_parts: mono_body(1.0), at: crate::rules::space::Vec2::new(0.0, 2.0) },
+            crate::formation::FoeSpec { id: "b2".into(), params: dummy, body_parts: mono_body(1.0), at: crate::rules::space::Vec2::new(0.0, 4.0) },
+        ];
+        monte_carlo(&p, 4, 3)
+    };
+    let (no_co, with_co) = (crowd(0.0), crowd(0.8));
+    let dot_ratio = with_co.mean_dot_damage / no_co.mean_dot_damage;
+    assert!(dot_ratio > 2.2, "Influence + Follow Through DoTs must scale with CO, got x{dot_ratio:.3}");
+
+    // Real Melee Influence multi-status loadout: Condition Overload beats Primed Pressure Point.
+    let praedos = |dmg_mod: &str| {
+        let base = crate::model::WeaponBase::from_data("praedos", true, &[]);
+        let pool = crate::data::mods::pool_for_weapon("praedos");
+        let mods = [
+            dmg_mod, "sovereign_outcast", "voltaic_strike", "shocking_touch",
+            "virulent_scourge", "weeping_wounds", "blood_rush",
+        ];
+        let refs = named_combo_mods(&pool, &mods, &base);
+        let panel = crate::build::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
+        let arcane = crate::data::arcanes::pool_for_weapon("praedos", "melee")
+            .into_iter()
+            .find(|a| a.id == "melee_influence")
+            .expect("melee_influence")
+            .fx(5, crate::model::StackPolicy::Emergent, base.traits, crate::data::tenno::default_tenno());
+        let arena = crate::arena::Arena::training(30.0);
+        let mut p = FightParams::for_panel(&panel, &arena, &arcane, || panel.clone());
+        let dummy = p.foe.clone();
+        p.others = (1..=4).map(|i| crate::formation::FoeSpec {
+            id: format!("g{i}"),
+            params: dummy.clone(),
+            body_parts: arena.body_parts.clone(),
+            at: crate::rules::space::Vec2::new(0.0, i as f64 * 1.5),
+        }).collect();
+        monte_carlo(&p, 20, 7)
+    };
+    let (co, ppp) = (praedos("condition_overload"), praedos("primed_pressure_point"));
+    assert!(
+        co.mean_dot_damage > ppp.mean_dot_damage,
+        "CO DoT ({:.0}) must exceed Primed Pressure Point DoT ({:.0}) on multi-status Influence build",
+        co.mean_dot_damage, ppp.mean_dot_damage,
+    );
+    assert!(
+        co.mean_damage > ppp.mean_damage,
+        "CO total ({:.0}) must exceed Primed Pressure Point total ({:.0}) on multi-status Influence build",
+        co.mean_damage, ppp.mean_damage,
+    );
+}
+
+/// Melee Condition Overload has no kill trigger, so a permanent card explicitly
+/// configured to zero stacks stays at zero even when enemies die.
+#[test]
+fn permanent_condition_overload_does_not_earn_stacks_on_kill() {
+    let mut p = FightParams {
+        damage: DamageVector::new().with(DamageType::Impact, 100.0),
+        dot_modified_base: Some(100.0),
+        co_stack: Some(crate::model::StackSpec {
+            per_stack: 0.8,
+            max_stacks: 1,
+            duration: crate::model::NO_TIMEOUT,
+            initial_stacks: 0,
+            earned_on: None,
+        }),
+        co_base: crate::model::CoBase::whole(),
+        co_behavior: crate::model::CoBehavior::AdditiveWithBaseDamage,
+        forced_procs: vec![DamageType::Impact],
+        status_chance: 0.0,
+        base_crit_chance: 0.0,
+        crit_multiplier: 1.0,
+        fire_rate: 1.0,
+        magazine_size: 1e9,
+        duration_seconds: 5.5,
+        body_parts: mono_body(1.0),
+        foe: Foe { base_health: 50.0, mode: TargetMode::InstantRespawn, ..Foe::training_dummy() },
+        ..FightParams::default()
+    };
+    let zero_co = monte_carlo(&p, 4, 3);
+    p.co_stack = None;
+    let bare = monte_carlo(&p, 4, 3);
+    assert!(zero_co.mean_kills >= 5.0, "expected kills to test bump_on_kill");
+    assert!((zero_co.mean_damage - bare.mean_damage).abs() < 1e-9);
+}
+
+
 

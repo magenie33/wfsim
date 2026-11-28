@@ -377,7 +377,7 @@ pub(super) fn field_tick_seeded(
     } else {
         1.0
     };
-    let mb_live = f.modified_base * arc_ratio;
+    let mb_live = f.modified_base * bucket;
 
     // WHAT THE PART IS WORTH — the head ladder as of this shot (`FieldCtx`), or
     // the part's own multiplier, or 1.0 for a field with no part at all.

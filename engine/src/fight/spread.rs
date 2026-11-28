@@ -456,6 +456,7 @@ pub(super) fn spread_hit(
     // explosion's only where its entry says so (`takes_condition_overload`),
     // the rule the aimed body's half of the same blast already follows.
     takes_co: bool,
+    co_base: crate::model::CoBase,
     echo: Option<&mut EchoInputs<'_>>,
 ) -> Landed {
     // KILLED BY THIS SHOT ALREADY — see `Body::fallen`.
@@ -499,8 +500,8 @@ pub(super) fn spread_hit(
             arcane_base_damage,
             arc_ratio,
             half_hp,
-            active.co_base,
-            crate::model::CoStage::Direct,
+            co_base,
+            co_base.stage(),
             active.co_behavior,
             None,
         )
@@ -640,7 +641,7 @@ pub(super) fn spread_hit(
         if push_break_proc(&mut foe.debuffs, seat, params, t, pool, active, spec.params,
             &mut foe.state, gal, arc, r, rec, &mut d.status, 0.0, inst.target) {
             foe.fallen = true;
-            return Landed { procs: Vec::new(), raw, shares, killed: true };
+            return Landed { procs: Vec::new(), raw, shares, mb_live: 0.0, killed: true };
         }
     }
     // …AND IT IS STILL THE WEAPON'S KILL, whichever mechanism carried it there.
@@ -667,7 +668,7 @@ pub(super) fn spread_hit(
         foe.debuffs.on_death(seat, None, spec.params);
         // A FRESH INDIVIDUAL TAKES NO STATUS FROM THE HIT THAT KILLED THE LAST
         // ONE — the aimed path returns here for the same reason.
-        return Landed { procs: Vec::new(), raw, shares, killed };
+        return Landed { procs: Vec::new(), raw, shares, mb_live: 0.0, killed };
     }
 
     // …AND ITS OWN STATUS ROLL, at FULL chance. The share scales the damage and
@@ -697,7 +698,8 @@ pub(super) fn spread_hit(
     let applied = if params.arcane.influence_chance > 0.0 && matches!(by, SpreadBy::FollowThrough | SpreadBy::MeleeRadius | SpreadBy::Contact) {
         status::applied_procs(procs, &spec.params.status_immunities).collect()
     } else { Vec::new() };
-    let mut landed = Landed { procs: applied, raw, shares, killed };
+    let mb_here = modded_base * bucket.bucket * inst.share;
+    let mut landed = Landed { procs: applied, raw, shares, mb_live: mb_here, killed };
     let landing = if inst.headshot {
         let mut found = ProcLanding::default();
         for p in spec.body_parts {
@@ -719,7 +721,7 @@ pub(super) fn spread_hit(
             // THE HEAD FACTOR IS NOT IN HERE, which is the point of keeping it
             // off `share`: a Slash bleed off a headshot is the same size as one
             // off a bodyshot, because a status effect reads the modded base.
-            mb_live: modded_base * arc_ratio * inst.share,
+            mb_live: mb_here,
             crit_multiplier,
             // …AND IT IS IN HERE, because Heat and Blast are computed as a
             // fraction of the HIT rather than of the base — the same two the
@@ -843,6 +845,7 @@ pub(super) fn spread_from_melee(
     crit_tier: u32,
     attrition: f64,
     modded_base: f64,
+    co_base: crate::model::CoBase,
     status_chance: f64,
     forced: &[DamageType],
     status_vector: &TargetComposition,
@@ -885,6 +888,7 @@ pub(super) fn spread_from_melee(
             if all_contacts && n == 0 { SpreadBy::Contact } else { by },
             tennokai_heavy,
             true,
+            co_base,
             None,
         );
         if params.arcane.influence_chance > 0.0 { seeds.push((sidx, landed)); }
@@ -1065,6 +1069,7 @@ pub(super) fn spread_from_punch_through(
                 SpreadBy::PunchThrough,
                 false,
                 true,
+                active.co_base,
                 Some(&mut group),
             );
             r.punched_contacts += 1;
@@ -1200,6 +1205,7 @@ pub(super) fn spread_from_ricochet(
             SpreadBy::Ricochet,
             false,
             true,
+            active.co_base,
             Some(&mut group),
         );
     }
@@ -1277,6 +1283,7 @@ pub(super) fn spread_from_echo(
             SpreadBy::Echo,
             false,
             true,
+            active.co_base,
             Some(&mut echo),
         );
     }
@@ -1403,6 +1410,7 @@ pub(super) fn spread_from_tendrils(
             SpreadBy::Tendril,
             false,
             true,
+            active.co_base,
             Some(&mut group),
         );
     }
@@ -1585,6 +1593,7 @@ pub(super) fn blast_at(
             by,
             rad.blast_kind == crate::model::BlastKind::InFlight,
             rad.takes_condition_overload,
+            rad.co_base,
             Some(grp),
         );
         if !foe.fallen {
@@ -1688,6 +1697,7 @@ pub(super) fn spread_from_seeds(
                 SpreadBy::Chain,
                 false,
                 true,
+                active.co_base,
                 Some(&mut group),
             );
         }
@@ -1774,6 +1784,7 @@ pub(super) fn spread_from_seeds(
             SpreadBy::Chain,
             false,
             true,
+            active.co_base,
             Some(grp),
         );
     }

@@ -147,7 +147,9 @@ pub(super) struct GalStacks {
 impl GalStacks {
     pub(super) fn bump_on_kill(&mut self, params: &FightParams, now: f64) {
         if let Some(spec) = &params.co_stack {
-            self.co.on_kill(now, spec);
+            if spec.earned_on == Some("kill") {
+                self.co.on_kill(now, spec);
+            }
         }
         if let Some(spec) = &params.multishot_stack {
             self.multishot.on_kill(now, spec);

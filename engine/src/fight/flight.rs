@@ -497,7 +497,7 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
                 raw, strike.shares, strike.crit_multiplier, strike.crit_tier,
                 strike.attrition, mb, strike.status_chance, &strike.forced,
                 &strike.status_vector, me.params, active, &mut me.gal, &mut me.arc, g.r, g.rec,
-                d, t, SpreadBy::Chain, false, true, None,
+                d, t, SpreadBy::Chain, false, true, active.co_base, None,
             );
         }
     }

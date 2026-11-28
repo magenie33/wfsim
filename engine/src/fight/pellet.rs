@@ -474,7 +474,6 @@ pub(super) fn settle_pellet(
     };
     let base_damage = active.base_damage_bonus;
     let arc_ratio = (1.0 + base_damage + arcane_base_damage) / (1.0 + base_damage);
-    let mb_live = modded_base * arc_ratio;
     // GunCO family — ONE machinery (wiki CO catalog; user
     // 2026-07-27): every source contributes rate × TARGET-COUNTER
     // into the same bracket, is scaled by the original-base
@@ -1481,34 +1480,6 @@ pub(super) fn settle_pellet(
         };
         let part_factor = if direct { part_factor } else { 1.0 };
         let landing = if direct { ProcLanding::at(landing, part) } else { ProcLanding::default() };
-        // ModifiedBase carries both the merge (DoTs "affected TWICE by
-        // multishot") and the continuous beam ramp (measured on Phantasma
-        // Prime: first tick at 15% ramp ticks 14 instead of 86, and 10 Heat
-        // stacks over the ramp window tick 669-690).
-        let mb_live = *beam_merge
-            * match &rad {
-                None => mb_live * beam_ramp,
-                Some(r) => r.modified_base * arc_ratio,
-            }
-            // THE CHAMBERS REACH STATUS DAMAGE, which is stated and not
-            // inferred: *"The damage bonus applies to all Multishot
-            // hits and to Status Damage"* (wiki, Primed Chamber). It is
-            // the ONE line that separates this card from Synth Charge,
-            // whose page never says either way and which therefore
-            // multiplies the instance and leaves `mb_live` alone.
-            * cc_mult
-            // MULTISHOT PAID IN DAMAGE REACHES THE DoT SEED, measured
-            // (M113): an Arbucep Gas tick at +110% reads 360, which is
-            // `(228 x 2.1 + 1) x 0.5 x 1.5`, against 172 without it.
-            * ms_damage;
-        // WHAT A SPREAD'S STATUSES BURN OFF, and it is THIS number
-        // rather than the bare `modded_base` every spread was handed.
-        // `spread_hit` multiplies the arcane ratio back in, so the one
-        // term is divided out here and the rest — the merge above, the
-        // Chamber — travels. A merged beam's DoT was `(*beam_merge)` times
-        // bigger on the body it was aimed at than on the body BEHIND
-        // it, which is the same hit still flying.
-        let spread_mb = mb_live / arc_ratio;
         // The direct hit always carries CO. An explosion does NOT by
         // default — the mods say direct hits only — but the engine
         // supports the case the mods forbid, because some entries do it
@@ -1530,6 +1501,27 @@ pub(super) fn settle_pellet(
             Some(_) => Gunco { bucket: arc_ratio, ..Default::default() },
         };
         let bucket = gunco.bucket;
+        // ModifiedBase carries the merge (DoTs "affected TWICE by
+        // multishot"), the continuous beam ramp, and this stage's base-damage
+        // and Condition Overload bracket (`bucket`). `spread_mb` holds the
+        // pre-bucket base so each spread body multiplies in its own bucket.
+        let spread_mb = *beam_merge
+            * match &rad {
+                None => modded_base * beam_ramp,
+                Some(r) => r.modified_base,
+            }
+            // THE CHAMBERS REACH STATUS DAMAGE, which is stated and not
+            // inferred: *"The damage bonus applies to all Multishot
+            // hits and to Status Damage"* (wiki, Primed Chamber). It is
+            // the ONE line that separates this card from Synth Charge,
+            // whose page never says either way and which therefore
+            // multiplies the instance and leaves `mb_live` alone.
+            * cc_mult
+            // MULTISHOT PAID IN DAMAGE REACHES THE DoT SEED, measured
+            // (M113): an Arbucep Gas tick at +110% reads 360, which is
+            // `(228 x 2.1 + 1) x 0.5 x 1.5`, against 172 without it.
+            * ms_damage;
+        let mb_live = spread_mb * bucket;
         // Primary Crux's stacks join the status-chance BUCKET (wiki:
         // "additive to mods like Rifle Aptitude"), so the relative
         // bonus multiplies THIS part's own unmodded base — the
@@ -1760,7 +1752,7 @@ pub(super) fn settle_pellet(
             spread_from_melee(
                 seat, windows, bodies, params, active, melee_struck, &mut contact_seeds,
                 1.0, SpreadBy::MeleeRadius, raw / bucket, shares, crit_multiplier, tier,
-                attrition, spread_mb, status_chance, forced, &spread_composition,
+                attrition, spread_mb, co_base, status_chance, forced, &spread_composition,
                 &mut *gal, &mut *arc, &mut *r, rec, d, t, tennokai_heavy,
             );
             continue;
@@ -2080,6 +2072,7 @@ pub(super) fn settle_pellet(
                     tier,
                     attrition,
                     spread_mb,
+                    co_base,
                     status_chance,
                     forced,
                     &spread_composition,
@@ -2794,7 +2787,7 @@ pub(super) fn settle_pellet(
         // one-hit-kill enemies cannot trigger nor benefit"*, which the
         // wiki files under Bugs and which is the behaviour all the same.
         if params.arcane.influence_chance > 0.0 {
-            influence_seeds.push((0, Landed { procs: aimed_procs, raw, shares, killed: false }));
+            influence_seeds.push((0, Landed { procs: aimed_procs, raw, shares, mb_live, killed: false }));
             // THE SPREAD READS THE WINDOW THIS SWING FOUND OPEN, and the
             // grant below is rolled after: the buff is what an
             // Electricity status GRANTS, so the swing that grants it has
@@ -2802,9 +2795,9 @@ pub(super) fn settle_pellet(
             // also spreads, and assuming it would invent a copy of the
             // swing.
             let open = t < *influence_until;
-            let scale = InstanceScale { native_source: None, native_part: None,
+            let mut scale = InstanceScale { native_source: None, native_part: None,
                 // THE STATUS IS THE SWING'S OWN, one derivation further
-                // out — so it burns off the base the swing's statuses
+                // out — so it burns off the base the struck body's statuses
                 // burn off, and only the faction rung differs. The wiki
                 // checks it from that side: an ordinary Electricity proc
                 // of 228 spreads as 353, and 353 / 228 is exactly one
@@ -2822,6 +2815,7 @@ pub(super) fn settle_pellet(
                     if landed.killed {
                         continue;
                     }
+                    scale.mb_live = landed.mb_live;
                     let carried: Vec<(DamageType, f64)> = landed
                         .procs
                         .iter()

@@ -1465,6 +1465,38 @@ fn a_field_takes_condition_overload_only_where_the_weapon_declares_it() {
     );
 }
 
+#[test]
+fn a_field_with_condition_overload_scales_its_dot_payloads() {
+    let p = |takes: bool| {
+        let mut f = cloud(crate::model::FieldStacking::Stack);
+        f.forced_procs = crate::rules::damage::ForcedProcs::from_types([DamageType::Slash]);
+        f.takes_condition_overload = takes;
+        FightParams {
+            damage: DamageVector::default(),
+            forced_procs: vec![DamageType::Impact],
+            lingering: Some(f),
+            co_per_type: 1.0,
+            co_behavior: crate::model::CoBehavior::Independent,
+            crit_multiplier: 1.0,
+            base_crit_chance: 0.0,
+            arcane: ArcaneFx::none(),
+            fire_rate: 1.0,
+            magazine_size: 1.0,
+            reload_seconds: 999.0,
+            duration_seconds: 20.0,
+            ..no_status()
+        }
+    };
+    let off = monte_carlo(&p(false), 4, 3);
+    let on = monte_carlo(&p(true), 4, 3);
+    assert!(
+        on.mean_dot_damage > off.mean_dot_damage * 1.8,
+        "field CO must scale DoTs when declared: {} vs {}",
+        on.mean_dot_damage,
+        off.mean_dot_damage,
+    );
+}
+
 /// …and the same for an EXPLOSION. The mods forbid it — CO boosts direct
 /// hits — but the engine supports the case anyway, because the CO catalog
 /// lists entries that do it: the Zylok's Incarnon radial receives CO "on

@@ -288,17 +288,17 @@ pub(crate) fn enumerate_buffs(
                 uncapped: false,
                 trigger: None,
                 }),
-                ConditionOverload { max_stacks, .. } => push(BuffMeta {
+                ConditionOverload { max_stacks, earned_on, .. } => push(BuffMeta {
                     id: "condition_overload".into(),
                     name: nm.clone(),
                     grants: String::new(),
                     max_stacks,
                     kind: "stacking",
-                    default_stacks: 0,
+                    default_stacks: if earned_on.is_none() { max_stacks } else { 0 },
                     default_locked: false,
-                    permanent: false,
-                uncapped: false,
-                trigger: None,
+                    permanent: earned_on.is_none(),
+                    uncapped: false,
+                    trigger: None,
                 }),
                 OnWeakpointElementAndStatus { .. } => push(BuffMeta {
                     id: "on_weakpoint_element".into(),
@@ -1279,6 +1279,35 @@ mod buff_event_cards {
         };
         assert_eq!(of("lex_prime"), Some(Some("kill")), "Galvanized Strike earns it on a kill");
         assert_eq!(of("magistar"), Some(None), "melee's Condition Overload earns it by nothing");
+    }
+
+    #[test]
+    fn melee_condition_overload_card_opens_full_and_permanent_while_galvanized_opens_at_zero() {
+        let card_for = |weapon: &str, mod_id: &str| {
+            let info = weapons().iter().find(|w| w.id == weapon).expect("weapon");
+            let pool = wfsim_engine::data::mods::pool_for_weapon(weapon);
+            let m = pool.iter().find(|m| m.id == mod_id).expect("mod");
+            let refs = [m];
+            let tenno = wfsim_engine::data::tenno::default_tenno();
+            let none = wfsim_engine::data::arcanes::ArcaneFx::none();
+            enumerate_buffs(&refs, &refs, &none, info, tenno)
+                .into_iter()
+                .find(|b| b.id == "condition_overload")
+                .expect("condition_overload buff card")
+        };
+        let melee = card_for("magistar", "condition_overload");
+        assert_eq!(melee.default_stacks, 1);
+        assert_eq!(melee.max_stacks, 1);
+        assert!(melee.permanent);
+        assert!(!melee.default_locked);
+        assert_eq!(melee.trigger, None);
+
+        let gun = card_for("lex_prime", "galvanized_shot");
+        assert_eq!(gun.default_stacks, 0);
+        assert_eq!(gun.max_stacks, 3);
+        assert!(!gun.permanent);
+        assert!(!gun.default_locked);
+        assert_eq!(gun.trigger, Some("kill"));
     }
 
     /// ONE CARD, ONE ANSWER: an arcane's specs must all want the same thing.

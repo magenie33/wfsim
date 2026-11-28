@@ -185,6 +185,9 @@ pub(super) struct Landed {
     pub(super) raw: f64,
     /// Each source body's own composition, retained when Influence copies it.
     pub(super) shares: TypeShares,
+    /// The source body's live ModifiedBase (with its own CO bucket and share),
+    /// carried so Influence's copied statuses burn off the struck body's base.
+    pub(super) mb_live: f64,
     pub(super) killed: bool,
 }
 
