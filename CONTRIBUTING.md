@@ -5,6 +5,7 @@
 # Contributing to WFSim
 
 [**wfsim.app**](https://wfsim.app) ·
+[Discord](https://discord.gg/H4BMqvYFVg) ·
 QQ group [995078378](https://qm.qq.com/q/uiXrMSTs8S) ·
 [README](README.md)
 
@@ -60,15 +61,17 @@ Weapons, mods, arcanes, enemies, evolutions, rivens. Data is normalized —
 anything reusable is defined once and referenced by `id` (stable English slugs,
 never translated). Read [`data/README.md`](data/README.md) for the reference
 graph and [`docs/DATA_SOURCES.md`](docs/DATA_SOURCES.md) for sourcing rules.
-Two sources, always cross-checked: the wiki's structured Lua modules and DE's
-Public Export. Each entry cites its source.
+Two sources, always cross-checked: the wiki and DE's Public Export (never
+WFCD). Each entry cites its source.
 
 ### 3. Translations (`data/i18n/<locale>/`, YAML — no code, lowest barrier)
 
-A locale is a directory: hand-written `names.yaml` and `ui.yaml`, generated
-`descriptions.yaml`. Fill `id → name` lines per table; ten lines is a fine PR,
-and anything untranslated just keeps showing English. CI validates every key
-against the real ids, so a typo cannot break anything.
+A locale is a directory whose YAML files merge into one overlay — hand-written
+name, UI and prose tables alongside generated card descriptions (see
+[`data/README.md`](data/README.md) for the exact layout). Fill `id → name`
+lines per table; ten lines is a fine PR, and anything untranslated just keeps
+showing English. CI validates every key against the real ids, so a typo cannot
+break anything.
 
 **A string is transcribed, never translated.** Names come from the official CN
 client — DE's own Chinese is routinely non-literal, so a name derived from the
@@ -87,8 +90,10 @@ not count as correct, no matter how faithful it looks. Catalog:
 ### 5. Optimizer / web UI (`optimizer/`, `web/`)
 
 The optimizer only ever calls the engine — never add a simplified damage
-formula to it. The web UI's static files are `include_str!`'d into the binary,
-so rebuild `wfsim-web` after any JS/CSS/HTML change.
+formula to it. Static files and `data/` are compiled into the binary, so
+rebuild `wfsim-web` after editing either. Never build or commit `site/` in a
+PR — CI builds and publishes it; test against `wfsim-web` and run
+`node scripts/check_page_bodies.mjs` and `node scripts/check_comment_style.mjs`.
 
 This is the area where the pace warning above bites hardest. Issue first.
 
@@ -152,9 +157,13 @@ and the app states them on the page.
   for inclusion. For an optimizer idea, start with the approach and a
   reproducible comparison in an issue. The maintainer decides how to implement
   the change.
-- **Before a PR:** `cargo test --workspace` green and
-  `cargo clippy --workspace --all-targets -- -D warnings` clean (CI enforces
-  both). Toolchain is pinned via `mise install`.
+- **Before a PR:** `cargo test --workspace` green,
+  `cargo clippy --workspace --all-targets -- -D warnings` clean, and
+  `node scripts/check_page_bodies.mjs` + `node scripts/check_comment_style.mjs`
+  passing (CI enforces all of them). Toolchain is pinned via `mise install`.
+- **Hooks and commit hygiene:** run `git config core.hooksPath .githooks` once
+  per clone. Never commit `site/`, and do not include AI co-author trailers in
+  commit messages (`check_commit_trailers`).
 - **Engine changes need tests.** Golden tests for new mechanics; existing golden
   values may only change with a measurement justifying it — including the
   maintainer's.
@@ -162,6 +171,10 @@ and the app states them on the page.
   and source strings stay English. Issues and PR discussion can be in Chinese.
 - **Small, focused PRs.** See the pace section — this one is load-bearing here,
   not boilerplate.
+- **External tools & clients:** third-party volunteer compute clients follow
+  [`docs/CLIENTS.md`](docs/CLIENTS.md); external tools linking to or integrating
+  with `wfsim.app` follow [`TRADEMARK.md`](TRADEMARK.md) and may apply for
+  listing on [Community Projects](https://wfsim.app/community/projects).
 - Working with an AI coding agent? The condensed repo rulebook lives in
   [`AGENTS.md`](AGENTS.md) — point your agent at it.
 

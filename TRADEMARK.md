@@ -13,8 +13,9 @@ here than branding usually does.
 
 Referential use — naming the project to talk about it — is always fine:
 
-- **Compatibility.** "Compatible with WFSim", "reads WFSim share links",
-  "imports builds from WFSim".
+- **Compatibility.** "Compatible with WFSim", "Open in WFSim (wfsim.app)",
+  "reads WFSim share links", "imports builds from WFSim", or linking a user's
+  browser to `wfsim.app` with an explicit button click.
 - **Origin.** "Based on WFSim", "a fork of WFSim", "powered by the WFSim
   engine".
 - **Discussion.** Mentioning, reviewing, comparing, criticising or linking the
@@ -28,6 +29,9 @@ required by the license, and this policy does not touch it.
 
 - Naming or branding a product, service, site or application **WFSim**, or any
   name close enough to be confused with it.
+- Adding **WFSim** to a third-party app, package, branch or release title (for
+  example, `"<App> · WFSim Edition"` or an equivalent localized edition label)
+  in a way that reads as an official collaboration or endorsed variant.
 - The wordmark or logo as the icon, brand or identity of something that is not
   this project.
 - Anything that implies official status, endorsement, affiliation or
@@ -35,6 +39,14 @@ required by the license, and this policy does not touch it.
 - Distributing a **modified version under the WFSim name or logo**. The code
   license gives you the right to modify and redistribute the code; this policy
   asks you to rename what you distribute, and nothing more.
+
+## Community projects
+
+Independent projects built around WFSim are welcome to integrate and may apply
+for listing in the [Community Projects directory](https://wfsim.app/community/projects).
+A "Verified by WFSim" listing confirms usefulness and compatibility, not
+official authorship, may be removed if a project no longer meets those
+standards, and grants no trademark rights in the WFSim name or logo.
 
 ## Forks and derived projects
 

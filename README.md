@@ -10,18 +10,21 @@ A Warframe calculator that simulates the fight instead of estimating it —
 builder, simulator, optimizer.
 
 [**wfsim.app**](https://wfsim.app) ·
-[Discord](https://discord.gg/H4BMqvYFVg)
+[Discord](https://discord.gg/H4BMqvYFVg) ·
+[QQ](https://qm.qq.com/q/uiXrMSTs8S)
 
 [![CI](https://github.com/magenie33/wfsim/actions/workflows/ci.yml/badge.svg)](https://github.com/magenie33/wfsim/actions/workflows/ci.yml)
 
 </div>
 
-**Status:** usable, still moving. [624 weapons](https://wfsim.app/weapons) —
-every primary, secondary and archgun, 225 melee weapons with each attack form its
-own build, sentinel and exalted weapons, and 69 Incarnon forms; mods, arcanes,
-evolutions, rivens, custom enemies and the [leaderboard](docs/BOARD.md) are
-live. Fights are single-target or a formation; the crowd ruler is a 5x5. Gaps are expected —
-issues welcome.
+**Status:** active. Covers [the weapon roster](https://wfsim.app/weapons) —
+primary, secondary, archgun, melee (with each attack form its own build),
+modular Kitguns and Zaws, companion and exalted weapons, and Incarnon forms —
+alongside Warframe, Companion and Operator builders. Mods, arcanes, evolutions,
+rivens, custom enemies, the Build Library and [leaderboard](docs/BOARD.md),
+Riven Analyst, volunteer computing ([CLI](client/README.md)), and an
+[MCP server](https://mcp.wfsim.app/mcp) are live. Fights run single-target or
+multi-target formations. Gaps are expected — issues welcome.
 
 **On AI:** I use AI assistance while writing this code (see
 [AGENTS.md](AGENTS.md)). The simulator uses a deterministic damage model, and
@@ -40,6 +43,29 @@ The most valuable contribution here is **an in-game measurement, not code** —
 the engine is only as trustworthy as its baseline, and one maintainer cannot
 run every test in game. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
+## Third-party projects & agents
+
+Independent tools built around WFSim — volunteer compute clients, overlays,
+chat bots, AI agents and build-link launchers — are welcome.
+
+| use | entrypoint | rules |
+| --- | --- | --- |
+| open a build in a user's browser | `https://wfsim.app/weapons/<id>?b=<code>` | [`TRADEMARK.md`](TRADEMARK.md); internal wire format, not a frozen external API |
+| query weapons, builds & method | [`llms.txt`](https://wfsim.app/llms.txt), [AI catalog](https://wfsim.app/.well-known/ai-catalog.json), [MCP](https://mcp.wfsim.app/mcp), [A2A](https://mcp.wfsim.app/a2a), `.md` twins | [`docs/AGENT.md`](docs/AGENT.md), [reuse policy](https://wfsim.app/reuse) |
+| volunteer compute clients | [official CLI](client/README.md) & public work API | [`docs/CLIENTS.md`](docs/CLIENTS.md) |
+| community directory listing | [Community Projects](https://wfsim.app/community/projects) | `"Verified by WFSim"` confirms usefulness & compatibility, not official authorship |
+
+- **Stay independent:** use your own product name, icon and release branding
+  ([`TRADEMARK.md`](TRADEMARK.md)), respect [`LICENSE`](LICENSE),
+  [`LICENSE-DATA.md`](LICENSE-DATA.md), the [reuse policy](https://wfsim.app/reuse)
+  (on-demand AI retrieval allowed; model training reserved) and service rate
+  limits, and do not read game memory or inject into the game process.
+- **No external API freeze:** WFSim keeps older posted links readable where
+  practical, but `?b=` and query tool names evolve with WFSim; external tools
+  adapt when formats or IDs change.
+- **Recognition:** useful, well-maintained, compatible independent projects may
+  apply for listing on [Community Projects](https://wfsim.app/community/projects).
+
 ## Run
 
 ```sh
@@ -55,6 +81,7 @@ cargo run --release --bin one_fight           # …and after: delta + did the an
 
 [Design](docs/CORE.md) · [Mechanics](docs/MECHANICS.md) ·
 [Measurements](docs/MEASUREMENTS.md) · [Data](data/README.md) ·
+[Clients](docs/CLIENTS.md) · [Agents & MCP](docs/AGENT.md) ·
 [Contributing](CONTRIBUTING.md)
 
 ## License

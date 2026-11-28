@@ -17,7 +17,10 @@
 - [ ] `cargo clippy --workspace --all-targets -- -D warnings` is clean
 - [ ] Golden values are unchanged, or a measurement justifying the change is
       cited above
-- [ ] Frontend change? `web/src/static/` edits need `wfsim-web` rebuilt to be
-      visible, and `site/` regenerated before shipping
+- [ ] Frontend or `data/` change? Rebuild `wfsim-web` to test locally; never
+      commit `site/` (CI builds and publishes it)
+- [ ] `node scripts/check_page_bodies.mjs` and
+      `node scripts/check_comment_style.mjs` pass, and commits carry no AI
+      attribution trailers
 
 <!-- Small and focused merges fastest — see CONTRIBUTING.md on the pace. -->
