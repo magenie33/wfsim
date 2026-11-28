@@ -19,7 +19,7 @@
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="stylesheet" href="/asset/style.6bc55f06405c.css">
+<link rel="stylesheet" href="/asset/style.db4e62e24942.css">
 <link rel="icon" type="image/svg+xml" href="/logo.svg">
 <script type="application/ld+json">{"@context": "https://schema.org", "@type": "TechArticle", "headline": "射线武器（持续型武器）计算机制全解析", "description": "射线首跳随射速动态变化公式、5 阶段多敌人独立预热状态机、多重合并 M² 持续异常缩放、 中心主射线特例、末端半径穿透门控与托里德双形态全景手算。", "inLanguage": "zh-Hans", "dateModified": "2026-11-27", "url": "https://wfsim.app/mechanics/zh/beam-weapons", "author": {"@type": "Organization", "name": "WFSim", "url": "https://wfsim.app/"}, "publisher": {"@type": "Organization", "name": "WFSim", "url": "https://wfsim.app/"}, "about": {"@type": "VideoGame", "name": "Warframe"}}</script>
 <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "射线武器第 1 跳伤害是固定 20% 吗？", "acceptedAnswer": {"@type": "Answer", "text": "不是。首跳结算前预热时钟会先推进 1/射速 秒，首跳倍率等于 基础下限 + (1 - 基础下限) × min(1, 1 / (射速 × 预热总时长))。 例如幻离子 Prime 基础下限为 2%，12 射速下首跳为 15.6%，24 射速下为 8.8%。"}}, {"@type": "Question", "name": "为什么射线武器的持续异常伤害对多重射击呈平方级（M²）增长？", "acceptedAnswer": {"@type": "Answer", "text": "命中同一目标的 M 条射线合并为单跳结算，单跳触发几率乘以 M，同时合并后的异常基底伤害也乘以 M。 触发层数与单层伤害同时放大 M 倍，使火、毒、电、毒气、切割持续异常期望呈 M² 增长。"}}, {"@type": "Question", "name": "托里德灵化形态或伊格尼斯堆穿透可以增加连锁起点吗？", "acceptedAnswer": {"@type": "Answer", "text": "不行。凡是带有末端伤害半径（半径 > 0）的射线，穿透深度均会被锁死为 0；只有半径为 0 的常规连锁射线 （如安培克斯、信条·冷冻光束步枪、信条·循环离子枪、赤毒·努寇微波枪、翠雀）支持穿透多起点。"}}]}</script>
