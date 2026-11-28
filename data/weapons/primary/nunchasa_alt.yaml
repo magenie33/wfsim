@@ -48,7 +48,6 @@ unmodeled:
   - reason: client_projectile_collision
   - reason: client_projectile_callbacks
   - reason: client_accuracy_runtime
-  - reason: spread_not_transcribed
 
 source:
   url: https://wiki.warframe.com/w/Nunchasa

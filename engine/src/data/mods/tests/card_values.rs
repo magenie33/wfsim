@@ -106,14 +106,6 @@ fn a_mod_that_drops_an_effect_says_so_and_the_list_is_argued() {
             // runs the standard time and this weapon is overstated by the
             // difference.
             "nightwatch_napalm :: a heat proc that should burn for three seconds and burns for the standard time",
-            // A PER-WEAPON CATALOG ROW, of the kind docs/CATALOGS.md is
-            // about: the wiki tabulates an ADDITIONAL spread penalty for
-            // the Cernos Prime (and, commented out, four crossbows this
-            // roster does not carry) on top of the flat ladder every bow
-            // takes. One row for one weapon in the roster, so the mod's
-            // own number is right for eight of the nine bows and a third
-            // of a degree tight on the ninth.
-            "split_flights :: the cernos prime takes an additional spread row of its own",
             // TWO THINGS THE PAGE STATES AND THE MODEL CANNOT. One is an
             // open question — whether the bonus reaches a status payload —
             // and the other is a family of alt-fire and reload mechanics

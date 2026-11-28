@@ -53,8 +53,12 @@ impl ModEffect {
                 "{} damage on the magazine's FIRST round — its own multiplier, not the base-damage bucket, and it reaches status damage",
                 pct(v)
             ),
-            AddedSpread(v) => format!(
+            AddedSpread { degrees: v, weapons: [] } => format!(
                 "+{v} degrees of spread — added after accuracy bonuses, which do not reach it"
+            ),
+            AddedSpread { degrees: v, weapons } => format!(
+                "+{v} degrees of additional spread on {} — added after accuracy bonuses",
+                weapons.join(", ")
             ),
             // A STATE, not a number: no per-stack value to state.
             GrantsStackingBuff(b) if b.grant == BuffGrant::InfiniteAmmo => format!(

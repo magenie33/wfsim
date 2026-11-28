@@ -480,6 +480,8 @@ fn panel_for_spec(s: &WeaponSpec, metadata: &'static WeaponSpec, frenzy_active: 
 
     let accuracy = super::accuracy::profile(id);
     let mut base = WeaponBase {
+        weapon_id: metadata.id.as_str(),
+        group_id: metadata.transform_group.as_deref().unwrap_or(metadata.id.as_str()),
         additional_projectile: None,
         weakness_bonus: s.weakness_bonus.or_else(|| s.transforms_from.as_deref()
             .and_then(spec).and_then(|base| base.weakness_bonus)),

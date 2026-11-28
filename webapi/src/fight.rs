@@ -756,7 +756,7 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
         }
         let roster = v.get("formation").and_then(Value::as_array).into_iter().flatten();
         let models = roster.zip(&others).map(|(entry, body)| (formation_enemy(entry, enemy_id), body.at));
-        crate::scene_profiles::source_default(raw, info, player_at, (enemy_id, target_at), models, aim_at)
+        crate::scene_profiles::source_default(raw, info, &tenno.id, player_at, (enemy_id, target_at), models, aim_at)
     }).transpose().map_err(err_json)?;
     let scene_3d = scene_3d.map(|mut scene| {
         let weakpoint_aim = v.get("weakpoint_aim_pct").map(|_| {

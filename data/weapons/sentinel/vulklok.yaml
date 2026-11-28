@@ -44,9 +44,16 @@ attack:
   punch_through_m: 1.5
   infinite_body_punch_through: true
   damage: { electricity: 175.0 }
+  spread:
+    min_deg: 5.0
+    max_deg: 20.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 5.0
+      hip_max_deg: 20.0
 unmodeled:
   - reason: companion_fires_it
-  - reason: spread_not_transcribed
 
 source:
   url: https://wiki.warframe.com/w/Vulklok

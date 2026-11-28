@@ -413,9 +413,16 @@ pub(crate) fn seats_beside(
 pub(crate) fn seat_from(v: &Value, arena: &wfsim_engine::arena::Arena) -> Result<FightParams, Value> {
     let e = Entrant::new(v, true)?;
     let refs = e.seat(&mod_ids(v))?;
-    if let Some(scene) = arena.scene_3d.as_ref().filter(|scene| scene.using_reference_fallback()) {
+    if let Some(scene) = arena.scene_3d.as_ref() {
         let mut arena = arena.clone();
-        arena.scene_3d = Some(std::sync::Arc::new(scene.reference_wielder()));
+        if e.fight.info.sentinel {
+            arena.scene_3d = Some(
+                crate::scene_profiles::companion_seat_scene(scene, &e.fight.info.id, arena.player_at)
+                    .map_err(err_json)?,
+            );
+        } else {
+            arena.scene_3d = Some(std::sync::Arc::new(scene.reference_wielder()));
+        }
         Ok(e.bare(&refs, &arena)?.1)
     } else {
         Ok(e.bare(&refs, arena)?.1)

@@ -156,9 +156,17 @@ pub fn desc_info(id: &str) -> Option<&'static ModDescInfo> {
             // so it stays visible and
             // `desc_info_fills_every_x_across_the_pool` fails, rather than a
             // wrong-kind value quietly taking the slot.
-            let varying = |e: &Value| match (f(e, "rank0"), f(e, "rankMax")) {
-                (Some(a), Some(b)) if (a - b).abs() > 1e-12 => Some((a, b)),
-                _ => None,
+            let varying = |e: &Value| {
+                if e.get("weapons").is_some() {
+                    return None;
+                }
+                match (
+                    f(e, "card_rank0").or_else(|| f(e, "rank0")),
+                    f(e, "card_rankMax").or_else(|| f(e, "rankMax")),
+                ) {
+                    (Some(a), Some(b)) if (a - b).abs() > 1e-12 => Some((a, b)),
+                    _ => None,
+                }
             };
             // EVERY LADDER an effect has, in order: its value, then each
             // `<field>_rank0` the fight reads (`parse::field_ladders`) — so one

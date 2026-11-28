@@ -861,10 +861,10 @@ fn split_flights_refuses_what_its_tags_refuse() {
         .collect();
     assert!(untagged.is_empty(), "bow-pool weapons with no `compatibility_tags`: {untagged:?}");
     let has = |weapon: &str| pool_for_weapon(weapon).iter().any(|m| m.id == "split_flights");
-    for w in ["lenz", "prisma_lenz", "kuva_bramma", "nataruk", "proboscis_cernos", "attica", "zhuge", "nagantaka_prime"] {
+    for w in ["lenz", "prisma_lenz", "kuva_bramma", "nataruk", "proboscis_cernos", "nunchasa", "attica", "zhuge", "nagantaka_prime"] {
         assert!(!has(w), "{w} refuses Split Flights");
     }
-    for w in ["paris", "cernos_prime", "daikyu", "mutalist_cernos", "nunchasa", "paris_incarnon"] {
+    for w in ["paris", "cernos_prime", "daikyu", "mutalist_cernos", "paris_incarnon"] {
         assert!(has(w), "{w} takes Split Flights");
     }
 }

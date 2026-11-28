@@ -533,13 +533,19 @@ fn mod_sources(
                 // bucket — the panel's accuracy row would claw it back with
                 // every accuracy mod on the build, which is the one thing the
                 // source says cannot happen.
-                AddedSpread(x) => {
-                    conditionals.push(json!({
-                        "mod": name,
-                        "desc": e.describe(),
-                        "active": x > 0.0,
-                        "why": "a WIDER cone, so it costs nothing at contact and grows with the distance on the arena floor — and no accuracy mod on this build takes any of it back",
-                    }));
+                AddedSpread { degrees: x, weapons } => {
+                    let applies = weapons.is_empty()
+                        || forms_list.iter().any(|(_, _, b)| {
+                            weapons.iter().any(|&w| w == b.weapon_id || w == b.group_id)
+                        });
+                    if weapons.is_empty() || applies {
+                        conditionals.push(json!({
+                            "mod": name,
+                            "desc": e.describe(),
+                            "active": applies && x > 0.0,
+                            "why": "a WIDER cone, so it costs nothing at contact and grows with the distance on the arena floor — and no accuracy mod on this build takes any of it back",
+                        }));
+                    }
                 }
                 // A MOD-GRANTED STACKING BUFF gets a CARD (see
                 // `enumerate_buffs`), which is where its stack count is set —

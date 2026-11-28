@@ -95,7 +95,7 @@ fn fixed_tail_effect(e: &ModEffect) -> bool {
         | ModEffect::WeakpointCritChance(v)
         | ModEffect::LastRoundDamage(v)
         | ModEffect::FirstRoundDamage(v)
-        | ModEffect::AddedSpread(v)
+        | ModEffect::AddedSpread { degrees: v, .. }
         | ModEffect::OverguardDamage(v)
         | ModEffect::NonCritDamage(v)
         | ModEffect::MagazineRefillOnKill(v)

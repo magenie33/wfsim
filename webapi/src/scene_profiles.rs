@@ -33,9 +33,21 @@ struct SourceEnemy {
 }
 
 #[derive(Deserialize)]
+struct CarrierProfile {
+    owner_offset: [f64; 3],
+    controller: wfsim_engine::model::Controller,
+    muzzle_local: Affine,
+    eye_y: f64,
+}
+
+#[derive(Deserialize)]
 struct SourceProfiles {
     weapons: BTreeMap<String, EquippedFire>,
     enemies: BTreeMap<String, SourceEnemy>,
+    #[serde(default)]
+    warframes: BTreeMap<String, BTreeMap<usize, Affine>>,
+    #[serde(default)]
+    carriers: BTreeMap<String, CarrierProfile>,
 }
 
 type WeaponMounts = BTreeMap<String, EquippedFire>;
@@ -117,8 +129,8 @@ pub(crate) fn source_default_choices() -> Value {
             let c = &enemy.model.controller;
             (id, c.radius * c.scale)
         }).collect::<BTreeMap<_, _>>(),
-        "player_controller_skin_m": standing(Affine::IDENTITY, None, false).ok().map(|(player, _, _)| player.controller.skin),
-        "player_controller_radius_m": standing(Affine::IDENTITY, None, false).ok().map(|(player, _, _)| {
+        "player_controller_skin_m": standing(Affine::IDENTITY, None, false, None).ok().map(|(player, _, _)| player.controller.skin),
+        "player_controller_radius_m": standing(Affine::IDENTITY, None, false, None).ok().map(|(player, _, _)| {
             player.controller.radius * player.controller.scale
         }),
     })
@@ -142,6 +154,7 @@ fn standing(
     world: Affine,
     fire: Option<EquippedFire>,
     aim_pose: bool,
+    warframe_id: Option<&str>,
 ) -> Result<(PlayerModel, Mount, Vec3), String> {
     static SOURCE: OnceLock<Result<StandingPlayer, String>> = OnceLock::new();
     let source = SOURCE
@@ -156,6 +169,16 @@ fn standing(
     if aim_pose {
         if let Some(left) = player.bones.get_mut(17) { *left = STANDARD_LEFT_HAND; }
         if let Some(right) = player.bones.get_mut(48) { *right = STANDARD_RIGHT_HAND; }
+    } else if let Some(id) = warframe_id {
+        if let Ok(profiles) = profiles() {
+            if let Some(overrides) = profiles.warframes.get(id) {
+                for (&bone, &matrix) in overrides {
+                    if let Some(slot) = player.bones.get_mut(bone) {
+                        *slot = matrix;
+                    }
+                }
+            }
+        }
     }
     player.world = world;
     player.equipped_fire = fire;
@@ -167,26 +190,85 @@ fn standing(
     Ok((player, source.camera.clone(), reference_point))
 }
 
-fn pose(at: Vec2, forward_x: f64, forward_z: f64, scale: f64) -> Affine {
+fn pose_3d(at: Vec3, forward_x: f64, forward_z: f64, scale: f64) -> Affine {
     Affine([
         scale * forward_z,
         0.,
         scale * forward_x,
-        at.x,
+        at.0[0],
         0.,
         scale,
         0.,
-        0.,
+        at.0[1],
         -scale * forward_x,
         0.,
         scale * forward_z,
-        at.y,
+        at.0[2],
     ])
+}
+
+fn pose(at: Vec2, forward_x: f64, forward_z: f64, scale: f64) -> Affine {
+    pose_3d(Vec3([at.x, 0., at.y]), forward_x, forward_z, scale)
+}
+
+fn autonomous_carrier(
+    profile: &CarrierProfile,
+    owner_at: Vec2,
+    forward_x: f64,
+    forward_z: f64,
+) -> (PlayerModel, Mount, Vec3) {
+    let owner_world = pose(owner_at, forward_x, forward_z, 1.);
+    let carrier_pos = owner_world.point(Vec3(profile.owner_offset));
+    let scale = f64::from(profile.controller.scale);
+    let world = pose_3d(carrier_pos, forward_x, forward_z, scale);
+    let player = PlayerModel {
+        world,
+        controller: profile.controller,
+        bones: vec![Affine::IDENTITY],
+        muzzle: Mount { bone: 0, local: profile.muzzle_local },
+        equipped_fire: None,
+    };
+    let camera = Mount {
+        bone: 0,
+        local: Affine([1., 0., 0., 0., 0., 1., 0., profile.eye_y, 0., 0., 1., 0.]),
+    };
+    let muzzle_pos = world.compose(profile.muzzle_local).point(Vec3([0.; 3]));
+    let reference_point = Vec3([carrier_pos.0[0], muzzle_pos.0[1], carrier_pos.0[2]]);
+    (player, camera, reference_point)
+}
+
+pub(crate) fn companion_seat_scene(
+    scene: &Scene,
+    weapon_id: &str,
+    owner_at: Vec2,
+) -> Result<Arc<Scene>, String> {
+    let source = profiles()?;
+    let Some(profile) = source.carriers.get(weapon_id) else {
+        return Ok(Arc::new(scene.reference_wielder().with_shooting_policy(Some(0.), 0.)));
+    };
+    let mut input = scene.input().clone();
+    let target = scene.root(0);
+    let dx = target.0[0] - owner_at.x;
+    let dz = target.0[2] - owner_at.y;
+    let heading = Vec3([dx, 0., dz]).normalized().unwrap_or(Vec3([0., 0., 1.]));
+    let (player, camera, reference_point) =
+        autonomous_carrier(profile, owner_at, heading.0[0], heading.0[2]);
+    input.player = player;
+    input.camera = camera;
+    input.reference_point = reference_point;
+    input.placement = Placement::Supplied;
+    let count = input.enemies.len();
+    let mut built = Scene::new_standing(input, count)?.with_shooting_policy(Some(0.), 0.);
+    if scene.using_reference_fallback() {
+        built = built.with_reference_fallback();
+    }
+    Ok(Arc::new(built))
 }
 
 pub(crate) fn source_default<'a>(
     raw: &Value,
     weapon: &crate::registry::WeaponInfo,
+    warframe_id: &str,
     player_at: Vec2,
     aimed: (&'a str, Vec2),
     formation: impl Iterator<Item = (&'a str, Vec2)>,
@@ -205,7 +287,7 @@ pub(crate) fn source_default<'a>(
     if !standing_gun(&weapon.id) && !standing_melee(&weapon.id) {
         return Err("scene_3d standing preset needs a supported weapon".into());
     }
-    if weapon.sentinel && carrier.is_none() && !matches!(preset, Preset::SourceStandard) {
+    if weapon.sentinel && carrier.is_none() && !source.carriers.contains_key(&weapon.id) && !matches!(preset, Preset::SourceStandard) {
         return Err("scene_3d needs a posed companion carrier and its weapon mount".into());
     }
     if !weapon.sentinel && carrier.is_some() {
@@ -233,7 +315,10 @@ pub(crate) fn source_default<'a>(
     let [enemy_x, _, enemy_z] = facing.0;
     let (player, camera, reference_point) = match carrier {
         Some(c) => (c.player, c.camera, c.reference_point),
-        None => standing(pose(player_at, x, z, 1.), fire.cloned(), matches!(preset, Preset::SourceStandard))?,
+        None if weapon.sentinel && source.carriers.contains_key(&weapon.id) => {
+            autonomous_carrier(&source.carriers[&weapon.id], player_at, x, z)
+        }
+        None => standing(pose(player_at, x, z, 1.), fire.cloned(), matches!(preset, Preset::SourceStandard), Some(warframe_id))?,
     };
     let (sin, cos) = enemy_yaw_deg.to_radians().sin_cos_portable();
     let roster: Vec<_> = std::iter::once(aimed).chain(formation).collect();
@@ -311,7 +396,7 @@ pub(crate) fn explicit(raw: &Value, count: usize, player_at: Vec2) -> Result<Arc
             .transpose()
             .map_err(|e| format!("scene_3d player equipment: {e}"))?
             .flatten();
-        let (player, camera, reference_point) = standing(pose(player_at, 0., 1., 1.), equipment, false)?;
+        let (player, camera, reference_point) = standing(pose(player_at, 0., 1., 1.), equipment, false, None)?;
         fields.insert("player".into(), json!(player));
         fields.entry("camera").or_insert_with(|| json!(camera));
         fields

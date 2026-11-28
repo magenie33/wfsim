@@ -12,6 +12,10 @@ pub enum Shape {
         radius: f64,
         height: f64,
     },
+    /// Centered local box with half-extents `[dx/2, dy/2, dz/2]`.
+    Box {
+        half_extents: [f64; 3],
+    },
 }
 
 #[wfsim_gas_macro::metered]
@@ -30,11 +34,47 @@ impl Shape {
         match self {
             Self::Sphere { radius } => (radius, 0.0),
             Self::Capsule { radius, height } => (radius, height * 0.5),
+            Self::Box { half_extents: [hx, hy, hz] } => (hx.max(hz), hy),
         }
+    }
+
+    fn box_interval(half_extents: [f64; 3], origin: Vec3, direction: Vec3) -> Option<(f64, f64)> {
+        if !half_extents.iter().all(|&h| h >= 0.0 && h.is_finite())
+            || !origin.0.iter().chain(&direction.0).all(|v| v.is_finite())
+            || direction.dot(direction) == 0.0
+        {
+            return None;
+        }
+        let (mut t_min, mut t_max) = (f64::NEG_INFINITY, f64::INFINITY);
+        for (i, &h) in half_extents.iter().enumerate() {
+            let p = origin.0[i];
+            let d = direction.0[i];
+            if d.abs() < 1e-15 {
+                if p.abs() > h {
+                    return None;
+                }
+            } else {
+                let a = (-h - p) / d;
+                let b = (h - p) / d;
+                t_min = t_min.max(a.min(b));
+                t_max = t_max.min(a.max(b));
+                if t_min > t_max {
+                    return None;
+                }
+            }
+        }
+        if t_max < 0.0 {
+            return None;
+        }
+        let enter = t_min.max(0.0);
+        Some((enter, t_max.max(enter)))
     }
 
     /// Entry and exit of one convex primitive, in the original ray parameter.
     pub fn interval(self, origin: Vec3, direction: Vec3) -> Option<(f64, f64)> {
+        if let Self::Box { half_extents } = self {
+            return Self::box_interval(half_extents, origin, direction);
+        }
         let enter = self.intersect(origin, direction)?;
         let (radius, half) = self.radius_and_half_height();
         let [x, y, z] = origin.0;
@@ -55,9 +95,12 @@ impl Shape {
         Some((enter, exit))
     }
 
-    /// Analytic reference for the native sphere/capsule query (EGEO-01).
+    /// Analytic reference for the native sphere/capsule/box query (EGEO-01 / E3D-ROSTER-01).
     /// An origin already inside returns zero. Direction retains its ray parameter.
     pub fn intersect(self, origin: Vec3, direction: Vec3) -> Option<f64> {
+        if let Self::Box { half_extents } = self {
+            return Self::box_interval(half_extents, origin, direction).map(|(enter, _)| enter);
+        }
         let (radius, half) = self.radius_and_half_height();
         if radius < 0.0
             || half < 0.0

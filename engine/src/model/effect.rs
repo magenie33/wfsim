@@ -350,7 +350,10 @@ pub enum ModEffect {
     /// instead of adding AND be clawed back by exactly the mods the wiki says
     /// cannot touch it. Applied here, after the divisor, both halves come out
     /// right and the number stays in the unit the source published it in.
-    AddedSpread(f64),
+    AddedSpread {
+        degrees: f64,
+        weapons: &'static [&'static str],
+    },
     /// A MOD THAT GRANTS A [`StackingBuff`] — the same shape a weapon perk
     /// grants, reaching the sim by the same path.
     ///

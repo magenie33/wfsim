@@ -442,7 +442,13 @@ pub fn resolve_for(
                 // DOUBLE TAP does not join a bucket — it carries its own
                 // multiplier to the sim, which is the whole point of the card's
                 // "multiplicatively stacks with damage bonuses like Serration".
-                ModEffect::AddedSpread(v) => added_spread += v,
+                ModEffect::AddedSpread { degrees, weapons } => {
+                    if weapons.is_empty()
+                        || weapons.iter().any(|&w| w == base.weapon_id || w == base.group_id)
+                    {
+                        added_spread += degrees;
+                    }
+                }
                 ModEffect::GrantsStackingBuff(b) => mod_buffs.push(b),
                 ModEffect::LastRoundDamage(v) => last_round_damage += v,
                 ModEffect::CritPerKill(v, cap) => grenade_crit_per_kill = Some((v, cap)),
@@ -1566,7 +1572,19 @@ pub fn resolve_for(
 
     // Source-backed profiles use native WEAPON_SPREAD endpoint reductions.
     // Wiki profiles retain the inverse-accuracy rule; docs/MECHANICS.md §11.
-    let spread_scaling = base.spread.map(|s| {
+    let effective_base_spread = base.spread.or_else(|| {
+        (added_spread > 0.0 && !base.form.is_melee()).then_some(crate::model::SpreadSpec {
+            min_deg: 0.0,
+            max_deg: 0.0,
+            sampling: Some(crate::model::SpreadSampling {
+                horizontal_ratio: 0.5,
+                uniform: false,
+                hip_min_deg: Some(0.0),
+                hip_max_deg: Some(0.0),
+            }),
+        })
+    });
+    let spread_scaling = effective_base_spread.map(|s| {
         let bonus = indirect
             .iter()
             .find(|(st, _)| *st == IndirectStat::Accuracy)

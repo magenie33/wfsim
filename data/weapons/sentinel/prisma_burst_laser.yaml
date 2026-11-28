@@ -45,9 +45,16 @@ attack:
   status_chance: 0.10
   punch_through_m: 0.0
   damage: { impact: 2.2, puncture: 18.7, slash: 1.1 }   # 22 total
+  spread:
+    min_deg: 0.0
+    max_deg: 0.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 0.0
+      hip_max_deg: 0.0
 unmodeled:
   - reason: companion_fires_it
-  - reason: spread_not_transcribed
 
 source:
   url: https://wiki.warframe.com/w/Prisma_Burst_Laser

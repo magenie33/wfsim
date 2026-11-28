@@ -17,6 +17,10 @@ effects:
   - kind: accuracy_bonus
     rank0: -0.1
     rankMax: -0.6
+  - kind: added_spread
+    rank0: 5.0
+    rankMax: 30.0
+    weapons: [arca_plasmor, tenet_arca_plasmor, phantasma, phantasma_prime]
 
 source:
   url: https://wiki.warframe.com/w/Vicious_Spread

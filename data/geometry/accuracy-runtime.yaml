@@ -2,15 +2,117 @@
   "attacks": {
     "acceltra": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TennoUziAimAccuracyInfo",
+      "extra_floor": 10.0,
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TennoUziAimAccuracyInfo"
     },
     "acceltra_prime": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TennoUziAimAccuracyInfo",
+      "extra_floor": 10.0,
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TennoUziAimAccuracyInfo"
+    },
+    "acrid": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
+    },
+    "aegrit": {
+      "extra_floor": 9.0,
+      "extra_spread": {
+        "extra_deg": 0.0,
+        "multiplier": 1.0,
+        "rings": [
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            2
+          ],
+          [
+            2,
+            3
+          ],
+          [
+            3,
+            5
+          ]
+        ],
+        "rotation_offset_deg": 0.0,
+        "uniform": true
+      },
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 1.0,
+          "uniform": true
+        }
+      }
+    },
+    "aeolak": {
+      "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TennoTommyGunSemiAutoHipAccuracyInfo"
     },
     "aeolak_alt": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TennoTommyGunSemiAutoHipAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TennoTommyGunSemiAutoHipAccuracyInfo"
+    },
+    "afentis": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
+    },
+    "afentis_prime": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
+    },
+    "afentis_prime_throw": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
+    },
+    "afentis_throw": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
     },
     "afuris": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/AkimboAutoPistolsAimAccuracyInfo",
@@ -22,10 +124,24 @@
     },
     "akarius": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/CorpusHandRocketLauncherAccuracyInfo",
+      "extra_spread": {
+        "extra_deg": 0.0,
+        "multiplier": 1.0,
+        "rings": [],
+        "rotation_offset_deg": 0.0,
+        "uniform": false
+      },
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/CorpusHandRocketLauncherAccuracyInfo"
     },
     "akarius_prime": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/CorpusHandRocketLauncherAccuracyInfo",
+      "extra_spread": {
+        "extra_deg": 0.0,
+        "multiplier": 1.0,
+        "rings": [],
+        "rotation_offset_deg": 0.0,
+        "uniform": false
+      },
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/CorpusHandRocketLauncherAccuracyInfo"
     },
     "akbolto": {
@@ -105,9 +221,51 @@
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/HarlequinAutoPistolsAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/AkimboAutoPistolsHipAccuracyInfo"
     },
+    "alternox": {
+      "extra_floor": 6.0
+    },
+    "alternox_alt": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
+    },
+    "alternox_prime": {
+      "extra_floor": 6.0
+    },
+    "alternox_prime_alt": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
+    },
     "ambassador": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TnWispRifleAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TnWispRifleAimAccuracyInfo"
+    },
+    "ambassador_charged": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
     },
     "amprex": {
       "resting": {
@@ -123,7 +281,67 @@
     },
     "angstrum": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/CorpusHandRocketLauncherAccuracyInfo",
+      "extra_spread": {
+        "extra_deg": 1.5,
+        "multiplier": 2.0,
+        "rings": [
+          [
+            0,
+            1
+          ],
+          [
+            3,
+            5
+          ],
+          [
+            5,
+            8
+          ],
+          [
+            8,
+            12
+          ]
+        ],
+        "rotation_offset_deg": 0.0,
+        "uniform": true
+      },
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/CorpusHandRocketLauncherAccuracyInfo"
+    },
+    "angstrum_incarnon": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
+    },
+    "arbucep": {
+      "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/HeavyRifleAimAccuracyInfo",
+      "extra_spread": {
+        "extra_deg": 10.0,
+        "multiplier": 1.0,
+        "rings": [
+          [
+            0,
+            5
+          ],
+          [
+            6,
+            6
+          ],
+          [
+            7,
+            100
+          ]
+        ],
+        "rotation_offset_deg": 0.0,
+        "uniform": true
+      },
+      "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/HeavyRifleHipAccuracyInfo"
     },
     "arca_plasmor": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TennoDoubleBarrelShotgunAimAccuracyInfo",
@@ -140,6 +358,12 @@
     "argonak_auto": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/GrineerAssaultRifleAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/GrineerAssaultRifleHipAccuracyInfo"
+    },
+    "artax": {
+      "beam_mode": {
+        "kind": "smoothed",
+        "smooth_time": 0.5
+      }
     },
     "astilla": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/BoltoRifleAimAccuracyInfo",
@@ -158,6 +382,10 @@
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/CrpRubanRifleAimAccuracyInfo"
     },
     "atomos": {
+      "beam_mode": {
+        "kind": "smoothed",
+        "smooth_time": 0.5
+      },
       "resting": {
         "max_deg": 8.0,
         "min_deg": 8.0,
@@ -184,18 +412,95 @@
     "ballistica": {
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/AutoCrossBowHipAccuracyInfo"
     },
+    "ballistica_incarnon": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 1.0,
+          "uniform": true
+        }
+      }
+    },
     "ballistica_prime": {
+      "extra_spread": {
+        "extra_deg": 0.5,
+        "multiplier": 0.800000011920929,
+        "rings": [
+          [
+            0,
+            1
+          ],
+          [
+            3,
+            5
+          ],
+          [
+            5,
+            8
+          ],
+          [
+            8,
+            12
+          ]
+        ],
+        "rotation_offset_deg": 45.0,
+        "uniform": true
+      },
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/AutoCrossBowHipAccuracyInfo"
     },
+    "ballistica_prime_incarnon": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 1.0,
+          "uniform": true
+        }
+      }
+    },
     "ballistica_prime_uncharged": {
+      "extra_spread": {
+        "extra_deg": 0.5,
+        "multiplier": 0.800000011920929,
+        "rings": [
+          [
+            0,
+            1
+          ],
+          [
+            3,
+            5
+          ],
+          [
+            5,
+            8
+          ],
+          [
+            8,
+            12
+          ]
+        ],
+        "rotation_offset_deg": 45.0,
+        "uniform": true
+      },
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/AutoCrossBowHipAccuracyInfo"
     },
     "basmu": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/CrpSentAmlgSniperAimAccuracyInfo",
+      "extra_floor": 17.0,
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/CrpSentAmlgSniperAimAccuracyInfo"
     },
     "basmu_beam": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/AkimboShotGunHipAccuracyInfo",
+      "beam_mode": {
+        "kind": "smoothed",
+        "smooth_time": 1.0
+      },
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/AkimboShotGunHipAccuracyInfo",
       "resting": {
         "max_deg": 42.0,
@@ -210,7 +515,20 @@
     },
     "battacor": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/PrimeBurstonAimAccuracyInfo",
+      "extra_floor": 5.0,
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/PrimeBurstonHipAccuracyInfo"
+    },
+    "battacor_charged": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
     },
     "baza": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TnSMGAimAccuracyInfo",
@@ -224,9 +542,41 @@
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/FullAutoShotgunAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/FullAutoShotgunHipAccuracyInfo"
     },
+    "boar_incarnon": {
+      "beam_mode": {
+        "kind": "smoothed",
+        "smooth_time": 0.25
+      },
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
+    },
     "boar_prime": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/FullAutoShotgunAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/FullAutoShotgunHipAccuracyInfo"
+    },
+    "boar_prime_incarnon": {
+      "beam_mode": {
+        "kind": "smoothed",
+        "smooth_time": 0.25
+      },
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
     },
     "bolto": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/AkimboBoltoAimAccuracyInfo",
@@ -294,6 +644,20 @@
     },
     "bubonico": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/InfArmCannonAccuracyInfo",
+      "extra_floor": 1.0,
+      "extra_spread": {
+        "extra_deg": 2.0,
+        "multiplier": 3.0,
+        "rings": [],
+        "rotation_offset_deg": 0.0,
+        "uniform": false
+      },
+      "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/InfArmCannonAccuracyInfo",
+      "inverse": true
+    },
+    "bubonico_burst": {
+      "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/InfArmCannonAccuracyInfo",
+      "extra_floor": 15.0,
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/InfArmCannonAccuracyInfo",
       "inverse": true
     },
@@ -321,8 +685,73 @@
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/HuntingBowAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/HuntingBowHipAccuracyInfo"
     },
+    "cantare": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
+    },
+    "carmine_penta": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
+    },
+    "castanas": {
+      "extra_floor": 20.0,
+      "extra_spread": {
+        "extra_deg": 0.0,
+        "multiplier": 1.0,
+        "rings": [
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            2
+          ],
+          [
+            2,
+            3
+          ],
+          [
+            3,
+            4
+          ]
+        ],
+        "rotation_offset_deg": 0.0,
+        "uniform": true
+      },
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 1.0,
+          "uniform": true
+        }
+      }
+    },
     "catabolyst": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/InfBeamPistolAccuracyInfo",
+      "beam_mode": {
+        "kind": "smoothed",
+        "smooth_time": 0.17000000178813934
+      },
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/InfBeamPistolAccuracyInfo",
       "resting": {
         "max_deg": 23.0,
@@ -335,12 +764,19 @@
         }
       }
     },
+    "catchmoon_primary": {
+      "extra_floor": 10.0
+    },
+    "catchmoon_secondary": {
+      "extra_floor": 10.0
+    },
     "cedo": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TnAlchemistShotgunAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TnAlchemistShotgunHipAccuracyInfo"
     },
     "cedo_alt": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TnSMGAimAccuracyInfo",
+      "extra_floor": 15.0,
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TnSMGAimAccuracyInfo"
     },
     "cedo_prime": {
@@ -349,6 +785,7 @@
     },
     "cedo_prime_alt": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TnSMGAimAccuracyInfo",
+      "extra_floor": 15.0,
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TnSMGAimAccuracyInfo"
     },
     "cernos": {
@@ -416,11 +853,28 @@
     "coda_bubonico": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/InfArmCannonAccuracyInfo",
       "extra_floor": 1.0,
+      "extra_spread": {
+        "extra_deg": 2.0,
+        "multiplier": 3.0,
+        "rings": [],
+        "rotation_offset_deg": 0.0,
+        "uniform": false
+      },
+      "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/InfArmCannonAccuracyInfo",
+      "inverse": true
+    },
+    "coda_bubonico_burst": {
+      "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/InfArmCannonAccuracyInfo",
+      "extra_floor": 15.0,
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/InfArmCannonAccuracyInfo",
       "inverse": true
     },
     "coda_catabolyst": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/InfBeamPistolAccuracyInfo",
+      "beam_mode": {
+        "kind": "smoothed",
+        "smooth_time": 0.17000000178813934
+      },
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/InfBeamPistolAccuracyInfo",
       "resting": {
         "max_deg": 23.0,
@@ -437,7 +891,20 @@
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/InfBurstRifleAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/InfBurstRifleHipAccuracyInfo"
     },
+    "coda_pox": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
+    },
     "coda_sporothrix": {
+      "extra_floor": 2.0,
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/DefaultSniperHipAccuracyInfo",
       "resting": {
         "max_deg": 0.0,
@@ -450,12 +917,63 @@
         }
       }
     },
+    "coda_synapse": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
+    },
+    "coda_tysis": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
+    },
+    "convectrix": {
+      "beam_mode": {
+        "atten_max": 0.0024999999441206455,
+        "base_deg": 92.0,
+        "base_rays": 2,
+        "expansion_time": 0.75,
+        "force_loop": false,
+        "horizontal_ratio": 0.699999988079071,
+        "inner_ring": false,
+        "kind": "fan",
+        "reverse": false
+      }
+    },
+    "convectrix_alt": {
+      "beam_mode": {
+        "atten_max": 0.0024999999441206455,
+        "base_deg": 92.0,
+        "base_rays": 2,
+        "expansion_time": 1.5,
+        "force_loop": true,
+        "horizontal_ratio": 0.6000000238418579,
+        "inner_ring": true,
+        "kind": "fan",
+        "reverse": true
+      }
+    },
     "corinth": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TennoDoubleBarrelShotgunAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TennoDoubleBarrelShotgunHipAccuracyInfo"
     },
     "corinth_airburst": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TennoDoubleBarrelShotgunAimAccuracyInfo",
+      "extra_floor": 10.0,
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TennoDoubleBarrelShotgunHipAccuracyInfo"
     },
     "corinth_prime": {
@@ -466,6 +984,16 @@
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TennoDoubleBarrelShotgunAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TennoDoubleBarrelShotgunHipAccuracyInfo"
     },
+    "cortege_alt": {
+      "extra_floor": 15.0,
+      "multishot_cone": {
+        "cone_deg": 25.0,
+        "offset_deg": 0.0
+      }
+    },
+    "cryotra": {
+      "extra_floor": 4.0
+    },
     "cyanex": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/CrpSentAmalgPistolAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/CrpSentAmalgPistolAimAccuracyInfo"
@@ -473,6 +1001,22 @@
     "cyanex_burst": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TnSMGAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/GrnSniperRifleHipAccuracyInfo"
+    },
+    "cycron": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
+    },
+    "cyngas": {
+      "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/PrimeBurstonAimAccuracyInfo",
+      "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/PrimeBurstonHipAccuracyInfo"
     },
     "daikyu": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/HuntingBowAimAccuracyInfo",
@@ -486,13 +1030,50 @@
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/HuntingBowAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/HuntingBowHipAccuracyInfo"
     },
+    "dera": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
+    },
     "dera_incarnon": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TnWispRifleAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TnWispRifleAimAccuracyInfo"
     },
+    "dera_vandal": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
+    },
     "dera_vandal_incarnon": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TnWispRifleAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TnWispRifleAimAccuracyInfo"
+    },
+    "despair": {
+      "extra_floor": 5.0,
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
     },
     "despair_incarnon": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/ShotgunAimAccuracyInfo",
@@ -560,6 +1141,10 @@
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/CodaInfSporePistolAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/CodaInfSporePistolHipAccuracyInfo"
     },
+    "dual_decurion": {
+      "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/HeavyRifleAimAccuracyInfo",
+      "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/HeavyRifleAimAccuracyInfo"
+    },
     "dual_toxocyst": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TennoHeavyPistolAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TennoHeavyPistolHipAccuracyInfo"
@@ -584,20 +1169,52 @@
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/GLAPistolAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/GLAPistolHipAccuracyInfo"
     },
+    "embolist": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
+    },
+    "enkaus": {
+      "beam_mode": {
+        "kind": "smoothed",
+        "smooth_time": 0.5
+      },
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
+    },
     "epitaph": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TnSMGAimAccuracyInfo",
+      "extra_floor": 2.0,
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TnSMGHipAccuracyInfo"
     },
     "epitaph_prime": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TnSMGAimAccuracyInfo",
+      "extra_floor": 2.0,
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TnSMGHipAccuracyInfo"
     },
     "epitaph_prime_uncharged": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TnSMGAimAccuracyInfo",
+      "extra_floor": 2.0,
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TnSMGHipAccuracyInfo"
     },
     "epitaph_uncharged": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TnSMGAimAccuracyInfo",
+      "extra_floor": 2.0,
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TnSMGHipAccuracyInfo"
     },
     "euphona_prime": {
@@ -616,6 +1233,16 @@
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/HuntingBowAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/HuntingBowHipAccuracyInfo"
     },
+    "exergis": {
+      "extra_floor": 9.0,
+      "extra_spread": {
+        "extra_deg": 0.0,
+        "multiplier": 1.0,
+        "rings": [],
+        "rotation_offset_deg": 0.0,
+        "uniform": false
+      }
+    },
     "felarx": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/ZarimanShotgunAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/ZarimanShotgunAccuracyInfo"
@@ -631,6 +1258,18 @@
     "ferrox_thrown": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/HuntingBowAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/HuntingBowHipAccuracyInfo"
+    },
+    "flux_rifle": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
     },
     "fulmin": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TnWispRifleAimAccuracyInfo",
@@ -666,6 +1305,62 @@
         }
       }
     },
+    "gammacor": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
+    },
+    "gammacor_incarnon": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
+    },
+    "glaxion": {
+      "beam_mode": {
+        "kind": "smoothed",
+        "smooth_time": 0.5
+      },
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
+    },
+    "glaxion_vandal": {
+      "beam_mode": {
+        "kind": "smoothed",
+        "smooth_time": 0.5
+      },
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
+    },
     "gorgon": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/HeavyRifleAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/HeavyRifleHipAccuracyInfo"
@@ -682,9 +1377,49 @@
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/BoltoRifleAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/BoltoRifleAimAccuracyInfo"
     },
+    "gotva_prime": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
+    },
     "grakata": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/GrineerAssaultRifleAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/GrineerAssaultRifleHipAccuracyInfo"
+    },
+    "grattler": {
+      "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/GrattlerAimAccuracyInfo",
+      "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/GrattlerAimAccuracyInfo"
+    },
+    "grimoire": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
+    },
+    "grimoire_active": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
     },
     "grinlok": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/GLARifleAimAccuracyInfo",
@@ -694,6 +1429,13 @@
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TennoDoubleBarrelShotgunAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TennoDoubleBarrelShotgunHipAccuracyInfo"
     },
+    "helstrum": {
+      "fan": {
+        "end_deg": 45.0,
+        "start_deg": 0.0,
+        "vertical": false
+      }
+    },
     "hema": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/InfBurstRifleAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/InfBurstRifleHipAccuracyInfo"
@@ -701,6 +1443,42 @@
     "higasa": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/GunbrellaAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/GunbrellaHipAccuracyInfo"
+    },
+    "higasa_charged": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
+    },
+    "hikou": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
+    },
+    "hikou_prime": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
     },
     "hind": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/GrnBurstRifleAimAccuracyInfo",
@@ -741,6 +1519,54 @@
     "hystrix_prime_ice": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/QuillDartgunAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/QuillDartgunHipAccuracyInfo"
+    },
+    "ignis": {
+      "beam_mode": {
+        "kind": "smoothed",
+        "smooth_time": 0.25
+      },
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
+    },
+    "ignis_wraith": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
+    },
+    "imperator": {
+      "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/ArchMachinegunAimAccuracyInfo",
+      "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/ArchMachinegunHipAccuracyInfo"
+    },
+    "imperator_vandal": {
+      "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/ArchMachinegunAimAccuracyInfo",
+      "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/ArchMachinegunHipAccuracyInfo"
+    },
+    "javlok": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
     },
     "javlok_throw": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/HuntingBowAimAccuracyInfo",
@@ -788,7 +1614,43 @@
     },
     "kulstar": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/CorpusHandRocketLauncherAccuracyInfo",
+      "extra_spread": {
+        "extra_deg": 1.5,
+        "multiplier": 2.0,
+        "rings": [
+          [
+            0,
+            1
+          ],
+          [
+            3,
+            5
+          ],
+          [
+            5,
+            8
+          ],
+          [
+            8,
+            12
+          ]
+        ],
+        "rotation_offset_deg": 0.0,
+        "uniform": true
+      },
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/CorpusHandRocketLauncherAccuracyInfo"
+    },
+    "kunai": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
     },
     "kunai_incarnon": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/ShotgunAimAccuracyInfo",
@@ -800,6 +1662,7 @@
     },
     "kuva_bramma": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/HuntingBowAimAccuracyInfo",
+      "extra_floor": 20.0,
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/HuntingBowHipAccuracyInfo"
     },
     "kuva_chakkhurr": {
@@ -841,6 +1704,10 @@
         }
       }
     },
+    "kuva_grattler": {
+      "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/GrattlerAimAccuracyInfo",
+      "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/GrattlerAimAccuracyInfo"
+    },
     "kuva_hek": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TennoDoubleBarrelShotgunAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TennoDoubleBarrelShotgunHipAccuracyInfo"
@@ -881,6 +1748,34 @@
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/HeavyPistolAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/HeavyPistolHipAccuracyInfo"
     },
+    "kuva_nukor": {
+      "beam_mode": {
+        "kind": "smoothed",
+        "smooth_time": 0.30000001192092896
+      },
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
+    },
+    "kuva_ogris": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
+    },
     "kuva_quartakk": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/GrnFourBarrelRifleAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/GrnFourBarrelRifleHipAccuracyInfo"
@@ -897,12 +1792,28 @@
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TennoDoubleBarrelShotgunAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TennoDoubleBarrelShotgunHipAccuracyInfo"
     },
+    "kuva_tonkor": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
+    },
     "kuva_twin_stubbas": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/KuvaStubbaAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TennoHeavyPistolHipAccuracyInfo"
     },
+    "kuva_zarr_barrage": {
+      "extra_floor": 10.0
+    },
     "laetum": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TennoHeavyPistolAimAccuracyInfo",
+      "extra_floor": 4.0,
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TennoHeavyPistolHipAccuracyInfo"
     },
     "laetum_incarnon": {
@@ -934,17 +1845,65 @@
         }
       }
     },
+    "larkspur": {
+      "beam_mode": {
+        "kind": "smoothed",
+        "smooth_time": 0.30000001192092896
+      }
+    },
+    "larkspur_prime": {
+      "beam_mode": {
+        "kind": "smoothed",
+        "smooth_time": 0.30000001192092896
+      }
+    },
     "lato": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/MK1LatoAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/MK1LatoHipAccuracyInfo"
+    },
+    "lato_incarnon": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
     },
     "lato_prime": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/MK1LatoAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/MK1LatoHipAccuracyInfo"
     },
+    "lato_prime_incarnon": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
+    },
     "lato_vandal": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/LatoVandalAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/LatoVandalHipAccuracyInfo"
+    },
+    "lato_vandal_incarnon": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
     },
     "latron": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/SemiAutoRifleAimAccuracyInfo",
@@ -994,6 +1953,9 @@
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TennoHeavyPistolAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TennoHeavyPistolHipAccuracyInfo"
     },
+    "mandonel_uncharged": {
+      "extra_floor": 15.0
+    },
     "mara_detron": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/VTDetronAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/VTDetronHipAccuracyInfo"
@@ -1001,6 +1963,40 @@
     "marelok": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/GLAPistolAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/GLAPistolHipAccuracyInfo"
+    },
+    "mausolon": {
+      "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TnSMGAimAccuracyInfo",
+      "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TnSMGAimAccuracyInfo"
+    },
+    "mausolon_charged": {
+      "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TnSMGAimAccuracyInfo",
+      "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TnSMGAimAccuracyInfo"
+    },
+    "miter": {
+      "extra_spread": {
+        "extra_deg": 0.75,
+        "multiplier": 1.5,
+        "rings": [
+          [
+            0,
+            0
+          ],
+          [
+            3,
+            6
+          ],
+          [
+            6,
+            9
+          ],
+          [
+            9,
+            12
+          ]
+        ],
+        "rotation_offset_deg": -15.0,
+        "uniform": true
+      }
     },
     "miter_incarnon": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TnAlchemistShotgunAimAccuracyInfo",
@@ -1027,6 +2023,30 @@
         "sampling": {
           "hip_max_deg": 15.0,
           "hip_min_deg": 5.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
+    },
+    "mk1_kunai": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
+    },
+    "mk1_kunai_incarnon": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
           "horizontal_ratio": 0.5,
           "uniform": false
         }
@@ -1061,6 +2081,17 @@
         }
       }
     },
+    "morgha": {
+      "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/ThanoTechGrenadeAccuracyInfo",
+      "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/ThanoTechGrenadeAccuracyInfo"
+    },
+    "morgha_alt": {
+      "extra_floor": 15.0,
+      "multishot_cone": {
+        "cone_deg": 25.0,
+        "offset_deg": 0.0
+      }
+    },
     "mutalist_cernos": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/HuntingBowAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/HuntingBowHipAccuracyInfo"
@@ -1068,6 +2099,18 @@
     "mutalist_cernos_uncharged": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/HuntingBowAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/HuntingBowHipAccuracyInfo"
+    },
+    "mutalist_quanta": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
     },
     "mutalist_quanta_orb": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/BoltoRifleAimAccuracyInfo",
@@ -1105,6 +2148,8 @@
     },
     "nataruk_perfect": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/HuntingBowAimAccuracyInfo",
+      "extra_floor": 5.0,
+      "first_pellet_pinpoint": true,
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/HuntingBowHipAccuracyInfo",
       "resting": {
         "max_deg": 12.0,
@@ -1117,6 +2162,18 @@
         }
       }
     },
+    "nukor": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
+    },
     "nunchasa": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/HuntingBowAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/HuntingBowHipAccuracyInfo"
@@ -1124,6 +2181,84 @@
     "nunchasa_alt": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/HuntingBowAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/HuntingBowHipAccuracyInfo"
+    },
+    "ocucor": {
+      "beam_mode": {
+        "kind": "smoothed",
+        "smooth_time": 0.5
+      }
+    },
+    "ogris": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
+    },
+    "onos_incarnon": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
+    },
+    "opticor": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
+    },
+    "opticor_quick": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
+    },
+    "opticor_vandal": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
+    },
+    "opticor_vandal_quick": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
     },
     "pandero": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TennoHeavyPistolAimAccuracyInfo",
@@ -1141,13 +2276,85 @@
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TennoHeavyPistolHipAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TennoHeavyPistolHipAccuracyInfo"
     },
+    "panthera": {
+      "extra_spread": {
+        "extra_deg": 0.75,
+        "multiplier": 1.5,
+        "rings": [
+          [
+            0,
+            0
+          ],
+          [
+            3,
+            6
+          ],
+          [
+            6,
+            9
+          ],
+          [
+            9,
+            12
+          ]
+        ],
+        "rotation_offset_deg": 0.0,
+        "uniform": true
+      },
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.89999998,
+          "uniform": true
+        }
+      }
+    },
     "panthera_prime": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TnSMGAimAccuracyInfo",
+      "extra_spread": {
+        "extra_deg": 0.75,
+        "multiplier": 1.5,
+        "rings": [
+          [
+            0,
+            0
+          ],
+          [
+            3,
+            6
+          ],
+          [
+            6,
+            9
+          ],
+          [
+            9,
+            12
+          ]
+        ],
+        "rotation_offset_deg": 0.0,
+        "uniform": true
+      },
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TnSMGHipAccuracyInfo"
     },
     "paracyst": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/InfQuantaRifleAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/PrimeBurstonHipAccuracyInfo"
+    },
+    "paracyst_harpoon": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
     },
     "paris": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/HuntingBowAimAccuracyInfo",
@@ -1173,14 +2380,134 @@
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/HuntingBowAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/HuntingBowHipAccuracyInfo"
     },
+    "penta": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
+    },
     "perigale": {
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/DefaultSniperHipAccuracyInfo"
     },
     "perigale_prime": {
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/DefaultSniperHipAccuracyInfo"
     },
+    "phaedra": {
+      "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/ArchLongRifleAimAccuracyInfo",
+      "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/ArchLongRifleAimAccuracyInfo"
+    },
+    "phage": {
+      "beam_mode": {
+        "atten_max": 0.02500000037252903,
+        "base_deg": 92.0,
+        "base_rays": 6,
+        "expansion_time": 0.6000000238418579,
+        "force_loop": false,
+        "horizontal_ratio": 0.6000000238418579,
+        "inner_ring": true,
+        "kind": "fan",
+        "reverse": false
+      }
+    },
+    "phantasma": {
+      "beam_mode": {
+        "horizontal_ratio": 0.699999988079071,
+        "kind": "child_quat",
+        "quats": [
+          [
+            0.008725999854505062,
+            0.01308900024741888,
+            -0.0001140000022132881,
+            0.9998760223388672
+          ],
+          [
+            0.008725999854505062,
+            -0.01308900024741888,
+            0.0001140000022132881,
+            0.9998760223388672
+          ],
+          [
+            -0.008725999854505062,
+            0.01308900024741888,
+            0.0001140000022132881,
+            0.9998760223388672
+          ],
+          [
+            -0.008725999854505062,
+            -0.01308900024741888,
+            -0.0001140000022132881,
+            0.9998760223388672
+          ]
+        ]
+      }
+    },
+    "phantasma_charged": {
+      "extra_floor": 10.0,
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
+    },
+    "phantasma_prime": {
+      "beam_mode": {
+        "horizontal_ratio": 0.699999988079071,
+        "kind": "child_quat",
+        "quats": [
+          [
+            0.008725999854505062,
+            0.01308900024741888,
+            -0.0001140000022132881,
+            0.9998760223388672
+          ],
+          [
+            0.008725999854505062,
+            -0.01308900024741888,
+            0.0001140000022132881,
+            0.9998760223388672
+          ],
+          [
+            -0.008725999854505062,
+            0.01308900024741888,
+            0.0001140000022132881,
+            0.9998760223388672
+          ],
+          [
+            -0.008725999854505062,
+            -0.01308900024741888,
+            -0.0001140000022132881,
+            0.9998760223388672
+          ]
+        ]
+      }
+    },
+    "phantasma_prime_charged": {
+      "extra_floor": 10.0,
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
+    },
     "phenmor": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/ZarimanSemiAutoRifleAimAccuracyInfo",
+      "extra_floor": 4.0,
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/ZarimanSemiAutoRifleHipAccuracyInfo"
     },
     "phenmor_incarnon": {
@@ -1191,9 +2518,61 @@
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/SUModularBarralBAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/SUModularBarralBHipAccuracyInfo"
     },
+    "pox": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
+    },
     "prisma_angstrum": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/CorpusHandRocketLauncherAccuracyInfo",
+      "extra_spread": {
+        "extra_deg": 1.0,
+        "multiplier": 1.7999999523162842,
+        "rings": [
+          [
+            0,
+            1
+          ],
+          [
+            3,
+            5
+          ],
+          [
+            5,
+            8
+          ],
+          [
+            8,
+            12
+          ]
+        ],
+        "rotation_offset_deg": 0.0,
+        "uniform": true
+      },
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/CorpusHandRocketLauncherAccuracyInfo"
+    },
+    "prisma_angstrum_incarnon": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
+    },
+    "prisma_dual_decurions": {
+      "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/HeavyPistolAimAccuracyInfo",
+      "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/HeavyPistolHipAccuracyInfo"
     },
     "prisma_gorgon": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/VTHeavyRifleAimAccuracyInfo",
@@ -1221,7 +2600,21 @@
     },
     "proboscis_cernos": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/HuntingBowAimAccuracyInfo",
+      "extra_floor": 15.0,
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/HuntingBowHipAccuracyInfo"
+    },
+    "purgator_1": {
+      "extra_floor": 4.0,
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
     },
     "pyrana": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TennoHandShotgunAimAccuracyInfo",
@@ -1231,9 +2624,33 @@
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/PyranaPrimeAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/PyranaPrimeHipAccuracyInfo"
     },
+    "quanta": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
+    },
     "quanta_cube": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/BoltoRifleAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/BoltoRifleHipAccuracyInfo"
+    },
+    "quanta_vandal": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
     },
     "quanta_vandal_cube": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/BoltoRifleAimAccuracyInfo",
@@ -1255,8 +2672,32 @@
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/RailJackRifleAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/RailJackRifleHipAccuracyInfo"
     },
+    "quellor_alt": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
+    },
     "rakta_ballistica": {
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/AutoCrossBowHipAccuracyInfo"
+    },
+    "rakta_ballistica_incarnon": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 1.0,
+          "uniform": true
+        }
+      }
     },
     "rakta_cernos": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/HuntingBowAimAccuracyInfo",
@@ -1290,9 +2731,70 @@
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/GrineerLightPistolAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/GrineerLightPistolHipAccuracyInfo"
     },
+    "sancti_castanas": {
+      "extra_floor": 20.0,
+      "extra_spread": {
+        "extra_deg": 0.0,
+        "multiplier": 1.0,
+        "rings": [
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            2
+          ],
+          [
+            2,
+            3
+          ],
+          [
+            3,
+            4
+          ]
+        ],
+        "rotation_offset_deg": 0.0,
+        "uniform": true
+      },
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 1.0,
+          "uniform": true
+        }
+      }
+    },
     "sancti_tigris": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/NLTennoDoubleBarrelShotgunAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/NLTennoDoubleBarrelShotgunHipAccuracyInfo"
+    },
+    "scourge": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
+    },
+    "scourge_prime": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
     },
     "scourge_prime_thrown": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/HuntingBowAimAccuracyInfo",
@@ -1329,20 +2831,35 @@
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/DualCorpusMinigunAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/DualCorpusMinigunHipAccuracyInfo"
     },
+    "secura_penta": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
+    },
     "seer": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/HeavyPistolAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/HeavyPistolHipAccuracyInfo"
     },
     "sepulcrum": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/AutoPistolAimAccuracyInfo",
+      "extra_floor": 5.0,
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/AutoPistolAimAccuracyInfo"
     },
     "sepulcrum_lockon": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/CrpSentAmalgPistolAimAccuracyInfo",
+      "extra_floor": 20.0,
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/CrpSentAmalgPistolAimAccuracyInfo"
     },
     "shedu": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/SemiAutoRifleAimAccuracyInfo",
+      "extra_floor": 3.0,
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/SemiAutoRifleAimAccuracyInfo"
     },
     "sicarus": {
@@ -1363,6 +2880,7 @@
     },
     "simulor": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/SemiAutoRifleAimAccuracyInfo",
+      "extra_floor": 20.0,
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/SemiAutoRifleAimAccuracyInfo"
     },
     "snipetron": {
@@ -1393,7 +2911,62 @@
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/GrineerAssaultRifleAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/GrineerAssaultRifleHipAccuracyInfo"
     },
+    "spectra": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
+    },
+    "spectra_vandal": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
+    },
+    "spira": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
+    },
+    "spira_prime": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
+    },
+    "sporelacer_primary": {
+      "extra_floor": 10.0
+    },
+    "sporelacer_secondary": {
+      "extra_floor": 10.0
+    },
     "sporothrix": {
+      "extra_floor": 2.0,
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/DefaultSniperHipAccuracyInfo",
       "resting": {
         "max_deg": 0.0,
@@ -1408,10 +2981,12 @@
     },
     "stahlta": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/CrpRubanRifleAimAccuracyInfo",
+      "extra_floor": 10.0,
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/CrpRubanRifleAimAccuracyInfo"
     },
     "stahlta_charged": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/BoltoRifleAimAccuracyInfo",
+      "extra_floor": 20.0,
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/BoltoRifleAimAccuracyInfo"
     },
     "staticor": {
@@ -1493,6 +3068,38 @@
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TennoHeavyPistolAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TennoHeavyPistolHipAccuracyInfo"
     },
+    "stug": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
+    },
+    "stug_incarnon": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
+    },
+    "sweeper": {
+      "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Sentinel/ShotgunAimAccuracyInfo",
+      "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Sentinel/ShotgunHipAccuracyInfo"
+    },
+    "sweeper_prime": {
+      "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Sentinel/ShotgunAimAccuracyInfo",
+      "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Sentinel/ShotgunHipAccuracyInfo"
+    },
     "sybaris": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/GrineerAssaultRifleAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/GrineerAssaultRifleHipAccuracyInfo"
@@ -1509,9 +3116,84 @@
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/PrimeBurstonAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/PrimeBurstonHipAccuracyInfo"
     },
+    "synapse": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
+    },
+    "synoid_gammacor": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
+    },
+    "synoid_gammacor_incarnon": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
+    },
     "synoid_simulor": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/SemiAutoRifleAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/SemiAutoRifleAimAccuracyInfo"
+    },
+    "talons": {
+      "extra_floor": 20.0,
+      "extra_spread": {
+        "extra_deg": 0.0,
+        "multiplier": 1.0,
+        "rings": [
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            2
+          ],
+          [
+            3,
+            4
+          ]
+        ],
+        "rotation_offset_deg": 0.0,
+        "uniform": true
+      },
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 1.0,
+          "uniform": true
+        }
+      }
+    },
+    "tazicor": {
+      "beam_mode": {
+        "kind": "smoothed",
+        "smooth_time": 0.5
+      }
     },
     "telos_akbolto": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/AkimboBoltoAimAccuracyInfo",
@@ -1529,6 +3211,18 @@
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TennoDoubleBarrelShotgunAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TennoDoubleBarrelShotgunHipAccuracyInfo"
     },
+    "tenet_cycron": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
+    },
     "tenet_detron": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/CrpBEDetronAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/CrpBEDetronHipAccuracyInfo"
@@ -1540,6 +3234,18 @@
     "tenet_diplos_lock_on": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/CrpBriefcaseAkimboPistolAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/CrpBriefcaseAkimboPistolHipAccuracyInfo"
+    },
+    "tenet_envoy": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
     },
     "tenet_ferrox": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/HuntingBowAimAccuracyInfo",
@@ -1553,9 +3259,49 @@
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/CrpBEFluxRifleAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/CrpBEFluxRifleAimAccuracyInfo"
     },
+    "tenet_glaxion": {
+      "beam_mode": {
+        "kind": "smoothed",
+        "smooth_time": 0.5
+      },
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
+    },
     "tenet_plinx": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/SUModularBarralBAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/SUModularBarralBHipAccuracyInfo"
+    },
+    "tenet_plinx_charged": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
+    },
+    "tenet_quanta": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
     },
     "tenet_quanta_cube": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/BoltoRifleAimAccuracyInfo",
@@ -1611,6 +3357,32 @@
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TennoDoubleBarrelShotgunAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TennoDoubleBarrelShotgunHipAccuracyInfo"
     },
+    "tonkor": {
+      "extra_floor": 4.0,
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
+    },
+    "torid": {
+      "extra_floor": 3.0,
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
+    },
     "torid_incarnon": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TnSMGAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TnSMGAimAccuracyInfo",
@@ -1631,6 +3403,7 @@
     },
     "trumna_grenade": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TennoDoubleBarrelShotgunAimAccuracyInfo",
+      "extra_floor": 45.0,
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TennoDoubleBarrelShotgunHipAccuracyInfo"
     },
     "trumna_prime": {
@@ -1639,6 +3412,7 @@
     },
     "trumna_prime_grenade": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TennoDoubleBarrelShotgunAimAccuracyInfo",
+      "extra_floor": 45.0,
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TennoDoubleBarrelShotgunHipAccuracyInfo"
     },
     "twin_grakatas": {
@@ -1664,6 +3438,30 @@
     "twin_vipers_wraith": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/WraithTwinVipersAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/WraithTwinVipersHipAccuracyInfo"
+    },
+    "tysis": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
+    },
+    "vadarya_prime": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
     },
     "vasto": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TennoHeavyPistolAimAccuracyInfo",
@@ -1709,6 +3507,14 @@
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TnPriestPistolAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TennoHeavyPistolHipAccuracyInfo"
     },
+    "velocitus": {
+      "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/SemiAutoRifleAimAccuracyInfo",
+      "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/SemiAutoRifleHipAccuracyInfo"
+    },
+    "velocitus_uncharged": {
+      "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/SemiAutoRifleAimAccuracyInfo",
+      "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/SemiAutoRifleHipAccuracyInfo"
+    },
     "velox": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TnOdaliskAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TnOdaliskHipAccuracyInfo"
@@ -1716,6 +3522,30 @@
     "velox_prime": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TnOdaliskAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TnOdaliskHipAccuracyInfo"
+    },
+    "verglas": {
+      "beam_mode": {
+        "kind": "smoothed",
+        "smooth_time": 0.5
+      }
+    },
+    "verglas_prime": {
+      "beam_mode": {
+        "kind": "smoothed",
+        "smooth_time": 0.5
+      }
+    },
+    "vermisplicer_primary": {
+      "beam_mode": {
+        "kind": "smoothed",
+        "smooth_time": 0.30000001192092896
+      }
+    },
+    "vermisplicer_secondary": {
+      "beam_mode": {
+        "kind": "smoothed",
+        "smooth_time": 0.699999988079071
+      }
     },
     "vesper_77": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TennoHeavyPistolAimAccuracyInfo",
@@ -1749,6 +3579,9 @@
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/CorpusHandRocketLauncherAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/CorpusHandRocketLauncherAccuracyInfo"
     },
+    "zarr_barrage": {
+      "extra_floor": 10.0
+    },
     "zenith": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/SundialRifleAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/SundialRifleHipAccuracyInfo"
@@ -1769,12 +3602,37 @@
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/SybarisPistolAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TennoHeavyPistolHipAccuracyInfo"
     },
+    "zylok_incarnon": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
+    },
     "zylok_prime": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/SybarisPistolAimAccuracyInfo",
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TennoHeavyPistolHipAccuracyInfo"
     },
+    "zylok_prime_incarnon": {
+      "resting": {
+        "max_deg": 0.0,
+        "min_deg": 0.0,
+        "sampling": {
+          "hip_max_deg": 0.0,
+          "hip_min_deg": 0.0,
+          "horizontal_ratio": 0.5,
+          "uniform": false
+        }
+      }
+    },
     "zymos": {
       "aimed": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/AkLexPistolsAimAccuracyInfo",
+      "extra_floor": 3.0,
       "hip": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/AkLexPistolsHipAccuracyInfo"
     }
   },
@@ -1784,6 +3642,18 @@
       "rate": 10.0,
       "recovery_delay": 0.5,
       "recovery_rate": 1.0
+    },
+    "/Lotus/Types/Game/WeaponProperties/Accuracy/Sentinel/ShotgunAimAccuracyInfo": {
+      "exponential": true,
+      "rate": 6.0,
+      "recovery_delay": 0.1,
+      "recovery_rate": 70.0
+    },
+    "/Lotus/Types/Game/WeaponProperties/Accuracy/Sentinel/ShotgunHipAccuracyInfo": {
+      "exponential": true,
+      "rate": 10.0,
+      "recovery_delay": 0.050000001,
+      "recovery_rate": 70.0
     },
     "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/AK47WeaponAimAccuracyInfo": {
       "exponential": true,
@@ -1867,6 +3737,24 @@
       "exponential": true,
       "rate": 10.0,
       "recovery_delay": 0.050000001,
+      "recovery_rate": 70.0
+    },
+    "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/ArchLongRifleAimAccuracyInfo": {
+      "exponential": false,
+      "rate": 5.0,
+      "recovery_delay": 0.1,
+      "recovery_rate": 70.0
+    },
+    "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/ArchMachinegunAimAccuracyInfo": {
+      "exponential": false,
+      "rate": 5.0,
+      "recovery_delay": 0.25,
+      "recovery_rate": 70.0
+    },
+    "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/ArchMachinegunHipAccuracyInfo": {
+      "exponential": false,
+      "rate": 5.0,
+      "recovery_delay": 0.25,
       "recovery_rate": 70.0
     },
     "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/AutoCrossBowHipAccuracyInfo": {
@@ -2054,6 +3942,12 @@
       "rate": 5.0,
       "recovery_delay": 0.5,
       "recovery_rate": 20.0
+    },
+    "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/GrattlerAimAccuracyInfo": {
+      "exponential": false,
+      "rate": 5.0,
+      "recovery_delay": 0.25,
+      "recovery_rate": 70.0
     },
     "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/GrineerAkimboPistolAimAccuracyInfo": {
       "exponential": true,
@@ -2610,6 +4504,12 @@
     "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TennoUziHipAccuracyInfo": {
       "exponential": true,
       "rate": 6.0,
+      "recovery_delay": 0.050000001,
+      "recovery_rate": 70.0
+    },
+    "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/ThanoTechGrenadeAccuracyInfo": {
+      "exponential": true,
+      "rate": 15.0,
       "recovery_delay": 0.050000001,
       "recovery_rate": 70.0
     },

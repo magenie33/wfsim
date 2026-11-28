@@ -188,26 +188,26 @@ fn spread_costs_more_the_further_away_the_target_stands() {
 /// and the entry carries the admission.
 #[test]
 fn an_entry_with_no_transcribed_spread_lands_everything_and_admits_it() {
-    // A GUN, because this is about the spread INTAKE's remaining gap. A
-    // melee entry has no cone by construction and it does miss — past its
-    // reach, which is a wall rather than a cone — so it answers this
-    // question with a completely different mechanic.
-    let id = crate::data::weapons::all()
-        .iter()
-        .filter(|w| w.rules_slot() != "melee" && w.attack.trigger != "melee")
-        .map(|w| w.id.clone())
-        .find(|id| crate::model::WeaponBase::from_data(id, false, &[]).spread.is_none())
-        .expect("the roster still has entries waiting on the spread intake");
-    let close = landed(&id, 0.0);
-    assert!(close > 0, "{id}: the fixture fired nothing");
-    assert_eq!(landed(&id, 60.0), close, "{id} must not miss");
-    let spec = crate::data::weapons::spec(&id).unwrap();
-    assert!(
-        spec.unmodeled_parts
-            .iter()
-            .any(|u| u.reason.as_deref() == Some("spread_not_transcribed")),
-        "{id}: cannot miss for a DATA reason and does not say so"
-    );
+    let mut arena = crate::arena::Arena::training(10.0);
+    let base = crate::model::WeaponBase::from_data("braton", false, &[]);
+    let refs: Vec<&crate::model::ModDef> = Vec::new();
+    let panel =
+        crate::build::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
+    let close = FightParams {
+        spread: None,
+        spread_scaling: None,
+        ..FightParams::from_panel(&panel, &arena, &crate::data::arcanes::ArcaneFx::none())
+    };
+    arena.target_at = crate::rules::space::Vec2::new(0.0, 60.0);
+    let far = FightParams {
+        spread: None,
+        spread_scaling: None,
+        ..FightParams::from_panel(&panel, &arena, &crate::data::arcanes::ArcaneFx::none())
+    };
+    let landed_close = run_once(&close, &mut Rng::new(0x5EED)).pellets;
+    let landed_far = run_once(&far, &mut Rng::new(0x5EED)).pellets;
+    assert!(landed_close > 0, "the fixture fired nothing");
+    assert_eq!(landed_far, landed_close, "an attack with no spread cone must not miss at range");
 }
 
 /// THE TWO CLAUSES A RANGE TURNED ON, and both of them are worth zero at
@@ -369,7 +369,10 @@ fn every_entry_either_has_a_spread_or_admits_it_has_none() {
         // either stands inside it or does not. So there is nothing to
         // transcribe, and `spread_not_transcribed` would be a false
         // admission: it says a number exists and we did not write it down.
-        if w.rules_slot() == "melee" || w.attack.trigger == "melee" {
+        if w.weapon_type.as_str() == "melee"
+            || w.rules_slot() == "melee"
+            || w.attack.trigger == "melee"
+        {
             continue;
         }
         if crate::model::WeaponBase::from_data(&w.id, false, &[]).spread.is_some() {
@@ -385,9 +388,8 @@ fn every_entry_either_has_a_spread_or_admits_it_has_none() {
             w.id
         );
     }
-    assert!(with >= 207, "only {with} entries carry a spread");
-    // Nunchasa Alt-Fire publishes no spread; its explicit admission adds one known gap.
-    assert!(without <= 18, "the gap grew to {without}; it is only allowed to shrink");
+    assert!(with >= 224, "only {with} entries carry a spread");
+    assert_eq!(without, 0, "every non-melee entry carries a transcribed spread (missing: {without})");
 }
 
 /// ...and every DEPLOYMENT of every entry, for the same reason: the

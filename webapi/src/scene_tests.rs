@@ -464,16 +464,19 @@ fn a_standing_scene_resolves_the_enemy_and_reports_a_reference_muzzle() {
     assert!(scene.input().enemies[0].world.0[10] > 1.);
 
     v["enemy"] = json!("crewman");
-    let error = crate::fight::parse_fight(&v).err().unwrap();
-    assert!(error["error"].as_str().unwrap().contains("enemy profile for crewman"));
+    let crewman_fight = crate::fight::parse_fight(&v).unwrap();
+    let crewman_scene = crewman_fight.arena.scene_3d.unwrap();
+    assert_eq!(crewman_scene.input().enemies[0].proxies.len(), 10);
     v["enemy"] = json!("demolisher_devourer");
     v["weapon"] = json!("braton");
     let log = crate::log::log_json(&v);
     assert_eq!(log["ok"], true, "{log}");
     assert_eq!(log["scene_3d"]["emitter"], "player_mount");
     v["weapon"] = json!("verglas_prime");
-    let error = crate::fight::parse_fight(&v).err().unwrap();
-    assert!(error["error"].as_str().unwrap().contains("posed companion carrier"));
+    let carrier_fight = crate::fight::parse_fight(&v).unwrap();
+    let carrier_scene = carrier_fight.arena.scene_3d.unwrap();
+    assert!((carrier_scene.input().player.controller.scale - 0.75).abs() < 1e-6);
+    assert!(carrier_scene.muzzle().0[1] > 1.8);
 }
 
 #[test]
@@ -513,7 +516,7 @@ fn all_retained_acolyte_poses_resolve_standing_weak_point_hits() {
     let mut v = request("laetum", 1, false);
     v["target_at"] = json!([0., 5.]);
     v["scene_3d"] = json!({"preset":"source_default","placement":{"kind":"supplied"}});
-    for enemy in ["angst", "mania", "misery", "torment", "violence"] {
+    for enemy in ["angst", "malice", "mania", "misery", "torment", "violence"] {
         v["enemy"] = json!(enemy);
         let mut p = params(&v);
         p.spread = None;
@@ -1183,4 +1186,304 @@ fn shotgun_vendetta_respects_5m_distance_in_3d() {
         far_with["dps"],
         far_bare["dps"]
     );
+}
+
+#[test]
+fn all_twelve_selectable_enemies_resolve_in_source_default_with_box_and_normal_hit_proxies() {
+    let mut babau_contact = request("laetum", 1, false);
+    babau_contact["enemy"] = json!("techrot_babau");
+    babau_contact["eximus"] = json!(false);
+    babau_contact["scene_3d"] = json!({"preset": "source_default"});
+    let babau_scene = params(&babau_contact).scene_3d.unwrap();
+    assert!((babau_scene.root(0).0[2] - 1.47).abs() < 1e-4, "babau contact z={:?}", babau_scene.root(0));
+
+    let all_twelve = [
+        "angst", "corrupted_heavy_gunner", "crewman", "demolisher_devourer",
+        "legacyte", "malice", "mania", "misery", "techrot_babau",
+        "thrax_centurion", "torment", "violence",
+    ];
+    for enemy in all_twelve {
+        let mut v = request("laetum", 1, false);
+        v["enemy"] = json!(enemy);
+        v["eximus"] = json!(false);
+        v["target_at"] = json!([0., 5.]);
+        v["scene_3d"] = json!({"preset": "source_default", "placement": {"kind": "supplied"}});
+        let mut p = params(&v);
+        p.spread = None;
+        let scene = p.scene_3d.as_ref().unwrap();
+        if enemy == "techrot_babau" {
+            assert_eq!(scene.input().enemies[0].proxies.len(), 24);
+            assert_eq!(scene.input().head_proxy, 2);
+        }
+        if enemy == "crewman" {
+            assert!(matches!(
+                scene.input().enemies[0].proxies[0].shape,
+                wfsim_engine::rules::geometry::Shape::Box { .. }
+            ));
+        }
+        if enemy == "legacyte" {
+            let proxies = &scene.input().enemies[0].proxies;
+            assert!(matches!(proxies[0].shape, wfsim_engine::rules::geometry::Shape::Box { .. }));
+            assert_eq!(proxies[0].part, 1);
+            assert_eq!(proxies[10].part, 0, "mTreatHeadshotAsNormalHit suppresses headshot part");
+            assert_eq!(proxies[11].part, 0, "mTreatHeadshotAsNormalHit suppresses headshot part");
+        }
+        assert!(direct(&record(&p)).contains(&(0, true)), "{enemy} head hit");
+    }
+}
+
+#[test]
+fn warframe_hand_overrides_companion_seats_and_archgun_kitgun_mounts_resolve() {
+    let muzzle_of = |warframe: &str, weapon: &str| {
+        let mut v = request(weapon, 1, false);
+        v["wielder"] = json!({"frame": warframe});
+        v["scene_3d"] = json!({"preset": "source_default", "placement": {"kind": "center_distance", "distance": 5.}});
+        let p = params(&v);
+        let rec = record(&p);
+        rec.spatial_flights()[0].flight.muzzle
+    };
+    let excal_left = muzzle_of("excalibur", "akarius_prime");
+    let chroma_left = muzzle_of("chroma_prime", "akarius_prime");
+    // Akarius Prime round 0 is right hand (same), round 1 is left hand (shifted on Chroma Prime).
+    let mut v_chroma = request("akarius_prime", 1, false);
+    v_chroma["wielder"] = json!({"frame": "chroma_prime"});
+    v_chroma["scene_3d"] = json!({"preset": "source_default", "placement": {"kind": "center_distance", "distance": 5.}});
+    let chroma_flights = record(&params(&v_chroma)).spatial_flights().to_vec();
+    let mut v_excal = request("akarius_prime", 1, false);
+    v_excal["wielder"] = json!({"frame": "excalibur"});
+    v_excal["scene_3d"] = json!({"preset": "source_default", "placement": {"kind": "center_distance", "distance": 5.}});
+    let excal_flights = record(&params(&v_excal)).spatial_flights().to_vec();
+    assert_eq!(chroma_left.0, excal_left.0);
+    assert!((chroma_flights[1].flight.muzzle.minus(excal_flights[1].flight.muzzle).length() - 0.1599).abs() < 0.002);
+
+    let excal_laetum = muzzle_of("excalibur", "laetum");
+    let narin_laetum = muzzle_of("narin", "laetum");
+    assert!((narin_laetum.minus(excal_laetum).length() - 0.00786).abs() < 0.001);
+
+    // Archgun atmospheric heavy mount and modular Kitgun barrel mount.
+    for weapon in ["mausolon", "cortege", "dual_decurion", "gaze_secondary", "vermisplicer_primary"] {
+        let mut v = request(weapon, 1, false);
+        v["scene_3d"] = json!({"preset": "source_default", "placement": {"kind": "center_distance", "distance": 5.}});
+        let log = crate::log::log_json(&v);
+        assert_eq!(log["ok"], true, "{weapon}: {log}");
+        assert_eq!(log["scene_3d"]["emitter"], "attachment", "{weapon}");
+    }
+
+    // Autonomous companion seat acting alongside the player in 3D.
+    let mut with_companion = request("laetum", 1, false);
+    with_companion["scene_3d"] = json!({"preset": "source_default", "placement": {"kind": "center_distance", "distance": 5.}});
+    with_companion["also_acting"] = json!([{"weapon": "verglas_prime", "mods": ["serration"]}]);
+    let sim = crate::simulate::simulate_json(&with_companion);
+    assert_eq!(sim["ok"], true, "{sim}");
+    assert_eq!(sim["combatants"].as_array().unwrap().len(), 2);
+
+    // Laetum Incarnon ignores Seeker (`AllowPuncture = 0`), while base form accepts it.
+    let mut inc = request("laetum", 1, false);
+    inc["mods"] = json!(["seeker"]);
+    assert!(params(&inc).punch_through_m > 0.0);
+    inc["mode"] = json!("transformed");
+    assert_eq!(params(&inc).punch_through_m, 0.0);
+}
+
+#[test]
+fn negative_accuracy_mods_apply_flat_weapon_overrides_and_fork_3d_beams() {
+    let resolved_min = |weapon: &str, mods: &[&str], aiming: bool| {
+        let v = json!({
+            "weapon": weapon,
+            "mode": "base",
+            "mods": mods,
+            "aiming": aiming,
+        });
+        let entrant = crate::simulate::Entrant::new(&v, false).unwrap();
+        let refs = entrant.seat(mods).unwrap();
+        let (panel, _) = entrant.params(&refs).unwrap();
+        panel.spread.map_or(0.0, |s| s.min_deg)
+    };
+
+    assert!((resolved_min("ignis_wraith", &["heavy_caliber"], true) - 2.97).abs() < 1e-4);
+    assert!((resolved_min("flux_rifle", &["heavy_caliber"], true) - 5.94).abs() < 1e-4);
+    assert!((resolved_min("coda_synapse", &["heavy_caliber"], true) - 6.93).abs() < 1e-4);
+    assert!((resolved_min("ferrox", &["heavy_caliber"], true) - 13.97).abs() < 1e-4);
+    assert!((resolved_min("torid", &["heavy_caliber"], true) - 35.97).abs() < 2.0);
+    assert!((resolved_min("kuva_ogris", &["heavy_caliber"], true) - 57.97).abs() < 2.0);
+    assert!((resolved_min("ocucor", &["magnum_force"], true) - 22.0).abs() < 1e-4);
+    assert!((resolved_min("atomos", &["magnum_force"], true) - 15.7).abs() < 1e-4);
+    assert!(resolved_min("boar_prime", &["vicious_spread"], false) > 0.0);
+    assert!((resolved_min("phantasma_prime", &["vicious_spread"], true) - 30.0).abs() < 2.0);
+    assert!((resolved_min("dread", &["split_flights"], true) - 7.2).abs() < 1e-4);
+    assert!((resolved_min("cernos_prime", &["split_flights"], true) - 9.6).abs() < 1e-4);
+
+    // Boar Incarnon [0, 0] remains strictly 0.0 deg under Vicious Spread.
+    let mut boar_inc = request("boar_prime", 1, false);
+    boar_inc["mode"] = json!("transformed");
+    boar_inc["mods"] = json!(["vicious_spread"]);
+    assert_eq!(params(&boar_inc).spread.map_or(0.0, |s| s.min_deg), 0.0);
+
+    // Forked piercing beam: Coda Synapse + Heavy Caliber + Split Chamber emits multiple distinct rays per tick.
+    let mut syn = request("coda_synapse", 1, false);
+    syn["mods"] = json!(["heavy_caliber", "split_chamber"]);
+    syn["target_at"] = json!([0., 12.]);
+    syn["formation"] = json!([
+        {"id": "left", "at": [-0.8, 12.]},
+        {"id": "right", "at": [0.8, 12.]},
+    ]);
+    syn["scene_3d"] = json!({"preset": "source_default", "placement": {"kind": "supplied"}});
+    let syn_rec = record(&params(&syn));
+    let first_tick = syn_rec.spatial_flights()[0].time;
+    let tick_rays: Vec<_> = syn_rec.spatial_flights().iter().take_while(|f| (f.time - first_tick).abs() < 1e-9).collect();
+    assert!(tick_rays.len() >= 2, "multishot + Heavy Caliber must fork into >= 2 rays");
+    assert_ne!(tick_rays[0].flight.direction, tick_rays[1].flight.direction);
+
+    // Torid Incarnon + Heavy Caliber + Split Chamber in a 7-enemy cluster:
+    // diverging rays hitting separated targets/spheres spawn independent 5-hop chain trees.
+    let mut torid = request("torid", 1, false);
+    torid["mode"] = json!("transformed");
+    torid["mods"] = json!(["heavy_caliber", "split_chamber", "vigilante_armaments"]);
+    torid["duration"] = json!(2.0);
+    torid["target_at"] = json!([0., 14.]);
+    torid["formation"] = json!([
+        {"id": "e1", "at": [-2.2, 14.]},
+        {"id": "e2", "at": [2.2, 14.]},
+        {"id": "e3", "at": [-4.0, 14.]},
+        {"id": "e4", "at": [4.0, 14.]},
+        {"id": "e5", "at": [-1.2, 16.5]},
+        {"id": "e6", "at": [1.2, 16.5]},
+    ]);
+    torid["scene_3d"] = json!({"preset": "source_default", "placement": {"kind": "supplied"}});
+    let torid_rec = record(&params(&torid));
+    // Verify at least one tick spawns > 5 chain contacts (multiple independent 5-hop chain trees on the same tick!).
+    let max_chains_in_tick = torid_rec
+        .spatial_flights()
+        .iter()
+        .map(|f| {
+            f.flight
+                .beam_contacts
+                .iter()
+                .filter(|c| c.kind == wfsim_engine::scene::BeamContactKind::Chain)
+                .count()
+        })
+        .max()
+        .unwrap_or(0);
+    assert!(
+        max_chains_in_tick > 5,
+        "diverging Torid Incarnon rays in a cluster must spawn multiple 5-hop chain trees on one tick (got max {max_chains_in_tick})"
+    );
+}
+
+#[test]
+fn beam_spread_regimes_and_nonbeam_multishot_subregimes_resolve_in_3d() {
+    let off_axis_deg = |flight: &wfsim_engine::scene::Flight| {
+        let forward = flight.aim_target.minus(flight.muzzle).normalized().unwrap();
+        let dir = flight.direction.normalized().unwrap();
+        forward.dot(dir).clamp(-1.0, 1.0).acos_portable().to_degrees()
+    };
+
+    // 1. Regime B (Smoothed): Glaxion + Heavy Caliber + Split Chamber starts at 0 deg on tick 0,
+    //    then diverges smoothly on subsequent ticks.
+    let mut glax = request("glaxion", 1, false);
+    glax["mods"] = json!(["heavy_caliber", "split_chamber"]);
+    glax["duration"] = json!(0.5);
+    glax["scene_3d"] = json!({"preset": "source_default", "placement": {"kind": "center_distance", "distance": 10.}});
+    let glax_rec = record(&params(&glax));
+    let glax_flights = glax_rec.spatial_flights();
+    let t0 = glax_flights[0].time;
+    let tick0: Vec<_> = glax_flights.iter().take_while(|f| (f.time - t0).abs() < 1e-9).collect();
+    let tick1: Vec<_> = glax_flights
+        .iter()
+        .skip(tick0.len())
+        .take_while(|f| (f.time - glax_flights[tick0.len()].time).abs() < 1e-9)
+        .collect();
+    assert!(tick0.len() >= 2 && tick1.len() >= 2);
+    assert!(tick0.iter().all(|f| off_axis_deg(&f.flight) < 1e-4));
+    assert!(tick1.iter().any(|f| off_axis_deg(&f.flight) > 0.01));
+    assert_ne!(tick1[0].flight.direction, tick1[1].flight.direction);
+
+    // 2. Regime C (ChildQuat): Phantasma Prime splays 6 child beams at ~1.80 deg even unmodded,
+    //    and Vicious Spread (+30 deg) fans sub-beams onto corridor flanks.
+    let mut phan = request("phantasma_prime", 1, false);
+    phan["duration"] = json!(0.2);
+    phan["target_at"] = json!([0., 12.]);
+    phan["formation"] = json!([
+        {"id": "flank_l", "at": [-1.8, 12.]},
+        {"id": "flank_r", "at": [1.8, 12.]},
+    ]);
+    phan["scene_3d"] = json!({"preset": "source_default", "placement": {"kind": "supplied"}});
+    let phan_unmod = record(&params(&phan));
+    let p_t0 = phan_unmod.spatial_flights()[0].time;
+    let p_rays0: Vec<_> = phan_unmod.spatial_flights().iter().take_while(|f| (f.time - p_t0).abs() < 1e-9).collect();
+    assert_eq!(p_rays0.len(), 6);
+    assert!(p_rays0.iter().all(|f| (off_axis_deg(&f.flight) - 1.8027).abs() < 0.02));
+    phan["mods"] = json!(["vicious_spread", "hells_chamber"]);
+    phan["duration"] = json!(1.0);
+    let phan_wide = record(&params(&phan));
+    assert!(phan_wide.spatial_flights().iter().any(|f| f.flight.impacts.iter().any(|h| h.body > 0)));
+
+    // 3. Regime D (Fan): Phage converges from ~31.85 deg off-axis on tick 0 down below 1 deg after 0.6s.
+    let mut phage = request("phage", 1, false);
+    phage["duration"] = json!(0.8);
+    phage["scene_3d"] = json!({"preset": "source_default", "placement": {"kind": "center_distance", "distance": 10.}});
+    let phage_rec = record(&params(&phage));
+    let phage_first = off_axis_deg(&phage_rec.spatial_flights()[0].flight);
+    let phage_last_t = phage_rec.spatial_flights().last().unwrap().time;
+    let phage_last = phage_rec
+        .spatial_flights()
+        .iter()
+        .find(|f| (f.time - phage_last_t).abs() < 1e-9 && f.round == 0)
+        .map(|f| off_axis_deg(&f.flight))
+        .unwrap();
+    assert!((phage_first - 31.853).abs() < 0.1, "phage tick 0 off-axis: {phage_first}");
+    assert!(phage_last < 1.0, "phage converged off-axis: {phage_last}");
+
+    // 4. Non-beam MultishotAmmoSpread (Kuva Bramma) & First-Iteration Pinpoint (Nataruk Perfect).
+    let mut bramma = request("kuva_bramma", 1, false);
+    bramma["mode"] = json!("charged");
+    bramma["mods"] = json!(["split_chamber"]);
+    bramma["aiming"] = json!(true);
+    bramma["scene_3d"] = json!({"preset": "source_default", "placement": {"kind": "center_distance", "distance": 10.}});
+    let bramma_rec = record(&params(&bramma));
+    let b_shot = bramma_rec.spatial_flights()[0].shot;
+    let b_arrows: Vec<_> = bramma_rec.spatial_flights().iter().take_while(|f| f.shot == b_shot).collect();
+    assert!(b_arrows.len() >= 2);
+    assert!(off_axis_deg(&b_arrows[0].flight) < 1e-4, "arrow 0 unmodded is pinpoint");
+    assert!(off_axis_deg(&b_arrows[1].flight) > 0.05, "extra arrow uses MultishotMinSpread=20 deg");
+
+    let mut nataruk = request("nataruk_perfect", 1, false);
+    nataruk["mode"] = json!("charged");
+    nataruk["mods"] = json!(["split_chamber", "heavy_caliber"]);
+    nataruk["aiming"] = json!(true);
+    nataruk["scene_3d"] = json!({"preset": "source_default", "placement": {"kind": "center_distance", "distance": 10.}});
+    let nat_rec = record(&params(&nataruk));
+    let n_shot = nat_rec.spatial_flights()[0].shot;
+    let n_arrows: Vec<_> = nat_rec.spatial_flights().iter().take_while(|f| f.shot == n_shot).collect();
+    assert!(n_arrows.len() >= 2);
+    assert!(off_axis_deg(&n_arrows[0].flight) < 1e-4, "IgnoreSpreadOnFirstFireIteration keeps arrow 0 pinpoint");
+    assert!(off_axis_deg(&n_arrows[1].flight) > 0.01, "extra arrow scatters");
+
+    // 5. MultishotUseConeAngle (Morgha Alt-Fire + Dual Rounds): round 0 straight, extra rounds yaw-fanned.
+    let mut morgha = request("morgha", 1, false);
+    morgha["scene_3d"] = json!({"preset": "source_default", "placement": {"kind": "center_distance", "distance": 10.}});
+    let morgha_arena = crate::fight::parse_fight(&morgha).unwrap().arena;
+    let morgha_base = wfsim_engine::model::WeaponBase::from_data("morgha_alt", false, &[]);
+    let morgha_panel = wfsim_engine::build::loadout::resolve(
+        &morgha_base,
+        &[],
+        wfsim_engine::model::StackPolicy::Emergent,
+    );
+    let mut morgha_p = wfsim_engine::fight::FightParams::from_panel(
+        &morgha_panel,
+        &morgha_arena,
+        &wfsim_engine::data::arcanes::ArcaneFx::none(),
+    );
+    morgha_p.multishot = 3.0;
+    let m_rec = record(&morgha_p);
+    let m_shot = m_rec.spatial_flights()[0].shot;
+    let m_rounds: Vec<_> = m_rec.spatial_flights().iter().take_while(|f| f.shot == m_shot).collect();
+    assert_eq!(m_rounds.len(), 3);
+    assert!(off_axis_deg(&m_rounds[0].flight) < 1e-4);
+    assert!((off_axis_deg(&m_rounds[1].flight) - 12.5).abs() < 0.05);
+    assert!((off_axis_deg(&m_rounds[2].flight) - 12.5).abs() < 0.05);
+
+    // 6. Split Flights excludes duelistbow (Nunchasa).
+    let nunchasa_sf = json!({"weapon": "nunchasa", "mods": ["split_flights"]});
+    assert!(crate::simulate::ready(&nunchasa_sf, false).is_err());
 }

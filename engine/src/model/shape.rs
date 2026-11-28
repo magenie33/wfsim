@@ -357,7 +357,12 @@ impl Spread {
     }
 
     pub fn sample_fixed_cone(self, azimuth: f64, radius: f64, index: u32, count: u32) -> (f64, f64) {
-        let Some(spec) = self.sampling else { return (self.draw(1.0), azimuth); };
+        let spec = self.sampling.unwrap_or(crate::model::SpreadSampling {
+            horizontal_ratio: 0.5,
+            uniform: false,
+            hip_min_deg: None,
+            hip_max_deg: None,
+        });
         self.sample_disk(spec, self.min_deg, azimuth, radius, index, count)
     }
 
@@ -386,6 +391,120 @@ pub struct SpreadTiming {
     pub exponential: bool,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, serde::Deserialize)]
+pub struct MultishotCone {
+    pub cone_deg: f32,
+    pub offset_deg: f32,
+}
+
+#[wfsim_gas_macro::metered]
+impl MultishotCone {
+    /// Client sampler 0x3b2315..0x3b2650 target-pivoted yaw for iterations >= 1.
+    pub fn sample(self, iteration: usize, count: usize, attenuation: f32) -> (f64, f64) {
+        let cone = self.cone_deg * attenuation;
+        let half = cone * 0.5;
+        let yaw_deg = if count <= 2 {
+            f64::from(half)
+        } else {
+            let step = cone / (count - 2) as f32;
+            f64::from((iteration - 1) as f32 * step - half + self.offset_deg)
+        };
+        (yaw_deg.abs(), if yaw_deg >= 0.0 { 0.0 } else { 0.5 })
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct ExtraSpread {
+    pub uniform: bool,
+    pub extra_deg: f32,
+    pub multiplier: f32,
+    pub rotation_offset_deg: f32,
+    pub rings: [(u8, u8); 4],
+    pub ring_count: u8,
+}
+
+#[wfsim_gas_macro::metered]
+impl ExtraSpread {
+    /// Lotus projectile sampler 0x10d1b75..0x10d1dbf when count > 1.
+    pub fn sample(
+        self,
+        spread_deg: f64,
+        horizontal_ratio: f64,
+        azimuth: f64,
+        radius: f64,
+        index: u32,
+        count: u32,
+    ) -> (f64, f64) {
+        let rot_phase = f64::from(self.rotation_offset_deg) / 360.0;
+        let (ring_deg, phase, radial_scale) = if self.uniform {
+            let mut rem_idx = index + 1;
+            let mut rem_cnt = count;
+            let mut chosen_ring: Option<(usize, u32)> = None;
+            for r in 0..usize::from(self.ring_count) {
+                let (min_c, max_c) = self.rings[r];
+                let cap = if u32::from(max_c) >= rem_cnt {
+                    u32::from(max_c)
+                } else {
+                    u32::from(min_c)
+                };
+                if cap >= rem_idx {
+                    chosen_ring = Some((r, cap));
+                    break;
+                }
+                rem_idx -= cap;
+                rem_cnt -= cap;
+            }
+            let (ring_idx, ring_cap) =
+                chosen_ring.unwrap_or((usize::from(self.ring_count).saturating_sub(1), 1));
+            let denom = rem_cnt.min(ring_cap).max(1);
+            let odd = if rem_cnt % 2 == 1 { 0.5 } else { 0.0 };
+            let frac = f64::from(rem_idx) / f64::from(denom) + odd + rot_phase;
+            let r_f = ring_idx as f32;
+            let deg = f64::from(libm::powf(self.multiplier, r_f))
+                * (spread_deg + f64::from(r_f * self.extra_deg));
+            (deg, frac, 1.0)
+        } else {
+            (spread_deg, azimuth + rot_phase, radius.sqrt())
+        };
+        let angle = ring_deg.clamp(0.0, 179.0).to_radians() * 0.5;
+        let phi = phase * std::f64::consts::TAU;
+        let disk = angle.sin_portable() / angle.cos_portable() * radial_scale;
+        let x = horizontal_ratio * disk * phi.cos_portable();
+        let y = (1.0 - horizontal_ratio) * disk * phi.sin_portable();
+        let deviation = x.hypot_portable(y).atan2_portable(1.0).to_degrees();
+        let direction = y.atan2_portable(x).rem_euclid(std::f64::consts::TAU) / std::f64::consts::TAU;
+        (deviation, direction)
+    }
+}
+
+const fn default_beam_horizontal_ratio() -> f32 {
+    0.5
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, serde::Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+pub enum BeamSpreadMode {
+    Smoothed {
+        smooth_time: f32,
+        #[serde(default = "default_beam_horizontal_ratio")]
+        horizontal_ratio: f32,
+    },
+    ChildQuat {
+        horizontal_ratio: f32,
+        quats: [[f32; 4]; 4],
+    },
+    Fan {
+        base_deg: f32,
+        base_rays: u8,
+        atten_max: f32,
+        expansion_time: f32,
+        reverse: bool,
+        force_loop: bool,
+        inner_ring: bool,
+        horizontal_ratio: f32,
+    },
+}
+
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
 pub struct SpreadRuntime {
     pub timing: Option<SpreadTiming>,
@@ -393,6 +512,10 @@ pub struct SpreadRuntime {
     pub fan: Option<SpreadFan>,
     pub charge_attenuation: Option<f32>,
     pub extra_floor: Option<f32>,
+    pub multishot_cone: Option<MultishotCone>,
+    pub first_pellet_pinpoint: bool,
+    pub extra_spread: Option<ExtraSpread>,
+    pub beam_mode: Option<BeamSpreadMode>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, serde::Deserialize)]
@@ -432,7 +555,7 @@ pub struct SpreadScaling {
 impl SpreadScaling {
     pub fn factor(self, live_accuracy: f64) -> f64 {
         let bonus = self.accuracy_bonus + live_accuracy;
-        if self.base.sampling.is_some() {
+        if self.base.sampling.is_some() || self.runtime.beam_mode.is_some() {
             (1.0 - bonus).max(0.0)
         } else {
             1.0 / (1.0 + bonus).max(0.05)

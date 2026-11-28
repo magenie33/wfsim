@@ -114,6 +114,7 @@ attack:
   crit_multiplier: 2.2
   status_chance: 0.22
   punch_through_m: 0.0
+  punch_through_mods: false
   damage: { impact: 100.0 }
   # The radial (AoE) part — rules in MECHANICS §7: own crit/status stats,
   # 1x body-part multiplier (an explosion never headshots and never

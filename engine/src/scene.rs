@@ -308,21 +308,56 @@ impl Collider {
     fn new(shape: Shape, world: Affine) -> Result<Self, String> {
         let scale = uniform_scale(world)?;
         let inverse = world.inverse().ok_or("singular model transform")?;
-        let (radius, half) = shape.radius_and_half_height();
-        if !radius.is_finite() || !half.is_finite() || radius <= 0. || half < 0. {
-            return Err("invalid proxy dimensions".into());
-        }
-        let [a, b] = [-half, half].map(|y| world.point(Vec3([0., y, 0.])));
-        let low = Vec3(std::array::from_fn(|i| a.0[i].min(b.0[i]) - radius * scale));
-        let high = Vec3(std::array::from_fn(|i| a.0[i].max(b.0[i]) + radius * scale));
+        let (low, high) = match shape {
+            Shape::Box { half_extents } => {
+                if !half_extents.iter().all(|&h| h.is_finite() && h > 0.) {
+                    return Err("invalid proxy dimensions".into());
+                }
+                let (mut low, mut high) = (Vec3([f64::INFINITY; 3]), Vec3([f64::NEG_INFINITY; 3]));
+                for sx in [-1., 1.] {
+                    for sy in [-1., 1.] {
+                        for sz in [-1., 1.] {
+                            let corner = world.point(Vec3([
+                                sx * half_extents[0],
+                                sy * half_extents[1],
+                                sz * half_extents[2],
+                            ]));
+                            for i in 0..3 {
+                                low.0[i] = low.0[i].min(corner.0[i]);
+                                high.0[i] = high.0[i].max(corner.0[i]);
+                            }
+                        }
+                    }
+                }
+                (low, high)
+            }
+            _ => {
+                let (radius, half) = shape.radius_and_half_height();
+                if !radius.is_finite() || !half.is_finite() || radius <= 0. || half < 0. {
+                    return Err("invalid proxy dimensions".into());
+                }
+                let [a, b] = [-half, half].map(|y| world.point(Vec3([0., y, 0.])));
+                let low = Vec3(std::array::from_fn(|i| a.0[i].min(b.0[i]) - radius * scale));
+                let high = Vec3(std::array::from_fn(|i| a.0[i].max(b.0[i]) + radius * scale));
+                (low, high)
+            }
+        };
         Ok(Self { shape, inverse, scale, low, high })
     }
 
     fn distance(&self, point: Vec3) -> f64 {
-        let (radius, half) = self.shape.radius_and_half_height();
         let Vec3([x, y, z]) = self.inverse.point(point);
-        let offset = Vec3([x, y - y.clamp(-half, half), z]);
-        (offset.length() - radius).max(0.) * self.scale
+        match self.shape {
+            Shape::Box { half_extents: [hx, hy, hz] } => {
+                let offset = Vec3([x - x.clamp(-hx, hx), y - y.clamp(-hy, hy), z - z.clamp(-hz, hz)]);
+                offset.length() * self.scale
+            }
+            _ => {
+                let (radius, half) = self.shape.radius_and_half_height();
+                let offset = Vec3([x, y - y.clamp(-half, half), z]);
+                (offset.length() - radius).max(0.) * self.scale
+            }
+        }
     }
 }
 
@@ -453,9 +488,6 @@ impl Scene {
         let root = input.player.world.point(Vec3([0.; 3]));
         if !matches!(input.placement, Placement::Supplied) {
             let old = input.enemies[0].world.point(Vec3([0.; 3]));
-            if (old.0[1] - root.0[1]).abs() > 1e-6 {
-                return Err("contact/distance placement currently requires upright controllers on one floor".into());
-            }
             for world in [input.player.world, input.enemies[0].world] {
                 let up = world
                     .direction(Vec3([0., 1., 0.]))
@@ -465,12 +497,17 @@ impl Scene {
                     return Err("automatic placement requires upright controllers".into());
                 }
             }
-            let a = controller_segment(root, input.player.controller);
-            let b = controller_segment(old, input.enemies[0].controller);
-            if a.0.max(b.0) > a.1.min(b.1) {
-                return Err(
-                    "automatic contact requires overlapping controller inner segments".into(),
-                );
+            if matches!(input.placement, Placement::Contact) {
+                if (old.0[1] - root.0[1]).abs() > 1e-6 {
+                    return Err("contact/distance placement currently requires upright controllers on one floor".into());
+                }
+                let a = controller_segment(root, input.player.controller);
+                let b = controller_segment(old, input.enemies[0].controller);
+                if a.0.max(b.0) > a.1.min(b.1) {
+                    return Err(
+                        "automatic contact requires overlapping controller inner segments".into(),
+                    );
+                }
             }
             let distance = match input.placement {
                 Placement::Contact => f64::from(
@@ -487,7 +524,8 @@ impl Scene {
             let horizontal = Vec3([delta.0[0], 0., delta.0[2]])
                 .normalized()
                 .ok_or("placement needs a facing direction")?;
-            let at = root.along(horizontal, distance);
+            let floor_root = Vec3([root.0[0], old.0[1], root.0[2]]);
+            let at = floor_root.along(horizontal, distance);
             let shift = at.minus(old);
             for body in &mut input.enemies {
                 for i in 0..3 {
@@ -627,6 +665,7 @@ impl Scene {
             let shape = match p.proxy.shape {
                 Shape::Sphere { radius } => Shape::Sphere { radius: radius + expansion },
                 Shape::Capsule { radius, height } => Shape::Capsule { radius: radius + expansion, height },
+                Shape::Box { half_extents } => Shape::Box { half_extents: half_extents.map(|h| h + expansion) },
             };
             if let Some((a, b)) =
                 shape.interval(p.collider.inverse.point(ray.origin), p.collider.inverse.direction(ray.direction))

@@ -76,7 +76,6 @@ unmodeled:
   - "The damage type rotation is averaged: the weapon deals 130 of one type at a time, cycling Impact, Puncture, Slash, and this entry splits it evenly. Total damage and status mix are exact; armour is not, because mitigation applies per instance."
   - "The projectiles bounce off walls like a thrown glaive; there are no walls here."
   - reason: companion_fires_it
-  - reason: spread_not_transcribed
 
 source:
   url: https://wiki.warframe.com/w/Deconstructor

@@ -119,52 +119,100 @@ pub(super) fn launch(
     let progress = Rc::new(Cell::new(Progress::default()));
     let mut events = Vec::new();
     let accuracy = active.spread_scaling.map_or_else(crate::model::SpreadRuntime::default, |s| s.runtime);
-    let split_multishot = accuracy.extra_floor.is_some() && l.spread.is_some();
-    let ordinary = groups.iter().copied().enumerate().filter(|(_, copies)| *copies > 0)
-        .map(|(round, copies)| (round, if split_multishot { 1 } else { copies }));
-    let additional_groups: &[u32] = if split_multishot { &groups } else { &[] };
-    let extra = additional_groups.iter().copied().enumerate()
-        .flat_map(|(round, copies)| (1..copies).map(move |_| (round, 1)));
-    for (iteration, (round, copies)) in ordinary.chain(extra).enumerate() {
-        let charging = me.incarnon.in_base_form && !me.params.gauge_charging_body_parts.is_empty();
-        let weakpoint_aim = if charging { 1. } else { scene.weakpoint_aim.unwrap_or(head_weight / all.max(1e-20)) };
-        let head = me.d.aim.next_f64() < weakpoint_aim;
-        if misses.as_ref().is_some_and(|misses| misses[round]) {
-            let origin = origins.as_ref().and_then(|origins| origins[round]);
-            let path = scene.launch_flight(head, 0., 0., &eligible, origin);
-            rec.push(l.t, None, crate::record::Kind::Miss { reason: "scenario miss" });
-            rec.trace_spatial(l.t, l.shot, round as u32, path);
-            continue;
-        }
-        let spread = l.spread.map(|mut s| {
-            if let Some(scale) = accuracy.charge_attenuation {
-                s.min_deg *= f64::from(scale);
-            }
-            s
+    let enter_forked_beam = active.continuous && l.spread.is_some() && match accuracy.beam_mode {
+        Some(crate::model::BeamSpreadMode::ChildQuat { .. } | crate::model::BeamSpreadMode::Fan { .. }) => true,
+        Some(crate::model::BeamSpreadMode::Smoothed { .. }) => l.spread.is_some_and(|s| !s.is_pinpoint()),
+        None => l.blob_stacks > 1 && l.spread.is_some_and(|s| !s.is_pinpoint()),
+    };
+    if enter_forked_beam {
+        launch_forked_beam(
+            l, active, me, &scene, &eligible, &origins, misses.as_deref(),
+            head_weight, all, accuracy, burst_completed, progress.clone(), &mut events, rec,
+        );
+    } else {
+        let split_multishot = l.spread.is_some_and(|s| {
+            !s.is_pinpoint()
+                || accuracy.extra_floor.is_some()
+                || accuracy.multishot_cone.is_some()
+                || accuracy.fan.is_some()
+                || accuracy.extra_spread.is_some()
         });
-        let (dev, phi) = match (spread, accuracy.fan, accuracy.extra_floor) {
-            (Some(s), Some(fan), _) => {
-                let jitter = if s.is_pinpoint() { 0.5 } else { me.d.aim.next_f64() };
-                fan.sample(round, groups.len(), s.min_deg, jitter)
+        let total_emissions = if split_multishot { l.n_pellets as usize } else { groups.len() };
+        let ordinary = groups.iter().copied().enumerate().filter(|(_, copies)| *copies > 0)
+            .map(|(round, copies)| (round, if split_multishot { 1 } else { copies }));
+        let additional_groups: &[u32] = if split_multishot { &groups } else { &[] };
+        let extra = additional_groups.iter().copied().enumerate()
+            .flat_map(|(round, copies)| (1..copies).map(move |_| (round, 1)));
+        for (iteration, (round, copies)) in ordinary.chain(extra).enumerate() {
+            let charging = me.incarnon.in_base_form && !me.params.gauge_charging_body_parts.is_empty();
+            let weakpoint_aim = if charging { 1. } else { scene.weakpoint_aim.unwrap_or(head_weight / all.max(1e-20)) };
+            let head = me.d.aim.next_f64() < weakpoint_aim;
+            if misses.as_ref().is_some_and(|misses| misses[round]) {
+                let origin = origins.as_ref().and_then(|origins| origins[round]);
+                let path = scene.launch_flight(head, 0., 0., &eligible, origin);
+                rec.push(l.t, None, crate::record::Kind::Miss { reason: "scenario miss" });
+                rec.trace_spatial(l.t, l.shot, round as u32, path);
+                continue;
             }
-            (Some(mut s), _, Some(floor)) if l.n_pellets > 1 => {
-                let base = groups.len();
-                if iteration >= base {
-                    let lower = floor + (iteration - base) as f32 * 0.2 / base.max(1) as f32;
-                    s.min_deg = s.min_deg.max(f64::from(lower));
+            let spread = l.spread.map(|mut s| {
+                if let Some(scale) = accuracy.charge_attenuation {
+                    s.min_deg *= f64::from(scale);
                 }
-                s.sample_fixed_cone(me.d.blast_dir.next_f64(), me.d.aim.next_f64(), iteration as u32, l.n_pellets)
-            }
-            (Some(s), _, _) if !s.is_pinpoint() => s.sample(
-                me.d.aim.next_f64(),
-                me.d.blast_dir.next_f64(),
-                me.d.aim.next_f64(),
-                round as u32,
-                groups.len() as u32,
-            ),
-            _ => (0., 0.),
+                s
+            });
+            let (dev, phi) = if accuracy.first_pellet_pinpoint && iteration == 0 {
+                (0., 0.)
+            } else if let Some(cone) = accuracy.multishot_cone.filter(|_| iteration > 0 && total_emissions > 1) {
+                cone.sample(iteration, total_emissions, accuracy.charge_attenuation.unwrap_or(1.0))
+            } else if let (Some(s), Some(fan)) = (spread, accuracy.fan) {
+                let jitter = if s.is_pinpoint() { 0.5 } else { me.d.aim.next_f64() };
+                fan.sample(iteration, total_emissions.max(1), s.min_deg, jitter)
+            } else if let Some(mut s) = spread {
+                if let Some(floor) = accuracy.extra_floor.filter(|_| l.n_pellets > 1) {
+                    let base = groups.len().max(1);
+                    if iteration >= base {
+                        let lower = floor + (iteration - base) as f32 * 0.2 / base as f32;
+                        s.min_deg = s.min_deg.max(f64::from(lower));
+                    }
+                }
+                if let Some(extra_sp) = accuracy.extra_spread.filter(|_| l.n_pellets > 1) {
+                    let h_ratio = s.sampling.map_or(0.5, |sp| sp.horizontal_ratio);
+                    if extra_sp.uniform {
+                        extra_sp.sample(s.min_deg, h_ratio, 0., 1., iteration as u32, l.n_pellets)
+                    } else if s.is_pinpoint() && extra_sp.rotation_offset_deg == 0.0 {
+                        (0., 0.)
+                    } else {
+                        extra_sp.sample(
+                            s.min_deg,
+                            h_ratio,
+                            me.d.blast_dir.next_f64(),
+                            me.d.aim.next_f64(),
+                            iteration as u32,
+                            l.n_pellets,
+                        )
+                    }
+                } else if !s.is_pinpoint() {
+                    s.sample(
+                        me.d.aim.next_f64(),
+                        me.d.blast_dir.next_f64(),
+                        me.d.aim.next_f64(),
+                        iteration as u32,
+                        total_emissions.max(1) as u32,
+                    )
+                } else {
+                    (0., 0.)
+                }
+            } else {
+                (0., 0.)
+            };
+        let pierce = if active.continuous
+            && active.beam.is_some_and(|b| b.damage_radius_m > 0.)
+            && !active.infinite_body_punch_through
+        {
+            0.
+        } else {
+            active.punch_through_m + l.pierce_live_m
         };
-        let pierce = active.punch_through_m + l.pierce_live_m;
         let fire_origin = origins.as_ref().and_then(|o| o[round]);
         let rebound = active.rebound_blast.zip(active.projectile_speed_mps);
         let (mut path, reflected_from) = if let Some((model, speed)) = rebound {
@@ -249,8 +297,9 @@ pub(super) fn launch(
             }
         }
         let each = l.rounds.per_round(l.n_pellets);
+        let instance_each = if split_multishot { 1.0 } else { each };
         for (contact, hit) in path.impacts.iter().enumerate() {
-            let count = if contact == 0 || rebound.is_some() {
+            let count = if split_multishot || contact == 0 || rebound.is_some() {
                 copies
             } else {
                 each.floor() as u32 + u32::from(me.d.extra.chance(each.fract()))
@@ -273,7 +322,7 @@ pub(super) fn launch(
                     }),
                     t: l.t + hit.seconds,
                     n_pellets: 1,
-                    rounds: Rounds::single(1, each),
+                    rounds: Rounds::single(1, instance_each),
                     burst_starts: false,
                     burst_completed,
                     ..l.clone()
@@ -297,7 +346,7 @@ pub(super) fn launch(
                             }),
                             t: l.t + hit.seconds,
                             n_pellets: 1,
-                            rounds: Rounds::single(1, each),
+                            rounds: Rounds::single(1, instance_each),
                             burst_starts: false,
                             burst_completed,
                             ..l.clone()
@@ -330,7 +379,7 @@ pub(super) fn launch(
                             t: l.t + hit.seconds + rad.delay_seconds,
                             radial_only: true,
                             n_pellets: 1,
-                            rounds: Rounds::single(1, each),
+                            rounds: Rounds::single(1, instance_each),
                             burst_starts: false,
                             burst_completed,
                             ..l.clone()
@@ -359,7 +408,7 @@ pub(super) fn launch(
                         t: l.t + impact.seconds + rad.delay_seconds,
                         radial_only: true,
                         n_pellets: 1,
-                        rounds: Rounds::single(1, each),
+                        rounds: Rounds::single(1, instance_each),
                         burst_starts: false,
                         burst_completed,
                         ..l.clone()
@@ -402,6 +451,7 @@ pub(super) fn launch(
             );
         }
         rec.trace_spatial(l.t, l.shot, round as u32, path);
+        }
     }
     if events.is_empty() {
         let impact = crate::scene::Impact {
@@ -446,6 +496,156 @@ pub(super) fn launch(
         last.spatial.as_mut().unwrap().last = true;
     }
     me.in_flight.extend(events);
+}
+
+#[allow(clippy::too_many_arguments)]
+#[wfsim_gas_macro::metered]
+fn launch_forked_beam(
+    l: &Landing,
+    active: &FightParams,
+    me: &mut Combatant,
+    scene: &crate::scene::Scene,
+    eligible: &[bool],
+    origins: &Option<Vec<Option<crate::scene::FireOrigin>>>,
+    misses: Option<&[bool]>,
+    head_weight: f64,
+    all: f64,
+    accuracy: crate::model::SpreadRuntime,
+    burst_completed: Option<bool>,
+    progress: Rc<Cell<Progress>>,
+    events: &mut Vec<Landing>,
+    rec: &mut crate::record::Record,
+) {
+    let charging = me.incarnon.in_base_form && !me.params.gauge_charging_body_parts.is_empty();
+    let weakpoint_aim = if charging { 1. } else { scene.weakpoint_aim.unwrap_or(head_weight / all.max(1e-20)) };
+    let head = me.d.aim.next_f64() < weakpoint_aim;
+    let fire_origin = origins.as_ref().and_then(|o| o.first().copied().flatten());
+    if misses.is_some_and(|m| m.first() == Some(&true)) {
+        let path = scene.launch_flight(head, 0., 0., eligible, fire_origin);
+        rec.push(l.t, None, crate::record::Kind::Miss { reason: "scenario miss" });
+        rec.trace_spatial(l.t, l.shot, 0, path);
+        return;
+    }
+    let mut spread = l.spread.expect("forked beam has spread");
+    if let Some(scale) = accuracy.charge_attenuation {
+        spread.min_deg *= f64::from(scale);
+    }
+    let pierce = if active.beam.is_some_and(|b| b.damage_radius_m > 0.) && !active.infinite_body_punch_through {
+        0.
+    } else {
+        active.punch_through_m + l.pierce_live_m
+    };
+    let ray_count = l.blob_stacks.max(1);
+    let per_ray_merge = l.beam_merge / f64::from(ray_count);
+    let dt = (1.0 / l.live_rate.max(1e-4)) as f32;
+    let live_accuracy = if active.live_accuracy {
+        super::run::buff_total(active, crate::model::BuffGrant::Accuracy, &mut me.buff_stacks, l.t)
+    } else {
+        0.0
+    };
+    let mode_cone_deg = accuracy.beam_mode.map(|mode| {
+        me.beam_spread_state.prepare_tick(
+            active as *const FightParams,
+            me.ammo.refills,
+            mode,
+            active.spread_scaling,
+            spread.min_deg,
+            live_accuracy,
+        )
+    });
+    let mut paths = Vec::with_capacity(ray_count as usize);
+    for ray in 0..ray_count {
+        let (dev, phi) = if let (Some(mode), Some(cone_deg)) = (accuracy.beam_mode, mode_cone_deg) {
+            me.beam_spread_state.sample_ray(
+                mode,
+                cone_deg,
+                ray,
+                dt,
+                &mut me.d.aim,
+                &mut me.d.blast_dir,
+            )
+        } else if spread.is_pinpoint() {
+            (0., 0.)
+        } else {
+            spread.sample(
+                me.d.aim.next_f64(),
+                me.d.blast_dir.next_f64(),
+                me.d.aim.next_f64(),
+                ray,
+                ray_count,
+            )
+        };
+        paths.push(scene.trace(
+            head, dev, phi, active.projectile_speed_mps, active.homing, pierce,
+            active.infinite_body_punch_through, active.projectile_reverse_query,
+            active.projectile_width_m, active.range_m, eligible, fire_origin,
+        ));
+    }
+    if let Some(mode) = accuracy.beam_mode {
+        me.beam_spread_state.finish_tick(mode, dt);
+    }
+    let forked = beam::forked_seeds(scene, &mut paths, active, eligible, me.tendril.count);
+    let hit_any = !forked.direct.is_empty() || !forked.indirect.is_empty();
+    for (contact, entry) in forked.direct.into_iter().enumerate() {
+        events.push(Landing {
+            spatial: Some(SpatialLanding {
+                impact: entry.impact,
+                miss: false,
+                first: false,
+                last: false,
+                instance: 0,
+                follows: false,
+                contact,
+                splash: false,
+                beam: entry.seed,
+                redirected: false,
+                progress: progress.clone(),
+            }),
+            t: l.t + entry.impact.seconds,
+            n_pellets: 1,
+            rounds: Rounds::single(1, 1.),
+            beam_merge: f64::from(entry.tags) * per_ray_merge,
+            burst_starts: false,
+            burst_completed,
+            ..l.clone()
+        });
+    }
+    for (impact, seed) in forked.indirect {
+        let beam_merge = if seed.multishot { l.beam_merge } else { 1. };
+        events.push(Landing {
+            spatial: Some(SpatialLanding {
+                impact,
+                miss: false,
+                first: false,
+                last: false,
+                instance: 0,
+                follows: false,
+                contact: 0,
+                splash: false,
+                beam: Some(seed),
+                redirected: false,
+                progress: progress.clone(),
+            }),
+            n_pellets: 1,
+            rounds: Rounds::single(1, 1.),
+            beam_merge,
+            burst_starts: false,
+            burst_completed,
+            ..l.clone()
+        });
+    }
+    if !hit_any {
+        rec.push(
+            l.t,
+            None,
+            crate::record::Kind::Miss {
+                reason: "3d trajectory reached no enemy",
+            },
+        );
+    }
+    for (ray, path) in paths.into_iter().enumerate() {
+        rec.trace_spatial(l.t, l.shot, ray as u32, path);
+    }
 }
 
 #[wfsim_gas_macro::metered]

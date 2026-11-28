@@ -106,18 +106,9 @@ What is still open here:
   enemy silhouettes and vertical placement are not simulated. Where a landed
   pellet went remains `headshot_pct`'s question, pinned separately per pellet;
 - **missed explosive placement** uses the ray's closest approach to the target.
-  Terrain collisions and ballistic ground impacts are not simulated. A landed
-  hit uses the body's facing surface rather than a 3D silhouette intersection;
-- **18 entries have no transcribed spread**. Sixteen of them are
-  SENTINEL weapons, and that one is a source gap rather than a matching one:
-  the wiki's companion module carries no `MinSpread`/`MaxSpread` for any of
-  them. The other two are the Miter, whose weapon publishes a cone for its
-  uncharged shot and its Incarnon form and none for the charged shot our entry
-  IS, and Nunchasa Alt-Fire, whose attack block publishes no spread although
-  its primary does. The intake takes nothing rather than the neighbouring
-  attack’s value. Each says
-  so (`spread_not_transcribed`); re-running `scripts/intake_spread.py` only
-  ever lowers the count and a test holds the ceiling;
+  Terrain collisions and ballistic ground impacts are not simulated in planar
+  fights. A landed planar hit uses the body's facing surface rather than a 3D
+  silhouette intersection;
 - **PROJECTILE LIFETIME, and with it a projectile's MAX RANGE** (= speed ×
   lifetime, wiki `Range`). A round with no declared hard range flies any
   distance; Steflos's stated lifetime and contact extensions are not applied.
@@ -593,11 +584,14 @@ does not establish complete runtime or in-game calibration. Supported ordinary
 damage, rates, charge, reload and generic sampler inputs are applied; the register
 below is scoped to the affected entries through structured reason ids.
 
-- `client_accuracy_runtime`: live growth, recovery and smoothing are applied
-  to bound stationary 3D firearm profiles. Equip and stance transitions,
-  native random state and unbound profiles retain limits.
-- `client_special_spread`: custom beam patterns, arbitrary partial charges and
-  firing variants without full emission bindings.
+- `client_accuracy_runtime`: live growth, recovery, smoothing and per-ray beam
+  wandering are applied to bound stationary 3D profiles. Movement, view
+  rotation, equip and stance transitions, and native random seed installation
+  retain limits.
+- `client_special_spread`: stationary 3D scenes apply bound projectile fans,
+  concentric rings, multishot cone angles, extra-pellet floors, child-beam
+  quaternions and converging or oscillating beam fans; arbitrary partial
+  charges and planar fights retain envelope approximations.
 - `client_beam_target_ramp`: shared ramp progress instead of target-local state.
 - `client_spool_pellets` and `client_rate_spool`: a declared pellet stage and
   shot-count ramp span; native counter cadence and reset remain unverified.

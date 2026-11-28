@@ -25,9 +25,10 @@ description: "On Hit:
 family: split_chamber
 incompatible_with: [split_chamber]
 # "(Non-AOE Bows)" on the card: the Lenz (crpbow), Kuva Bramma (grnbow),
-# Proboscis Cernos (infbow), Nataruk (omicrus), every crossbow, Artemis Bow.
+# Proboscis Cernos (infbow), Nataruk (omicrus), Nunchasa (duelistbow), every
+# crossbow, Artemis Bow.
 # see notes: de_s_own_incompatibility
-excludes_weapon: [crpbow, crossbow, grnbow, power_weapon, infbow, omicrus]
+excludes_weapon: [crpbow, crossbow, grnbow, power_weapon, infbow, omicrus, duelistbow]
 
 effects:
   # A LIVE STACKING BUFF, not a flat +400% multishot. The distinction is the
@@ -71,8 +72,8 @@ effects:
   # on the card covers both — and a build carrying this mod is played at its
   # cap: +7.2 degrees on top of a bow's own cone.
   - kind: added_spread
-    rank0: 0.3
-    rankMax: 1.8
+    rank0: 0.30000001192092896
+    rankMax: 1.7999999523162842
     max_stacks: 4
     # THE WINDOW RAMPS WITH RANK, 0.33 s -> 2 s (the wiki's Duration column).
     # Without `duration_rank0` the card would read "for 2s" at every rank — a
@@ -81,11 +82,11 @@ effects:
     duration: 2.0
     duration_rank0: 0.333
 
-  # THE PER-WEAPON EXTRA the wiki tabulates separately: the Cernos Prime takes
-  # an ADDITIONAL +0.1 -> +0.6 spread, because its three arrows fan out on their
-  # own axis. It is a one-row catalog and it is not transcribed, so this roster
-  # runs the Cernos Prime a third of a degree tighter than the game does.
-  - kind: the_cernos_prime_takes_an_additional_spread_row_of_its_own
+  - kind: added_spread
+    rank0: 0.10000000149011612
+    rankMax: 0.6000000238418579
+    max_stacks: 4
+    weapons: [cernos_prime]
 
 source:
   url: https://wiki.warframe.com/w/Split_Flights

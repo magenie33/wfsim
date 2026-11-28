@@ -18,7 +18,6 @@ transforms_to: miter_incarnon
 unmodeled:
   - reason: client_projectile_collision
   - "The Uncharged Shot is not modelled; this entry carries only the Charged Shot."
-  - reason: spread_not_transcribed
 accuracy: 100
 disposition: 1.2
 polarities: [naramon]
@@ -74,6 +73,14 @@ attack:
     radius_calculation: snapshot
     reads_radius_m: 0.2
   damage: { impact: 25, slash: 450, puncture: 25 }   # total 500
+  spread:
+    min_deg: 0.0
+    max_deg: 0.0
+    sampling:
+      horizontal_ratio: 0.1
+      uniform: true
+      hip_min_deg: 0.0
+      hip_max_deg: 0.0
 
 # incarnon_evolutions: definitions live in data/evolutions/miter_*.yaml.
 

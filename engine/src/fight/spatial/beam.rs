@@ -18,6 +18,18 @@ pub(super) struct Seeds {
     pub indirect: Vec<(Impact, Seed)>,
 }
 
+pub(super) struct ForkedDirect {
+    pub impact: Impact,
+    pub tags: u32,
+    pub seed: Option<Seed>,
+}
+
+#[derive(Default)]
+pub(super) struct ForkedSeeds {
+    pub direct: Vec<ForkedDirect>,
+    pub indirect: Vec<(Impact, Seed)>,
+}
+
 #[wfsim_gas_macro::metered]
 impl Seed {
     fn new(kind: Option<BeamContactKind>, multishot: bool) -> Self {
@@ -49,6 +61,7 @@ pub(super) fn seeds(
             let endpoint = path
                 .stopped_at
                 .or_else(|| path.impacts.last().map(|hit| hit.point))
+                .or_else(|| scene.floor_contact(path.muzzle, line, None, active.range_m).map(|(p, _, _)| p))
                 .unwrap_or_else(|| path.muzzle.along(line, active.range_m));
             path.beam_endpoint = Some(endpoint);
             for (body, &is_present) in eligible.iter().enumerate() {
@@ -103,6 +116,128 @@ pub(super) fn seeds(
         path.beam_contacts.extend_from_slice(&seed.links);
     }
     seeds
+}
+
+#[wfsim_gas_macro::metered]
+pub(super) fn forked_seeds(
+    scene: &Scene, paths: &mut [Flight], active: &FightParams, eligible: &[bool], tendrils: u32,
+) -> ForkedSeeds {
+    let mut out = ForkedSeeds::default();
+    if paths.is_empty() {
+        return out;
+    }
+    let beam = active.beam.filter(|b| b.chain_hops > 0 || b.damage_radius_m > 0. || b.beams_count > 1);
+    let has_secondary = beam.is_some() || (tendrils > 0 && active.tendril_max > 0);
+    let mut taken = vec![false; eligible.len()];
+    let mut direct_slot = vec![None::<usize>; eligible.len()];
+    for path in paths.iter() {
+        let mut seen_in_ray = vec![false; eligible.len()];
+        for hit in &path.impacts {
+            if seen_in_ray[hit.body] {
+                continue;
+            }
+            seen_in_ray[hit.body] = true;
+            taken[hit.body] = true;
+            if let Some(slot) = direct_slot[hit.body] {
+                out.direct[slot].tags += 1;
+                if out.direct[slot].impact.part != 1 && hit.part == 1 {
+                    out.direct[slot].impact = *hit;
+                }
+            } else {
+                direct_slot[hit.body] = Some(out.direct.len());
+                out.direct.push(ForkedDirect {
+                    impact: *hit,
+                    tags: 1,
+                    seed: has_secondary.then(|| Seed::new(None, true)),
+                });
+            }
+        }
+    }
+    if !has_secondary {
+        return out;
+    }
+    let reticle = paths[0].aim_target.minus(paths[0].muzzle).normalized().unwrap_or(paths[0].direction);
+    let sight_line = paths[0].aim_target.minus(paths[0].camera).normalized().unwrap_or(reticle);
+    if let Some(beam) = beam {
+        if beam.damage_radius_m > 0. {
+            let mut seen_endpoints: Vec<crate::rules::geometry::Vec3> = Vec::new();
+            for path in paths.iter_mut() {
+                let line = path.direction.normalized().unwrap_or(reticle);
+                let endpoint = path
+                    .stopped_at
+                    .or_else(|| path.impacts.last().map(|hit| hit.point))
+                    .or_else(|| scene.floor_contact(path.muzzle, line, None, active.range_m).map(|(p, _, _)| p))
+                    .unwrap_or_else(|| path.muzzle.along(line, active.range_m));
+                path.beam_endpoint = Some(endpoint);
+                // Native 21E580 deduplicates sphere queries within 1e-4 per axis.
+                if seen_endpoints.iter().any(|prev| (0..3).all(|i| (prev.0[i] - endpoint.0[i]).abs() <= 1e-4)) {
+                    continue;
+                }
+                seen_endpoints.push(endpoint);
+                for (body, &is_present) in eligible.iter().enumerate() {
+                    // Native 21E737 checks batch exclusion so overlapping spheres and
+                    // direct hits never double-count the same victim on one tick.
+                    if is_present && !taken[body] && scene.distance_to_body(endpoint, body) <= beam.damage_radius_m {
+                        let impact = scene.beam_recipient(body, endpoint);
+                        taken[body] = true;
+                        path.beam_contacts.push(BeamContact {
+                            kind: BeamContactKind::Radius, from: endpoint, impact, share: 1.,
+                        });
+                        out.indirect.push((impact, Seed::new(Some(BeamContactKind::Radius), beam.radius_takes_multishot)));
+                    }
+                }
+            }
+        }
+        if beam.beams_count > 1 {
+            let count = (beam.beams_count as usize).saturating_sub(out.direct.len());
+            let muzzle = paths[0].muzzle;
+            let range = beam.beams_range_m + (active.range_m - beam.range_m);
+            let candidates = scene.beam_acquire(muzzle, paths[0].camera, sight_line, beam.beams_acquire_deg, range, eligible);
+            let mut remaining = count;
+            for impact in candidates {
+                if remaining == 0 { break; }
+                if taken[impact.body] { continue; }
+                taken[impact.body] = true;
+                paths[0].beam_contacts.push(BeamContact {
+                    kind: BeamContactKind::Acquired, from: muzzle, impact, share: 1.,
+                });
+                out.indirect.push((impact, Seed::new(Some(BeamContactKind::Acquired), true)));
+                remaining -= 1;
+            }
+        }
+        if beam.chain_hops > 0 {
+            let direct_len = out.direct.len();
+            for (index, entry) in out.direct.iter_mut().enumerate() {
+                if beam.chain_fanout && index + 1 != direct_len {
+                    continue;
+                }
+                let chain = links(scene, entry.impact, beam, eligible, &mut taken);
+                paths[0].beam_contacts.extend_from_slice(&chain);
+                entry.seed.as_mut().unwrap().links = chain;
+            }
+            for (hit, seed) in &mut out.indirect {
+                let chain = links(scene, *hit, beam, eligible, &mut taken);
+                paths[0].beam_contacts.extend_from_slice(&chain);
+                seed.links = chain;
+            }
+        }
+    }
+    if tendrils > 0 && active.tendril_max > 0 {
+        let muzzle = paths[0].muzzle;
+        let candidates = scene.beam_acquire(muzzle, paths[0].camera, sight_line, active.tendril_acquire_deg, active.tendril_range_m, eligible);
+        let mut remaining = tendrils;
+        for impact in candidates {
+            if remaining == 0 { break; }
+            if taken[impact.body] { continue; }
+            taken[impact.body] = true;
+            paths[0].beam_contacts.push(BeamContact {
+                kind: BeamContactKind::Tendril, from: muzzle, impact, share: 1.,
+            });
+            out.indirect.push((impact, Seed::new(Some(BeamContactKind::Tendril), true)));
+            remaining -= 1;
+        }
+    }
+    out
 }
 
 #[allow(clippy::too_many_arguments)]

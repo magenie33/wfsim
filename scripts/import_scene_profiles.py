@@ -65,7 +65,12 @@ def enemies():
             "steering_center": demo["anchors"]["hip_bone"],
         },
     }
-    return result
+    closure = read("native-roster-closure.json")
+    for id, enemy in closure["enemies"].items():
+        assert id not in result
+        result[id] = enemy
+    assert len(result) == 12
+    return result, closure["warframes"], closure["carriers"]
 
 
 def weapons():
@@ -93,7 +98,14 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args()
-    data = json.dumps({"enemies": enemies(), "weapons": weapons()}, separators=(",", ":"), allow_nan=False) + "\n"
+    all_enemies, warframes, carriers = enemies()
+    payload = {
+        "enemies": all_enemies,
+        "weapons": weapons(),
+        "warframes": warframes,
+        "carriers": carriers,
+    }
+    data = json.dumps(payload, separators=(",", ":"), allow_nan=False) + "\n"
     if args.check:
         assert OUTPUT.read_text() == data
     else:

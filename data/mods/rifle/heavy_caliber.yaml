@@ -14,9 +14,47 @@ effects:
     Value: 0.15000001
     FusionPowerStep: 0.0
     FusionPowerCurve: QC_LINEAR
-  - kind: accuracy_bonus
-    rank0: -0.05
-    rankMax: -0.55
+  - kind: added_spread
+    rank0: 0.27000001072883606
+    rankMax: 2.9700000286102295
+    card_rank0: -0.05
+    card_rankMax: -0.55
+  - kind: added_spread
+    rank0: 5.0
+    rankMax: 55.0
+    weapons: [kuva_ogris, ogris]
+  - kind: added_spread
+    rank0: 1.3600000143051147
+    rankMax: 14.960000038146973
+    weapons: [miter]
+  - kind: added_spread
+    rank0: 0.27000001072883606
+    rankMax: 2.9700000286102295
+    weapons: [flux_rifle, tenet_flux_rifle]
+  - kind: added_spread
+    rank0: 0.8999999761581421
+    rankMax: 9.899999618530273
+    weapons: [dera, dera_vandal]
+  - kind: added_spread
+    rank0: 0.36000001430511475
+    rankMax: 3.9600000381469727
+    weapons: [coda_synapse, synapse]
+  - kind: added_spread
+    rank0: 3.0
+    rankMax: 33.0
+    weapons: [torid]
+  - kind: added_spread
+    rank0: 1.5
+    rankMax: 16.5
+    weapons: [javlok]
+  - kind: added_spread
+    rank0: 1.0
+    rankMax: 11.0
+    weapons: [ferrox, tenet_ferrox]
+  - kind: added_spread
+    rank0: 1.75
+    rankMax: 19.25
+    weapons: [scourge, scourge_prime]
 
 source:
   url: https://wiki.warframe.com/w/Heavy_Caliber

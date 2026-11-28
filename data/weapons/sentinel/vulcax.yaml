@@ -62,10 +62,17 @@ attack:
     # none, so this one has to be written down or the explosion would proc at
     # half the rate the page gives it.
     status_chance: 0.20
+  spread:
+    min_deg: 0.0
+    max_deg: 0.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 0.0
+      hip_max_deg: 0.0
 unmodeled:
   - "The charge time is not modelled because the page publishes none: mods treat it as a charge weapon, but it fires at the listed 1.00/s. A real draw can only be slower, so the rate is a ceiling."
   - reason: companion_fires_it
-  - reason: spread_not_transcribed
 
 source:
   url: https://wiki.warframe.com/w/Vulcax

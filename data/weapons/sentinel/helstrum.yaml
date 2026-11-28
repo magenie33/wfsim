@@ -57,11 +57,18 @@ attack:
     crit_chance: 0.05
     crit_multiplier: 1.5
     status_chance: 0.30
+  spread:
+    min_deg: 0.0
+    max_deg: 0.0
+    sampling:
+      horizontal_ratio: 0.800000011920929
+      uniform: false
+      hip_min_deg: 0.0
+      hip_max_deg: 0.0
 unmodeled:
   - "The missiles home, which is not modelled; with one target at zero distance, homing and straight missiles land the same."
   - "The explosion's falloff is not published, so it is not modelled; the target stands at the centre and takes the full 30."
   - reason: companion_fires_it
-  - reason: spread_not_transcribed
 
 source:
   url: https://wiki.warframe.com/w/Helstrum

@@ -367,7 +367,20 @@ pub(super) fn effect(id: &str, v: &Value) -> Option<ModEffect> {
         // buff` with an indirect grant already takes: a build carrying this
         // mod is played at its cap.
         "added_spread" => {
-            ModEffect::AddedSpread(max("rankMax") * f64::from(u(v, "max_stacks").max(1)))
+            let weapons: &'static [&'static str] = match v.get("weapons").and_then(Value::as_sequence) {
+                Some(seq) => Box::leak(
+                    seq.iter()
+                        .filter_map(Value::as_str)
+                        .map(|s| &*Box::leak(s.to_string().into_boxed_str()))
+                        .collect::<Vec<&'static str>>()
+                        .into_boxed_slice(),
+                ),
+                None => &[],
+            };
+            ModEffect::AddedSpread {
+                degrees: max("rankMax") * f64::from(u(v, "max_stacks").max(1)),
+                weapons,
+            }
         }
         "last_round_damage" => ModEffect::LastRoundDamage(max("rankMax")),
         "crit_per_kill" => ModEffect::CritPerKill(

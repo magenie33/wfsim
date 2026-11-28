@@ -57,6 +57,7 @@ def source_mount_layers(batches, paths):
     filename, members = pinned_archive(batches, METADATA, METADATA_PIN, "data.zip")
     member = members["packages_owntext.jsonl"]
     layers = {}
+    heavy_layers = {}
     digest = sha256()
     size = 0
     with ZipFile(filename) as archive, archive.open(member["path"]) as stream:
@@ -65,9 +66,11 @@ def source_mount_layers(batches, paths):
             size += len(line)
             row = json.loads(line)
             if row["path"] in paths:
-                layers[row["path"]] = fields(row["ownText"]).get("THIRD_PERSON_ATTACHMENT")
+                parsed = fields(row["ownText"])
+                layers[row["path"]] = parsed.get("THIRD_PERSON_ATTACHMENT")
+                heavy_layers[row["path"]] = parsed.get("HeavyWeaponAttachments")
     assert size == member["bytes"] and digest.hexdigest() == member["sha256"]
-    return layers
+    return layers, heavy_layers
 
 
 def vector(text, n):
@@ -163,7 +166,17 @@ def single_iteration(behaviors, forms):
     return True
 
 
-def weapon_rig(path, slot, linked, mounts, models, bone_numbers, controls):
+def weapon_rig(
+    path,
+    slot,
+    linked,
+    mounts,
+    models,
+    bone_numbers,
+    controls,
+    require_controls=True,
+    allow_unresolved_bone=False,
+):
     declaration = linked[path]["fields"].get("FiringPositions")
     model_paths = mounts.get(path, {}).get("model_paths", [])
     firing_positions = []
@@ -193,16 +206,21 @@ def weapon_rig(path, slot, linked, mounts, models, bone_numbers, controls):
                     if bone_name not in bone_ids:
                         try:
                             matrix = source_bone(models[model_paths[0]], bone_name)
-                        except (KeyError, ValueError):
+                        except KeyError:
+                            if not allow_unresolved_bone or model_paths[0] not in models:
+                                return
+                            matrix = None
+                        except ValueError:
                             return
-                        bone_ids[bone_name] = len(used_bones)
-                        used_bones.append(matrix)
-                    bone_id = bone_ids[bone_name]
+                        if matrix is not None:
+                            bone_ids[bone_name] = len(used_bones)
+                            used_bones.append(matrix)
+                    bone_id = bone_ids.get(bone_name)
                 positions.append({"bone": bone_id, "local": offset(point)})
             firing_positions.append(positions)
         if not firing_positions:
             return
-        if len(firing_positions) > 1 or len(firing_positions[0]) > 1:
+        if require_controls and (len(firing_positions) > 1 or len(firing_positions[0]) > 1):
             for mode, positions in enumerate(firing_positions):
                 case = controls.get((path, mode))
                 if not case or not agrees_with_native(case, declaration, positions, used_bones):
@@ -239,7 +257,44 @@ def agrees_with_native(case, declaration, positions, bones):
     return len(reached) == len(positions)
 
 
-def select_groups(form_rows, source, models, layers, controls):
+ARCHGUN_MODES = {
+    ("cortege", "alt_fire"): 1,
+    ("larkspur", "charged"): 1,
+    ("larkspur_prime", "charged"): 1,
+    ("mandonel", "charged"): 1,
+    ("mausolon", "charged"): 1,
+    ("morgha", "alt_fire"): 1,
+}
+
+
+def heavy_attach_slots(ancestry, layers, heavy_layers, records, bone_numbers, alternating):
+    hands = {}
+    for parent_path in reversed(ancestry):
+        for declaration in (layers.get(parent_path), heavy_layers.get(parent_path)):
+            if declaration is None:
+                continue
+            entries = fields(declaration.strip()[1:-1])
+            for hand, raw in entries.items():
+                if hand not in ("MAIN_HAND", "OFF_HAND"):
+                    continue
+                slot = fields(raw.strip()[1:-1])
+                token = slot.get("Type", '""')
+                if token != '""' and not token.startswith("/"):
+                    slot["Type"] = str(PurePosixPath(parent_path).parent / token)
+                hands.setdefault(hand, {}).update(slot)
+    slots = {hand: row for hand, row in hands.items() if row.get("Type", '""') != '""'}
+    if len(slots) != (2 if alternating else 1):
+        return
+    for slot in slots.values():
+        if slot.get("BoneName") not in bone_numbers or slot.get("RelativeToBounds", "0") != "0":
+            return
+        if slot["Type"] not in records:
+            return
+    return slots
+
+
+def select_groups(form_rows, source, models, layers_pair, controls):
+    layers, heavy_layers = layers_pair
     player = (ROOT / "data/geometry/excalibur-standing.yaml").read_text()
     bones = {name:i for i,name in enumerate(re.findall(r"\] # (\w+)\s*$", player, re.M))}
     assert bones["GAME_R1_WEAPON1"] == 48 and bones["GAME_L1_WEAPON1"] == 17
@@ -257,6 +312,66 @@ def select_groups(form_rows, source, models, layers, controls):
             continue
         entry = source_weapons.get(next(iter(paths)), {})
         data = entry.get("fields", {})
+        if "PrimaryAttachmentOverride" in data and "Attachment" in data and id.endswith(("_primary", "_secondary")):
+            att_field = data["PrimaryAttachmentOverride"] if id.endswith("_primary") else data["Attachment"]
+            token = att_field["source_text"]
+            if not token.startswith("/"):
+                token = str(PurePosixPath(att_field["declared_by"]).parent / token)
+            slot = {"BoneName": "GAME_R1_WEAPON1"}
+            if token in links:
+                rig = weapon_rig(
+                    token,
+                    slot,
+                    links,
+                    models["mount_source"],
+                    models["models"],
+                    bones,
+                    controls,
+                    require_controls=False,
+                    allow_unresolved_bone=True,
+                )
+                if rig is not None:
+                    cycling = bool(rig["profiles"] and len(rig["profiles"][0]) > 1)
+                    mapped[id] = {"attachments": [rig], "round_order": [firing_slot(0, 0, cycling)]}
+            continue
+        if "HeavyWeaponAttachments" in data and not set(data).intersection((
+            "UsesExtraHandAttachments", "PrimaryAttachmentOverride",
+            "AlwaysUseAttachmentChildBone", "AuxiliaryAttachmentFiringIndex",
+        )):
+            style = data.get("AttachmentFireStyle", {}).get("source_text")
+            if style not in (None, "ALTERNATE_HANDS"):
+                continue
+            alternating = style == "ALTERNATE_HANDS"
+            slots = heavy_attach_slots(entry["ancestry_leaf_first"], layers, heavy_layers, links, bones, alternating)
+            if not slots:
+                continue
+            if alternating:
+                hands = [slots["MAIN_HAND"], slots["OFF_HAND"]]
+                if not hands[0]["BoneName"].startswith("GAME_R1_") or not hands[1]["BoneName"].startswith("GAME_L1_"):
+                    continue
+                rigs = [weapon_rig(hand["Type"], hand, links, models["mount_source"], models["models"], bones, controls, require_controls=False)
+                        for hand in hands]
+                if any(rig is None for rig in rigs):
+                    continue
+                mapped[id] = {"attachments": rigs, "round_order": [firing_slot(index) for index in range(2)]}
+                continue
+            slot = next(iter(slots.values()))
+            rig = weapon_rig(slot["Type"], slot, links, models["mount_source"], models["models"], bones, controls, require_controls=False)
+            if rig is None:
+                continue
+            orders = {}
+            for form in forms:
+                kind = form["form_or_action_id"]
+                mode = ARCHGUN_MODES.get((id, kind), 0)
+                mode = mode if mode < len(rig["profiles"]) else 0
+                cycling = bool(rig["profiles"] and len(rig["profiles"][mode]) > 1)
+                orders[kind] = [firing_slot(0, mode, cycling)]
+            base = orders.get("base", next(iter(orders.values())))
+            mapped[id] = {"attachments": [rig], "round_order": base}
+            overrides = {kind: order for kind, order in orders.items() if order != base}
+            if overrides:
+                mapped[id]["round_order_by_form"] = overrides
+            continue
         if set(data).intersection(("HeavyWeaponAttachments", "UsesExtraHandAttachments",
                                    "PrimaryAttachmentOverride", "AlwaysUseAttachmentChildBone",
                                    "AuxiliaryAttachmentFiringIndex")):

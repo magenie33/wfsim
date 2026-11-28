@@ -45,35 +45,32 @@ profile. The standing Excalibur, from the same source data as explicit
 scenes, faces the aimed actor. The formation faces the shooter along that
 axis with the optional shared `enemy_yaw_deg` angle relative to frontal.
 
-The preset supports primary, secondary and Archgun collision routes and
-approximate standing melee. It loads the Laetum, Akarius and Akarius Prime
-controls or the attachment
-models from `geometry/weapon-attachments.yaml`. Each catalog model projects
-an unambiguous named mount and its usable declared firing position into a
-source-default pose. A gun without a bound standing attachment uses the
-Excalibur right-hand reference mount. The picker labels that reference,
+The preset supports primary, secondary, Archgun and robotic companion firearm
+collision routes and approximate standing melee. It loads the weapon attachment
+models from `geometry/weapon-attachments.yaml`, including atmospheric Archgun
+mounts and modular Kitgun barrel mounts. Each catalog model projects an
+unambiguous named mount and its usable declared firing position into a
+source-default pose, honouring Warframe-specific weapon-hand bone overrides
+(`chroma_prime`, `narin`). A gun without a bound standing attachment uses the
+wielder's right-hand reference mount. The picker labels that reference,
 and the combat record reports `emitter: player_mount` or `attachment`.
 `/api/meta.scene_3d_source_default.reference_weapons` lists the guns that use
-the reference mount. The preset includes Thrax Centurion, Corrupted Heavy
-Gunner, Demolisher Devourer, and the Angst, Mania, Misery, Torment and
-Violence Acolytes. The Demolisher has its mine slots disabled in this pose.
-The Acolytes use their separate posed damage proxies and the controller
-declared by StalkerWalk. Their head capsule supplies the standing aim
-anchor and their posed hip supplies the steering center. The radial path
-uses their detailed proxies in the supplied standing scene.
-The geometry picker uses the supplied source-default state with a fixed
-1/64 s step and clear homing visibility. `scripts/import_scene_profiles.py
---check` verifies the compact data projection. An explicit scene supplies
-other poses, emitters and actor models through the same shared fight.
-`/api/log` records each actor's resolved root and each physical round's
-origin, path, and contacts.
+the reference mount. The preset includes all twelve selectable enemy profiles:
+Thrax Centurion, Corrupted Heavy Gunner, Crewman, Demolisher Devourer,
+Legacyte, Techrot Babau, and the Angst, Malice, Mania, Misery, Torment and
+Violence Acolytes. Box hitboxes (`Shape::Box`) and normal-hit weak-point
+overrides (`mTreatHeadshotAsNormalHit`) are preserved per slot. The Demolisher
+has its mine slots disabled in this pose. The Acolytes use their separate posed
+damage proxies and the controller declared by StalkerWalk. Their head capsule
+supplies the standing aim anchor and their posed hip supplies the steering
+center. The radial and kinematic reverse-ray paths use `radial_proxy` when
+present.
 
-A robotic companion firearm can use the preset's target models with a posed
-`scene_3d.carrier`. Supply its complete `player` model, `camera` mount and
-world-space `reference_point`. The player model contains the carrier's world
-transform, controller, posed bones, muzzle and optional equipment. These
-requests use supplied placement by default. An explicit scene for a companion
-also requires the complete carrier. `/api/meta.scene_3d_source_default.carrier_weapons`
+A robotic companion firearm uses its default autonomous hovering or ground
+carrier profile from `geometry/source-default.yaml` when `scene_3d.carrier` is
+omitted, including companion seats in `also_acting`. Requests may still supply
+an explicit `scene_3d.carrier` with a complete `player` model, `camera` mount
+and world-space `reference_point`. `/api/meta.scene_3d_source_default.carrier_weapons`
 lists applicable entries. The weapon's AI and aim policies retain their catalog
 conventions. Installed follower offsets and live poses remain separate inputs.
 
@@ -192,13 +189,16 @@ Melee keeps its existing action clock and
 settlement. Stance animation sweeps, the airborne pose during a slam, and
 glaive bounce/homing continue to use the existing approximations.
 
-Each physical round samples the weapon's resolved intrinsic spread once in 3D.
-Multishot instances share its physical path; each receiving body independently
-rolls the round's multishot share. The path is queried against every enemy's
-posed sphere/capsule proxies, ordered by nearest contact. Range, part, flight
-length and arrival time belong to that contact. Every receiving body uses the
-ordinary pellet damage, critical, status, buff and ledger code with its own
-state. A penetrated body independently resolves its part.
+Collinear zero-spread rounds share one physical ray and roll their multishot
+share per pierced body. Whenever effective spread is positive or a non-beam
+multishot pattern applies (`extra_floor`, `multishot_cone`, `fan`,
+`extra_spread`, `first_pellet_pinpoint`), each physical projectile samples its
+own 3D trajectory and settles independent direct and radial hits without
+cross-projectile victim deduplication. The path is queried against every
+enemy's posed sphere/capsule/box proxies, ordered by nearest contact. Range,
+part, flight length and arrival time belong to that contact. Every receiving
+body uses the ordinary pellet damage, critical, status, buff and ledger code
+with its own state. A penetrated body independently resolves its part.
 
 The analytic query uses binary64 geometry. Y is up; transforms are row-major
 3x4 matrices applied to column vectors. Capsule height describes its inner
@@ -248,14 +248,20 @@ The native replay captures radial parts at the controller input. Radial damage
 still follows the existing area damage rules. Live filter enrollment, cover
 and damage acceptance are open. Status areas retain their planar policy.
 
-Continuous fire traces the primary beam against posed contacts and spends
-the ordinary punch-through budget. The radius uses its stopping contact or
-the range endpoint and overlaps the detailed shapes. A direct contact gets
-one primary instance. A sphere-only contact receives a body hit with its
-declared multishot rule and can start a separate chain. Acquisition checks
-the angle to posed body centers and the reach from the player's root.
-Acquired beams and live tendrils select distinct bodies outside the primary
-contacts. A tendril's direct kill cannot earn another tendril.
+Continuous fire traces posed contacts per tick. Beams with positive spread,
+child-beam quaternions (`Phantasma`), converging or oscillating fans (`Phage`,
+`Convectrix`) or per-ray smoothed wandering (`0x1727ca0`) emit independent rays
+per rolled multishot iteration (`0x12947c0`), deduplicating ray tags per victim
+(`0xe6c787`) so multi-collider piercings never double-count. Beams with a
+positive endpoint `damage_radius_m` spend zero punch-through unless
+`infinite_body_punch_through` is set (`0x14df6f0`), anchor missed rays on floor
+contact before range limit, deduplicate sphere origins within `1e-4` per axis
+(`0x21e580`), and enforce batch exclusion (`0x21e737`) so overlapping spheres
+and direct hits cap each sphere-only bystander at one hit while each distinct
+primary or sphere recipient seeds its own sequential chain tree (`0x482380`).
+Acquisition checks the angle to posed body centers and the reach from the
+player's root. Acquired beams and live tendrils select distinct bodies outside
+the primary contacts. A tendril's direct kill cannot earn another tendril.
 
 All chain seeds are marked before the first hop. Each sequential path picks
 the nearest fresh root in 3D and considers repeats only after fresh

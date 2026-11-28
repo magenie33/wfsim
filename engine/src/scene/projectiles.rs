@@ -133,8 +133,26 @@ impl Scene {
     fn surface_normal(&self, hit: Impact) -> Option<Vec3> {
         let shape = self.bodies[hit.body].proxies.iter().find(|p| p.proxy.cache_index == hit.proxy)?;
         let local = shape.collider.inverse.point(hit.point);
-        let (_, half) = shape.collider.shape.radius_and_half_height();
-        let local_normal = Vec3([local.0[0], local.0[1] - local.0[1].clamp(-half, half), local.0[2]]);
+        let local_normal = match shape.collider.shape {
+            crate::rules::geometry::Shape::Box { half_extents } => {
+                let mut axis = 0;
+                let mut best = -1.0_f64;
+                for (i, &h) in half_extents.iter().enumerate() {
+                    let ratio = local.0[i].abs() / h.max(1e-12);
+                    if ratio > best {
+                        best = ratio;
+                        axis = i;
+                    }
+                }
+                let mut normal = [0.0; 3];
+                normal[axis] = if local.0[axis] >= 0.0 { 1.0 } else { -1.0 };
+                Vec3(normal)
+            }
+            _ => {
+                let (_, half) = shape.collider.shape.radius_and_half_height();
+                Vec3([local.0[0], local.0[1] - local.0[1].clamp(-half, half), local.0[2]])
+            }
+        };
         shape.collider.inverse.inverse()?.direction(local_normal).normalized()
     }
 
@@ -164,7 +182,9 @@ impl Scene {
             let crossing = if remaining > 0. {
                 let start = Vec3(reverse_start(anchor, direction, remaining).map(f64::from));
                 let delta = Vec3(anchor.map(f64::from)).minus(start);
-                let collider = &proxy.collider;
+                // Native 10BBCC0 swaps the hit target to the avatar's broad whole-body
+                // proxy when present before issuing the reverse raycast.
+                let collider = self.bodies[body].radial_proxy.as_ref().unwrap_or(&proxy.collider);
                 // One installed collider per supplied handle. Other handles cannot match it.
                 let record = collider
                     .shape

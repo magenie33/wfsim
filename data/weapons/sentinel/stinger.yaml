@@ -44,10 +44,17 @@ attack:
   # Overload's count.
   forced_procs: [toxin]
   damage: { toxin: 15.0 }
+  spread:
+    min_deg: 0.0
+    max_deg: 0.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 0.0
+      hip_max_deg: 0.0
 unmodeled:
   - "The Toxin embed, a second attack dealing damage over 3 s on top of the hit (page), is not modelled; only the hit is carried."
   - reason: companion_fires_it
-  - reason: spread_not_transcribed
 
 source:
   url: https://wiki.warframe.com/w/Stinger

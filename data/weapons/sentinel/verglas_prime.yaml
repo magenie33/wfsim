@@ -66,6 +66,14 @@ attack:
   # see notes: range_wall_ramp_full
   range_m: 24.0
   damage: { cold: 32.0 }
+  spread:
+    min_deg: 0.0
+    max_deg: 0.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 0.0
+      hip_max_deg: 0.0
 
 # THE SAME ADMISSIONS AS THE ORDINARY VERGLAS. This entry carried none at all
 # until the ordinary one joined the roster and the board check noticed the two
@@ -74,7 +82,6 @@ attack:
 # properties of the WEAPON and were always missing here.
 unmodeled:
   - reason: companion_fires_it
-  - reason: spread_not_transcribed
 
 source:
   url: https://wiki.warframe.com/w/Verglas_Prime

@@ -54,10 +54,17 @@ attack:
     crit_chance: 0.15
     crit_multiplier: 2.0
     status_chance: 0.22
+  spread:
+    min_deg: 3.0
+    max_deg: 8.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 4.0
+      hip_max_deg: 10.0
 unmodeled:
   - "The dart's 1.5 s explosion delay is not modelled: the blast arrives with the dart, so a short fight gets its damage early."
   - reason: companion_fires_it
-  - reason: spread_not_transcribed
 
 source:
   url: https://wiki.warframe.com/w/Multron
