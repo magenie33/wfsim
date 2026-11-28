@@ -55,10 +55,7 @@ attack:
   range_m: 300.0
   damage: { impact: 6.48, puncture: 7.56, slash: 12.96 }   # total 27
 
-unmodeled:
-  - reason: client_accuracy_runtime
-  - reason: empty_reload_is_faster
-    seconds: 2.6
+reload_from_empty_speed: 0.5
 
 source:
   url: https://wiki.warframe.com/w/Velox_Prime

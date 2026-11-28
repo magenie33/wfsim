@@ -110,13 +110,8 @@ attack:
     status_chance: 0.10
 
 unmodeled:
-  - reason: client_radial_critical
-  - reason: client_accuracy_runtime
-  - "The wiki's Condition Overload catalog gives this weapon's radial its own row, 350% of its base; that row is not entered here yet, so the radial takes 100% and a status-stacking build reads low on it."
-  - reason: explosion_ignores_cover
-  - reason: holstered_reload
-    pct: 33
-  - reason: self_stagger
+- reason: client_radial_critical
+- The wiki's Condition Overload catalog gives this weapon's radial its own row, 350% of its base; that row is not entered here yet, so the radial takes 100% and a status-stacking build reads low on it.
 
 source:
   url: https://wiki.warframe.com/w/Ferrox

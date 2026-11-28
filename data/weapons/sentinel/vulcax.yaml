@@ -74,8 +74,7 @@ attack:
       hip_min_deg: 0.0
       hip_max_deg: 0.0
 unmodeled:
-  - "The charge time is not modelled because the page publishes none: mods treat it as a charge weapon, but it fires at the listed 1.00/s. A real draw can only be slower, so the rate is a ceiling."
-  - reason: companion_fires_it
+- 'The charge time is not modelled because the page publishes none: mods treat it as a charge weapon, but it fires at the listed 1.00/s. A real draw can only be slower, so the rate is a ceiling.'
 
 source:
   url: https://wiki.warframe.com/w/Vulcax

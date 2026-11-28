@@ -103,10 +103,13 @@ attack:
     crit_multiplier: 2.4
     status_chance: 0.40
 
-unmodeled:
-  - reason: client_accuracy_runtime
-  - "Bullseye Reload, its passive: a headshot grants +25% reload speed for 4 s, stacking to 2 (wiki). It is not applied, so a headshot build reads low."
-  - reason: self_stagger
+bespoke:
+  stacking_buffs:
+    - trigger: headshot
+      grant: reload_speed
+      per_stack: 0.25
+      max_stacks: 2
+      duration_seconds: 4.0
 
 source:
   url: https://wiki.warframe.com/w/Tenet_Spirex

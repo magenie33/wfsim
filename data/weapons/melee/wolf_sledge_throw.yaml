@@ -7,9 +7,9 @@ form: throw
 transform_group: wolf_sledge
 co_behavior: additive_with_base_damage
 unmodeled:
-  - reason: client_melee_special
-  - reason: client_melee_legacy
-  - reason: wolf_sledge_throw_limits
+- reason: client_melee_special
+- reason: wolf_sledge_throw_limits
+
 attack:
   trigger: melee
   shot_type: projectile

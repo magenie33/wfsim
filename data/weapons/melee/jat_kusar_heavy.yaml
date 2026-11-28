@@ -7,13 +7,11 @@ form: heavy
 transform_group: jat_kusar
 co_behavior: additive_with_base_damage
 unmodeled:
-- reason: client_melee_timing
-- reason: client_melee_geometry
 - reason: melee_own_combo_unmodelled
   combos: heavy attack
-- reason: melee_slide_unpublished
 - reason: melee_passive_unmodelled
   passive: a heavy attack's 218 Blast explosion, which only Seismic Wave raises
+
 attack:
   trigger: melee
   shot_type: hit_scan

@@ -79,12 +79,9 @@ attack:
     damage: { magnetic: 240 }   # total 240
 
 unmodeled:
-  - reason: client_accuracy_runtime
-  - reason: client_composite_attack
-  - "Orbs merge, and a full set collapses into a singularity dealing damage over time in 5 m (module). The engine resolves each shot on its own, so neither is counted; this is most of the weapon, and the number reads well low."
-  - "The Entropy syndicate effect detonates enemies and restores the wielder's Energy (wiki). It runs on a syndicate meter the sim does not track; it is not counted."
-  - reason: explosion_ignores_cover
-  - reason: self_stagger
+- reason: client_composite_attack
+- Orbs merge, and a full set collapses into a singularity dealing damage over time in 5 m (module). The engine resolves each shot on its own, so neither is counted; this is most of the weapon, and the number reads well low.
+- The Entropy syndicate effect detonates enemies and restores the wielder's Energy (wiki). It runs on a syndicate meter the sim does not track; it is not counted.
 
 source:
   url: https://wiki.warframe.com/w/Synoid_Simulor

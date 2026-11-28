@@ -6,11 +6,7 @@ inherits: ekhein
 form: heavy
 transform_group: ekhein
 co_behavior: additive_with_base_damage
-unmodeled:
-- reason: client_melee_timing
-- reason: client_melee_geometry
-- reason: melee_passive_unmodelled
-  passive: 'Heavy Insight: a heavy attack that lands grants +80% damage and +20% attack speed for 8 s'
+
 attack:
   trigger: melee
   shot_type: hit_scan
@@ -33,6 +29,19 @@ attack:
   combo_script:
     tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/HammerMeleeTree
     context: CC_GROUND_HEAVY
+bespoke:
+  stacking_buffs:
+    - trigger: direct_hit
+      grant: melee_damage
+      per_stack: 0.80
+      max_stacks: 1
+      duration_seconds: 8.0
+    - trigger: direct_hit
+      grant: fire_rate
+      per_stack: 0.20
+      max_stacks: 1
+      duration_seconds: 8.0
+
 source:
   url: https://wiki.warframe.com/w/Ekhein
 

@@ -7,12 +7,11 @@ form: slide
 transform_group: sampotes
 co_behavior: additive_with_base_damage
 unmodeled:
-  - reason: client_melee_timing
-  - reason: client_melee_geometry
-  - reason: melee_own_combo_unmodelled
-    combos: "heavy attack, heavy slam and slam attack"
-  - reason: melee_passive_unmodelled
-    passive: "a slam's line of 8 explosions 5 m apart, and a heavy slam's three lines of 4"
+- reason: melee_own_combo_unmodelled
+  combos: heavy attack, heavy slam and slam attack
+- reason: melee_passive_unmodelled
+  passive: a slam's line of 8 explosions 5 m apart, and a heavy slam's three lines of 4
+
 attack:
   trigger: melee
   shot_type: hit_scan

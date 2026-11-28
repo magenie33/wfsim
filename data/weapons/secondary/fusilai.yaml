@@ -51,9 +51,6 @@ attack:
   # see notes: no_range_row_attack
   damage: { puncture: 30.8, slash: 46.2 }   # total 77
 
-unmodeled:
-  - reason: silent_weapon
-
 source:
   url: https://wiki.warframe.com/w/Fusilai
 

@@ -77,8 +77,7 @@ attack:
   damage: { viral: 47 }   # total 47
 
 unmodeled:
-  - reason: client_accuracy_runtime
-  - "Its drawback, converting health to ammo, is not modelled: nothing shoots back and the Tenno has no health here, so the rifle is shown without its cost."
+- 'Its drawback, converting health to ammo, is not modelled: nothing shoots back and the Tenno has no health here, so the rifle is shown without its cost.'
 
 source:
   url: https://wiki.warframe.com/w/Hema

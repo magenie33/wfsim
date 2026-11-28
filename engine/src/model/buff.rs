@@ -99,6 +99,8 @@ pub enum BuffTrigger {
     PlainHit,
     /// Lethal Rearmament, Headcracker: any weak-point hit.
     Headshot,
+    /// Nagantaka passive: a weak-point kill.
+    HeadshotKill,
     /// Prolific Perforation: a pellet that went THROUGH the body it hit into
     /// another. One per landing pellet, and nothing at all against a lone
     /// target — the mechanic, not an admission.
@@ -426,6 +428,7 @@ impl BuffTrigger {
         match self {
             BuffTrigger::PlainHit => "on a hit that neither crits nor procs",
             BuffTrigger::Headshot => "on a weak-point hit",
+            BuffTrigger::HeadshotKill => "on a weak-point kill",
             BuffTrigger::PunchThrough => "on a punch-through hit",
             BuffTrigger::HitEnemyWithStatus(_) => "on hitting a target already carrying the status",
             BuffTrigger::ReloadComplete => "on a completed reload",
@@ -657,6 +660,7 @@ impl BuffTrigger {
             BuffTrigger::Crit => "crit",
             BuffTrigger::PlainHit => "plain_hit",
             BuffTrigger::Headshot => "headshot",
+            BuffTrigger::HeadshotKill => "headshot_kill",
             BuffTrigger::ConsecutiveHeadshot => "consecutive_headshot",
             BuffTrigger::PunchThrough => "punch_through",
             BuffTrigger::StatusApplied => "status_applied",
@@ -685,7 +689,7 @@ impl BuffTrigger {
     pub fn from_id(id: &str) -> Option<Self> {
         use BuffTrigger as T;
         [
-            T::Kill, T::Hit, T::DirectHit, T::Crit, T::PlainHit, T::Headshot, T::ConsecutiveHeadshot, T::PunchThrough,
+            T::Kill, T::Hit, T::DirectHit, T::Crit, T::PlainHit, T::Headshot, T::HeadshotKill, T::ConsecutiveHeadshot, T::PunchThrough,
             T::StatusApplied, T::ReloadComplete, T::ReloadFromEmpty, T::FullBurst, T::AbilityCast, T::Firing,
         ]
         .into_iter()

@@ -68,10 +68,7 @@ attack:
     damage: { viral: 46 }   # total 46
 
 unmodeled:
-  - reason: client_accuracy_runtime
-  - "The bubbles explode 0.6-0.8 s after landing, which can let enemies leave the radius (page); here the blast resolves on impact, so nothing escapes."
-  - reason: explosion_ignores_cover
-  - reason: self_stagger
+- The bubbles explode 0.6-0.8 s after landing, which can let enemies leave the radius (page); here the blast resolves on impact, so nothing escapes.
 
 source:
   url: https://wiki.warframe.com/w/Kompressa_Prime

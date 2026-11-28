@@ -40,7 +40,4 @@ source:
   url: https://wiki.warframe.com/w/Zenith
 reload_seconds: 1.6
 
-unmodeled:
-  - reason: client_accuracy_runtime
-
 # see notes: client_primary_calibration

@@ -56,10 +56,6 @@ attack:
   # data/surveys/weapon_range.yaml.
   damage: { impact: 6.4, puncture: 57.6 }   # total 64
 
-unmodeled:
-  - reason: client_accuracy_runtime
-  - reason: bolt_corpse_ragdoll
-
 source:
   url: https://wiki.warframe.com/w/Bolto
 

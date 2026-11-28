@@ -73,11 +73,7 @@ attack:
     slash: 224.9999625
 
 unmodeled:
-  - reason: client_accuracy_runtime
-  - "Weak-point hits get +250% critical chance, additive with Point Strike (wiki). The engine has no headshot-only crit bonus, so the crit chance here is 40% where a headshot lands at 290%. It is most of the weapon; the number reads low."
-  - reason: bolt_corpse_ragdoll
-  - reason: silent_weapon
-  - reason: zoom_steps
+- Weak-point hits get +250% critical chance, additive with Point Strike (wiki). The engine has no headshot-only crit bonus, so the crit chance here is 40% where a headshot lands at 290%. It is most of the weapon; the number reads low.
 
 source:
   url: https://wiki.warframe.com/w/Daikyu_Prime

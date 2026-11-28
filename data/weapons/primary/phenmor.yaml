@@ -94,8 +94,4 @@ attack:
 source:
   url: https://wiki.warframe.com/w/Phenmor
 
-unmodeled:
-  - reason: client_projectile_collision
-  - reason: client_accuracy_runtime
-
 # see notes: client_primary_calibration

@@ -62,8 +62,7 @@ attack:
   damage: { impact: 15, puncture: 120, slash: 15 }   # total 150
 
 unmodeled:
-  - reason: client_accuracy_runtime
-  - "The semi-auto mode is entered by deploying a disc that lasts until a reload and highlights enemy heads within 20 m through walls (wiki). The sim does not use the highlight or the disc's timer, so the mode is available from the first shot."
+- The semi-auto mode is entered by deploying a disc that lasts until a reload and highlights enemy heads within 20 m through walls (wiki). The sim does not use the highlight or the disc's timer, so the mode is available from the first shot.
 
 source:
   url: https://wiki.warframe.com/w/Zenith

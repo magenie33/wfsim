@@ -52,8 +52,7 @@ attack:
     reduction: 0.911111111111
   damage: { impact: 38.25, puncture: 2.25, slash: 4.5 }   # 45 each, 270 a shell
 unmodeled:
-  - "The 20-40 degree spread is not modelled; at zero distance all six pellets land."
-  - reason: companion_fires_it
+- The 20-40 degree spread is not modelled; at zero distance all six pellets land.
 
 source:
   url: https://wiki.warframe.com/w/Sweeper_Prime

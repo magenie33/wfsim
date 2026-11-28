@@ -59,6 +59,10 @@ co_behavior: additive_with_base_damage
 
 attack:
   # see notes: cone_half_angle_from
+  sustained_fire_rate:
+    native_consumer: automatic_zero_duration_refire
+    ContinuousFireRateAtten: [0.53299999, 1.0]
+    ContinuousMaxShots: 30
   spread:
     min_deg: 1
     max_deg: 3
@@ -77,10 +81,6 @@ attack:
   # see notes: wall_ramp_full_damage_6
   range_m: 300.0
   damage: { impact: 40.0, puncture: 35.0, slash: 25.0 }   # 100 total
-unmodeled:
-  - reason: auto_spool_ramp
-    rate: 25
-  - reason: arch_gun_deployer_cooldown
 
 source:
   url: https://wiki.warframe.com/w/Imperator_Vandal

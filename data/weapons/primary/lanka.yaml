@@ -84,11 +84,7 @@ attack:
     end_m: 600.0
     reduction: 0.52380952381
 unmodeled:
-  - reason: client_accuracy_runtime
-  - reason: sniper_combo_miss
-    seconds: 6
-  - reason: zoom_steps
-  - "The partial charge is a separate entry; in game both are the same trigger released at different moments."
+- The partial charge is a separate entry; in game both are the same trigger released at different moments.
 
 source:
   url: https://wiki.warframe.com/w/Lanka

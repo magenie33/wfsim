@@ -59,8 +59,7 @@ attack:
   damage: { impact: 24.51, puncture: 6.27, slash: 26.22 }   # total 57
 
 unmodeled:
-  - reason: client_accuracy_runtime
-  - "Aiming highlights enemies within 100 m (wiki), an aiming aid the sim does not use."
+- Aiming highlights enemies within 100 m (wiki), an aiming aid the sim does not use.
 
 source:
   url: https://wiki.warframe.com/w/Argonak

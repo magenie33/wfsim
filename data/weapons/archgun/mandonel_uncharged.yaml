@@ -44,8 +44,7 @@ attack:
   damage: { impact: 50.0, puncture: 30.0, slash: 20.0, radiation: 80.0 }   # 180 each
 
 unmodeled:
-  - "The horizontal spread is not modelled; at zero distance all eight projectiles land."
-  - reason: arch_gun_deployer_cooldown
+- The horizontal spread is not modelled; at zero distance all eight projectiles land.
 
 source:
   url: https://wiki.warframe.com/w/Mandonel

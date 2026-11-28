@@ -43,6 +43,9 @@ pub(super) fn before_the_shot(
     field_duration_boost: &mut bool,
     beam: &mut BeamRamp,
     target_ramps: &mut Vec<TargetRamp>,
+    spool: &Spool,
+    bespoke: &mut BespokeState,
+    in_flight_count: usize,
     switch_to: Option<super::cycle::SwitchTo>,) -> Flow {
     let t = *t_at;
         // THE FRAME FOR THIS INSTANT IS ALREADY DRAWN, by the scan loop just
@@ -73,7 +76,13 @@ pub(super) fn before_the_shot(
         // never empties at all.
         if let Some(b) = params.battery {
             let idle = t - last_shot_t;
-            let delay = if ammo.loaded < 1e-9 { b.delay_empty_seconds } else { b.delay_partial_seconds };
+            let from_empty = ammo.loaded < 1e-9;
+            let raw_delay = if from_empty { b.delay_empty_seconds } else { b.delay_partial_seconds };
+            let bucket = params.reload_bonus + if from_empty { params.reload_from_empty_speed } else { 0.0 };
+            let add = params.arcane.reload_bonus
+                + arc.total(&params.arcane.buffs, ArcGrant::ReloadSpeed, t)
+                + live_reload_speed(params, params, *rs_armed, buff_stacks, t);
+            let delay = raw_delay / crate::rules::sim::reload_divisor(1.0 + bucket + add);
             if last_shot_t.is_finite() && b.regen_per_second > 0.0 && idle > delay {
                 let gained = (idle - delay) * b.regen_per_second;
                 ammo.loaded = (ammo.loaded + gained).min(ammo.cap);
@@ -116,6 +125,9 @@ pub(super) fn before_the_shot(
             // checked, so this is THAT form's cost.
             if eff >= 1.0 - 1e-9 {
                 0.0
+            } else if let Some(ps) = active.bespoke.as_ref().and_then(|b| b.pellet_spool) {
+                let shots_now = spool_after_pause(active, spool, t);
+                ps.ammo_cost_at(shots_now) * (1.0 - eff)
             } else {
                 active.ammo_cost * (1.0 - eff)
             }
@@ -127,6 +139,29 @@ pub(super) fn before_the_shot(
         // same mark-and-diff Sentient Surge's refill and the tendrils use, two
         // blocks down, and for the same reason: a list of call sites is a list
         // to forget one from.
+        if let Some(v) = params.bespoke.as_ref().and_then(|b| b.vendetta) {
+            if r.kills != bespoke.vendetta_kill_mark {
+                let fresh = r.kills - bespoke.vendetta_kill_mark;
+                bespoke.vendetta_kill_mark = r.kills;
+                if bespoke.vendetta_attacks_left == 0 {
+                    bespoke.vendetta_kills = bespoke.vendetta_kills.saturating_add(fresh);
+                    if bespoke.vendetta_kills >= v.kills_required {
+                        bespoke.vendetta_kills = 0;
+                        bespoke.vendetta_attacks_left = v.enhanced_attacks;
+                    }
+                }
+            }
+        }
+        if let Some(sc) = params.bespoke.as_ref().and_then(|b| b.slam_capacitor) {
+            if r.kills != bespoke.slam_capacitor_kill_mark {
+                let fresh = r.kills - bespoke.slam_capacitor_kill_mark;
+                bespoke.slam_capacitor_kill_mark = r.kills;
+                if params.form != crate::model::FormKind::HeavySlam {
+                    bespoke.slam_capacitor_stacks = bespoke.slam_capacitor_stacks.saturating_add(fresh).min(sc.max_stacks);
+                }
+            }
+        }
+
         if r.kills != *kill_buff_mark {
             let fresh = r.kills - *kill_buff_mark;
             *kill_buff_mark = r.kills;
@@ -271,13 +306,13 @@ pub(super) fn before_the_shot(
                 charge_the_gauge(params, apl, tennokai, rec, rng, d, cy, charge_on, true,
                     r.pellets, r.weakpoint_hits + r.headshots_on_others,
                     t_at, r, ammo, incarnon, double_tap, buff_stacks, rs_armed, opening_closed,
-                    beam, target_ramps);
+                    beam, target_ramps, bespoke);
                 if was_base && !incarnon.in_base_form { return Flow::Continue; }
             }
         }
         charge_magazine_cycle(
             params, apl, tennokai, rec, rng, next_cost, t_at, r, ammo, incarnon, double_tap,
             windows, arc, buff_stacks, rs_armed, opening_closed,
-            field_duration_boost, beam, target_ramps, last_shot_t, switch_to,
+            field_duration_boost, beam, target_ramps, last_shot_t, bespoke, in_flight_count, switch_to,
         )
 }

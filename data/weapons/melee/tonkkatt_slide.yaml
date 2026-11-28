@@ -7,10 +7,9 @@ form: slide
 transform_group: tonkkatt
 co_behavior: additive_with_base_damage
 unmodeled:
-  - reason: client_melee_timing
-  - reason: client_melee_geometry
-  - reason: melee_passive_unmodelled
-    passive: "raising the combo multiplier grants +4% Heat for 15 s, up to 30 stacks, refreshed by each new stack"
+- reason: melee_passive_unmodelled
+  passive: raising the combo multiplier grants +4% Heat for 15 s, up to 30 stacks, refreshed by each new stack
+
 attack:
   trigger: melee
   shot_type: hit_scan

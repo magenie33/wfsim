@@ -95,13 +95,11 @@ attack:
     stacking: refresh
 
 unmodeled:
-  - reason: client_forced_reload
-  - reason: client_projectile_acceleration
-  - reason: client_accuracy_runtime
-  - "The field pulls enemies within 10 m toward it for 30 s, the reason it is thrown. Grouping enemies helps every area weapon in a real room; enemies here do not move, so it changes nothing."
-  - "The throw's forced knockdown is crowd control, worth time and safety rather than damage; it changes nothing here."
-  - "The page lists as a bug that the field is disabled entirely against enemies with both shields and armor, or with Overguard. Against such a target the 2,250 above is zero."
-  - "The spear must be picked up or waited out; here it is thrown and firing continues."
+- reason: client_forced_reload
+- The field pulls enemies within 10 m toward it for 30 s, the reason it is thrown. Grouping enemies helps every area weapon in a real room; enemies here do not move, so it changes nothing.
+- The throw's forced knockdown is crowd control, worth time and safety rather than damage; it changes nothing here.
+- The page lists as a bug that the field is disabled entirely against enemies with both shields and armor, or with Overguard. Against such a target the 2,250 above is zero.
+- The spear must be picked up or waited out; here it is thrown and firing continues.
 
 source:
   url: https://wiki.warframe.com/w/Tenet_Ferrox

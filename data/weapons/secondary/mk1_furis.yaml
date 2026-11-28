@@ -89,7 +89,4 @@ attack:
 source:
   url: https://wiki.warframe.com/w/MK1-Furis
 
-unmodeled:
-  - reason: client_accuracy_runtime
-
 # see notes: client_secondary_calibration

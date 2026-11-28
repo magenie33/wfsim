@@ -34,6 +34,10 @@ co_behavior: additive_with_base_damage
 
 attack:
   # see notes: cone_half_angle_from
+  sustained_fire_rate:
+    native_consumer: automatic_zero_duration_refire
+    ContinuousFireRateAtten: [0.60000002, 1.0]
+    ContinuousMaxShots: 10
   spread:
     min_deg: 2.0
     max_deg: 8.0
@@ -59,11 +63,10 @@ attack:
   damage: { impact: 5.6, puncture: 22.4 }   # total 28
 
 unmodeled:
-  - reason: client_rate_spool
-  - reason: client_accuracy_runtime
-  - "The Sequence syndicate effect turns damage dealt into shields for the wielder and nearby allies (wiki). There are no shields and no allies here; the number is unaffected."
-  - reason: auto_spool_ramp
-    rate: 12.5
+- The Sequence syndicate effect turns damage dealt into shields for the wielder and nearby allies (wiki). There are no shields and no allies here; the number is unaffected.
+
+bespoke:
+  spindown_seconds: 0.5
 
 source:
   url: https://wiki.warframe.com/w/Secura_Dual_Cestra

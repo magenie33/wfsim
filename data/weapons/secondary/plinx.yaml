@@ -78,8 +78,4 @@ attack:
 source:
   url: https://wiki.warframe.com/w/Plinx
 
-unmodeled:
-  - reason: client_battery_defaults
-  - reason: client_accuracy_runtime
-
 # see notes: client_secondary_calibration

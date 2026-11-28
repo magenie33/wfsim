@@ -6,12 +6,6 @@ inherits: synoid_heliocor
 form: slide
 transform_group: synoid_heliocor
 co_behavior: additive_with_base_damage
-unmodeled:
-  - reason: client_melee_timing
-  - reason: client_melee_geometry
-  - reason: client_melee_counter
-  - reason: melee_passive_unmodelled
-    passive: "its combo counter starts at 20"
 
 attack:
   trigger: melee

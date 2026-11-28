@@ -100,10 +100,8 @@ attack:
     status_chance: 0.57
 
 unmodeled:
-  - "The explosion's +9 s status duration is applied before other percentage duration bonuses (page), and is not modelled."
-  - reason: explosion_ignores_cover
-  - "The projectiles arc and travel slowly, so at range they must be led; every shot here connects, so against a moving target the real hit rate is lower."
-  - reason: self_stagger
+- The explosion's +9 s status duration is applied before other percentage duration bonuses (page), and is not modelled.
+- The projectiles arc and travel slowly, so at range they must be led; every shot here connects, so against a moving target the real hit rate is lower.
 
 source:
   url: https://wiki.warframe.com/w/Coda_Bubonico

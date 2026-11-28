@@ -89,8 +89,6 @@ attack:
   # see notes: wall_ramp_full_damage_6
   range_m: 300.0
   damage: { impact: 80.0, puncture: 80.0, slash: 80.0 }   # 240 total
-unmodeled:
-  - reason: arch_gun_deployer_cooldown
 
 source:
   url: https://wiki.warframe.com/w/Cyngas

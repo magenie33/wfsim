@@ -6,9 +6,7 @@ inherits: machete_wraith
 form: heavy
 transform_group: machete_wraith
 co_behavior: additive_with_base_damage
-unmodeled:
-  - reason: client_melee_timing
-  - reason: client_melee_geometry
+
 attack:
   trigger: melee
   shot_type: hit_scan

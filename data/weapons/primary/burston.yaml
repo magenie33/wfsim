@@ -83,7 +83,4 @@ source:
 
 # see notes: client_primary_inputs
 
-unmodeled:
-  - reason: client_accuracy_runtime
-
 # see notes: client_primary_calibration

@@ -68,10 +68,6 @@ attack:
   # see notes: no_range_row_attack
   damage: { puncture: 360, slash: 90 }   # total 450
 
-unmodeled:
-  - reason: client_accuracy_runtime
-  - reason: silent_weapon
-
 source:
   url: https://wiki.warframe.com/w/Cinta
 

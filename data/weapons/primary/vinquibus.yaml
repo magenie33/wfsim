@@ -61,9 +61,8 @@ attack:
   damage: { puncture: 280, slash: 120 }   # total 400
 
 unmodeled:
-  - reason: client_accuracy_runtime
-  - "Equipping it also takes the melee slot, so a Vinquibus loadout has no melee weapon; this fight has no melee to give up."
-  - "Headshots grant 2 stacks (max 16) of Vinquibus Precision, +250% melee damage; it lands on a weapon the sim does not fire, so it adds nothing here."
+- Equipping it also takes the melee slot, so a Vinquibus loadout has no melee weapon; this fight has no melee to give up.
+- Headshots grant 2 stacks (max 16) of Vinquibus Precision, +250% melee damage; it lands on a weapon the sim does not fire, so it adds nothing here.
 
 source:
   url: https://wiki.warframe.com/w/Vinquibus

@@ -88,12 +88,8 @@ attack:
       status_chance: 0.19
 
 unmodeled:
-  - reason: client_projectile_acceleration
-  - reason: client_accuracy_runtime
-  - reason: explosion_ignores_cover
-  - reason: self_stagger
-  - reason: cluster_bomblet_co
-    row: "Kulstar | Cluster Bombs | Projectile | 75 | 200 | 257% | Adding — \"CO-bonus uses parent projectile damage value\""
+- reason: cluster_bomblet_co
+  row: Kulstar | Cluster Bombs | Projectile | 75 | 200 | 257% | Adding — "CO-bonus uses parent projectile damage value"
 
 source:
   url: https://wiki.warframe.com/w/Kulstar

@@ -36,9 +36,27 @@ pub(super) const INITIAL_COMBO_REGEN_PER_SECOND: f64 = 40.0;
 /// wiki's own table read as a step function — and 1x is a real state rather
 /// than "no combo": a heavy attack at 1x deals its class multiplier and nothing
 /// more.
+#[cfg(test)]
 #[wfsim_gas_macro::metered]
 pub(super) fn melee_combo_multiplier(points: f64) -> f64 {
-    (1.0 + (points / MELEE_COMBO_POINTS_PER_TIER).floor()).clamp(1.0, MELEE_COMBO_MAX)
+    melee_combo_multiplier_with(points, MELEE_COMBO_POINTS_PER_TIER, MELEE_COMBO_MAX)
+}
+
+#[wfsim_gas_macro::metered]
+pub(super) fn melee_combo_multiplier_for(active: &FightParams, points: f64) -> f64 {
+    let (step, max_m) = match active.bespoke.as_deref() {
+        Some(b) => (
+            if b.combo_points_per_tier > 0.0 { b.combo_points_per_tier } else { MELEE_COMBO_POINTS_PER_TIER },
+            if b.combo_max_multiplier > 0.0 { b.combo_max_multiplier } else { MELEE_COMBO_MAX },
+        ),
+        None => (MELEE_COMBO_POINTS_PER_TIER, MELEE_COMBO_MAX),
+    };
+    melee_combo_multiplier_with(points, step, max_m)
+}
+
+#[wfsim_gas_macro::metered]
+fn melee_combo_multiplier_with(points: f64, step: f64, max_m: f64) -> f64 {
+    (1.0 + (points / step.max(1e-9)).floor()).clamp(1.0, max_m.max(1.0))
 }
 
 /// THE COUNTER AS THIS SWING SEES IT: what was earned, or the floor, whichever
@@ -132,14 +150,32 @@ pub(super) fn heavy_attack_base_damage(active: &FightParams, tennokai_heavy: boo
 ///
 /// MULTIPLIER PER SECOND IS THE PROXY, and it UNDER-states a wait: Blood Rush
 /// reads the same counter and is not in it.
+#[cfg(test)]
 #[wfsim_gas_macro::metered]
 pub(super) fn heavy_cycle_seconds(floor_seconds: f64, earned: f64, initial: f64) -> f64 {
-    let per_second = |t: f64| melee_combo_multiplier(melee_combo_points(earned, initial, t)) / t;
+    heavy_cycle_seconds_with(floor_seconds, earned, initial, MELEE_COMBO_POINTS_PER_TIER, MELEE_COMBO_MAX)
+}
+
+#[wfsim_gas_macro::metered]
+pub(super) fn heavy_cycle_seconds_for(active: &FightParams, floor_seconds: f64, earned: f64, initial: f64) -> f64 {
+    let (step, max_m) = match active.bespoke.as_deref() {
+        Some(b) => (
+            if b.combo_points_per_tier > 0.0 { b.combo_points_per_tier } else { MELEE_COMBO_POINTS_PER_TIER },
+            if b.combo_max_multiplier > 0.0 { b.combo_max_multiplier } else { MELEE_COMBO_MAX },
+        ),
+        None => (MELEE_COMBO_POINTS_PER_TIER, MELEE_COMBO_MAX),
+    };
+    heavy_cycle_seconds_with(floor_seconds, earned, initial, step, max_m)
+}
+
+#[wfsim_gas_macro::metered]
+fn heavy_cycle_seconds_with(floor_seconds: f64, earned: f64, initial: f64, step: f64, max_m: f64) -> f64 {
+    let per_second = |t: f64| melee_combo_multiplier_with(melee_combo_points(earned, initial, t), step, max_m) / t;
     let mut best = floor_seconds.max(1e-6);
     let mut best_rate = per_second(best);
-    let rungs = (initial / MELEE_COMBO_POINTS_PER_TIER).floor().max(0.0) as u32;
+    let rungs = (initial / step.max(1e-9)).floor().max(0.0) as u32;
     for k in 1..=rungs {
-        let t = f64::from(k) * MELEE_COMBO_POINTS_PER_TIER / INITIAL_COMBO_REGEN_PER_SECOND;
+        let t = f64::from(k) * step / INITIAL_COMBO_REGEN_PER_SECOND;
         if t > best && per_second(t) > best_rate {
             best_rate = per_second(t);
             best = t;
@@ -349,7 +385,7 @@ pub(super) fn prepare_melee_event(active: &FightParams, apl: &crate::data::apl::
             && apl.pick_rule(&crate::data::apl::Now {
                 can_fire: true, can_alt_fire: false, gauge_pct: 0.0, magazine_pct: 1.0, tennokai: true,
                 battery_would_empty: false, switch_to: None, glaive_in_flight: false,
-                in_base_form: true, remaining: &|_| 0.0,
+                in_base_form: true, can_perfect_reload: false, beacon_needed: false, beacon_sent: false, remaining: &|_| 0.0,
             }).is_some_and(|r| r.action == crate::data::apl::Action::Heavy && r.when == crate::data::apl::When::Tennokai);
         let tennokai = flash && (converts || active.spends_combo);
         melee.input = Some(MeleeInputState {
@@ -505,7 +541,14 @@ pub(super) fn after_swing(
             // of it — `swing_combo_gain`. ENDURING STRIKE adds to that chance
             // while the target is LIFTED, a status this engine tracks rather
             // than a state it has to assume.
+            let sig_chance = active
+                .bespoke
+                .as_ref()
+                .and_then(|b| b.signature.as_ref())
+                .filter(|s| s.matches(&params.tenno.id))
+                .map_or(0.0, |s| s.extra_combo_point_chance);
             let chance_now = active.combo_count_chance
+                + sig_chance
                 + if bodies[0].debuffs.lifted.is_some_and(|e| e > t) {
                     active.combo_count_chance_on_lifted
                 } else {
@@ -691,7 +734,7 @@ pub(super) fn seconds_to_next_shot(
                 let next = current_melee_event(active, melee).unwrap();
                 let lead = next.windup_seconds + next.hit_delay_seconds.unwrap_or(0.0) / rate.max(1e-9);
                 let between_contacts = now + recovery + lead - melee.combo_spent_t;
-                recovery += heavy_cycle_seconds(between_contacts, melee.combo_points.max(MeleeState::maintained_points(active)), initial_now) - between_contacts;
+                recovery += heavy_cycle_seconds_for(active, between_contacts, melee.combo_points.max(MeleeState::maintained_points(active)), initial_now) - between_contacts;
             }
             melee.input = None;
         }
@@ -797,7 +840,7 @@ pub(super) fn seconds_to_next_shot(
             // heavy slam make the same decision and the next weapon needs
             // no field.
             if active.spends_combo || melee.detonating {
-                heavy_cycle_seconds(cycle, melee.combo_points.max(MeleeState::maintained_points(active)), initial_now)
+                heavy_cycle_seconds_for(active, cycle, melee.combo_points.max(MeleeState::maintained_points(active)), initial_now)
             } else {
                 cycle
             }
@@ -854,6 +897,7 @@ pub(super) fn swing_this_shot(
     modded_base: f64,
     buff_stacks: &mut [LiveStacks],
     melee: &mut MeleeState,
+    dice_face: u8,
     r: &RunResult,
     bodies: &[Body],
 ) -> Swung {
@@ -891,7 +935,7 @@ pub(super) fn swing_this_shot(
     if let Some(i) = melee.input.as_mut().filter(|_| input_heavy) {
         combo_now = *i.combo_now.get_or_insert(combo_now);
     }
-    let combo_multiplier = melee_combo_multiplier(combo_now);
+    let combo_multiplier = melee_combo_multiplier_for(active, combo_now);
     // THE STANCE MULTIPLIER SCALES THE SWING'S OWN DAMAGE, and a HEAVY form
     // takes the combo multiplier on top of it.
     //
@@ -930,6 +974,9 @@ pub(super) fn swing_this_shot(
             switch_to: None,
             glaive_in_flight: false,
             in_base_form: true,
+            can_perfect_reload: false,
+            beacon_needed: false,
+            beacon_sent: false,
             remaining: &|_| 0.0,
         })
         .is_some_and(|r| {
@@ -948,6 +995,9 @@ pub(super) fn swing_this_shot(
             switch_to: None,
             glaive_in_flight: true,
             in_base_form: true,
+            can_perfect_reload: false,
+            beacon_needed: false,
+            beacon_sent: false,
             remaining: &|_| 0.0,
         }));
     let detonates = active.form.is_throw()
@@ -1011,14 +1061,19 @@ pub(super) fn swing_this_shot(
     // WHO THIS SWING REACHES. A `360deg` swing is a spin and takes
     // everything within the weapon's range; an ordinary one sweeps in
     // front. Empty for a gun, which never asks.
+    let dice_range = match active.bespoke.as_deref().and_then(|b| b.dice_roll.as_ref()).map(|dr| (dr, dice_face)) {
+        Some((dr, 4 | 6)) => dr.melee_range_m,
+        _ => 0.0,
+    };
+    let live_melee_range = buff_total(active, crate::model::BuffGrant::MeleeRange, buff_stacks, t) + dice_range;
     let melee_struck = match &swing {
         _ if active.target_preference.is_some() => super::targeting::contact_targets(
             active, bodies, &mut melee.last_contact_target,
-            buff_total(active, crate::model::BuffGrant::MeleeRange, buff_stacks, t)),
+            live_melee_range),
         _ if active.melee_radius.is_some() => active.melee_radius_struck(
-            buff_total(active, crate::model::BuffGrant::MeleeRange, buff_stacks, t)),
+            live_melee_range),
         Some(h) if active.follow_through.is_some() => active
-            .melee_struck(h.all_around, buff_total(active, crate::model::BuffGrant::MeleeRange, buff_stacks, t)),
+            .melee_struck(h.all_around, live_melee_range),
         _ => Vec::new(),
     };
     // WHAT THIS SWING FORCES, split into the two machines that carry it —

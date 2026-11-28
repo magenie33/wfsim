@@ -65,10 +65,10 @@ attack:
     over_shots: 8.0
 
 unmodeled:
-  - reason: client_rate_spool
-  - reason: client_accuracy_runtime
-  - "It needs 40 shots to reach full accuracy (wiki); this entry uses the settled spread, so an early burst is tighter here than in game."
-  - reason: spool_rebuilds_after_reload
+- It needs 40 shots to reach full accuracy (wiki); this entry uses the settled spread, so an early burst is tighter here than in game.
+
+bespoke:
+  spindown_seconds: 1.0
 
 source:
   url: https://wiki.warframe.com/w/Tenora

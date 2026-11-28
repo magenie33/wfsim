@@ -257,7 +257,7 @@ async function route() {
   const what = { w: tr("Warframe build & DPS"), wf: tr("Warframe build"), comp: tr("Companion") };
   const title = authKind ? `${tr({ login: "Sign in", signup: "Create an account", reset: "Reset your password",
     account: "Account settings", sync: "Cloud sync", compute: "Compute together",
-    contributors: "Contributors", community_projects: "Community Projects", clan: "Clan", notifications: "Notifications", recommendations: "My recommendations" }[authKind] || (EXT.pages[authKind] || {}).title || "")} | WFSim`
+    contributors: "Contributors", community_projects: "Community Projects", clan: "Clan", notifications: "Notifications", recommendations: "My recommendations", scope: "Modelling scope" }[authKind] || (EXT.pages[authKind] || {}).title || "")} | WFSim`
     : support ? `${tr("Support WFSim")}`
     : dl ? `${tr("Download WFSim for Windows, Mac and Linux")}`
     : bench ? `${tr("Benchmark")} | WFSim`

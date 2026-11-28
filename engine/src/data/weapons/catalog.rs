@@ -58,7 +58,7 @@ pub fn fill_template(tpl: &str, params: &BTreeMap<String, String>) -> String {
 ///   - `form`, `default_form`, `transform_group`, `transforms_to/from`,
 ///     `incarnon`, `id`, `name` — the entry's own identity;
 ///   - `source`, because a form that shares a page still says so itself.
-pub(super) const INHERITED: [&str; 32] = [
+pub(super) const INHERITED: [&str; 34] = [
     "weakness_bonus",
     "slot", "class", "weapon_type", "mod_pools", "mastery_rank", "max_rank", "accuracy", "exalted", "fixed_stance",
     "no_exilus_slot",
@@ -68,6 +68,7 @@ pub(super) const INHERITED: [&str; 32] = [
     "disposition", "polarities", "exilus_polarity", "stance_polarity", "riven_family",
     "internal_name", "noise", "magazine", "reload_seconds", "ammo_type",
     "ammo_max", "ammo_pickup", "traits", "deployment", "no_resupply",
+    "innate_co_per_type", "reload_from_empty_speed",
     // THE COMBO COUNTER'S CLOCK IS THE WEAPON'S, not a way of swinging it —
     // five seconds on almost every melee. A form that does not inherit it reads
     // ZERO and is floored at 0.1 s, which kills the counter between every pair
@@ -80,7 +81,7 @@ pub(super) const INHERITED: [&str; 32] = [
 /// ...and `deployments` and `valence`, which are MAPS and would need a deep
 /// merge to inherit partially. They are all-or-nothing: a form that states
 /// neither takes its weapon's whole block.
-pub(super) const INHERITED_BLOCKS: [&str; 7] = ["deployments", "valence", "sniper_combo", "scope", "zaw", "physical_mods", "heavy_status"];
+pub(super) const INHERITED_BLOCKS: [&str; 8] = ["deployments", "valence", "sniper_combo", "scope", "zaw", "physical_mods", "heavy_status", "bespoke"];
 
 /// Every weapon entry in `data/weapons/` (embedded), parsed once.
 pub fn all() -> &'static [WeaponSpec] {

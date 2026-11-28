@@ -4,6 +4,7 @@
 use super::*;
 
 mod battery_recharge;
+mod bespoke_systems;
 mod bow;
 mod blobs;
 mod m127_stug;
@@ -284,6 +285,8 @@ impl Default for FightParams {
             crit_chance_per_hit_initial_stacks: 0,
             crit_chance_per_hit_held: false,
             super_crit_on_status: None,
+            bespoke: None,
+            empty_reload_radial: None,
             weakpoint_stacks: None,
             spawn_on_kill: None,
             kill_streak_summon: None,

@@ -90,6 +90,8 @@ pub enum Action {
     Recall,
     /// Put a magazine in.
     Reload,
+    /// Finish a reload inside its active reload window (Reconifex).
+    PerfectReload,
     /// PUT THE WEAPON IN ANOTHER MODE ITS ALTERNATE FIRE TOGGLES, inside the
     /// fight: the weapon's `mode_switch_seconds` on the reload clock, no shot
     /// while it runs. The same word the precombat list uses, where it is free.
@@ -224,6 +226,10 @@ pub enum When {
     /// property of the heavy action, because on a form that already spends
     /// combo the flash pays the other way and no rule fires.
     Tennokai,
+    /// `if=beacon.needed` — no homing beacon is active or in flight, and the magazine can pay for one.
+    BeaconNeeded,
+    /// `if=beacon.sent` — a homing beacon is active or already in flight.
+    BeaconSent,
 }
 
 /// One line of the list.
@@ -267,6 +273,7 @@ impl Rule {
             Action::Detonate => "detonate".into(),
             Action::Recall => "recall".into(),
             Action::Reload => "reload".into(),
+            Action::PerfectReload => "perfect_reload".into(),
             Action::Recharge => "recharge".into(),
             Action::SwitchMode { form } => format!("switch_mode,form={form}"),
             Action::TransformIn => "transform_in".into(),
@@ -282,6 +289,8 @@ impl Rule {
                 format!("{act},if=buff.{ability}.remains<{seconds}")
             }
             When::Tennokai => format!("{act},if=tennokai"),
+            When::BeaconNeeded => format!("{act},if=beacon.needed"),
+            When::BeaconSent => format!("{act},if=beacon.sent"),
             When::BatteryWouldEmpty => format!("{act},if=battery.next_shot_empties"),
             When::Once => format!("{act},if=once"),
             When::StrengthGain => format!("{act},if=strength_gain"),
@@ -352,6 +361,7 @@ impl Apl {
                 // A FULL MAGAZINE CANNOT BE RELOADED, so a rule that would is
                 // passed over like a transmute into a form already held.
                 Action::Reload => now.magazine_pct < 1.0 - 1e-9,
+                Action::PerfectReload => now.can_perfect_reload && now.magazine_pct < 1.0 - 1e-9,
                 // …AND A GLAIVE IN THE HAND CANNOT BE DETONATED.
                 Action::Detonate | Action::Recall => now.glaive_in_flight,
                 // …AND A MODE CAN BE SWITCHED TO ONLY FROM THE OTHER ONE.
@@ -369,6 +379,8 @@ impl Apl {
                 When::MagazineAtMost { pct } => now.magazine_pct <= *pct,
                 When::BuffRemainsUnder { ability, seconds } => (now.remaining)(ability) < *seconds,
                 When::Tennokai => now.tennokai,
+                When::BeaconNeeded => now.beacon_needed,
+                When::BeaconSent => now.beacon_sent,
                 When::BatteryWouldEmpty => now.battery_would_empty,
                 When::Once | When::StrengthGain => false,
             };
@@ -427,6 +439,9 @@ pub struct Now<'a> {
     /// other form at all. A transmute's two ends are each possible from exactly
     /// one of them, which is what [`Apl::pick`] reads it for.
     pub in_base_form: bool,
+    pub can_perfect_reload: bool,
+    pub beacon_needed: bool,
+    pub beacon_sent: bool,
     /// How long a named ability's buff has left, 0 when it is down.
     pub remaining: &'a dyn Fn(&str) -> f64,
 }
@@ -557,7 +572,7 @@ mod tests {
     use super::*;
 
     fn now<'a>(remaining: &'a dyn Fn(&str) -> f64) -> Now<'a> {
-        Now { can_alt_fire: true, can_fire: true, gauge_pct: 0.0, magazine_pct: 1.0, tennokai: false, battery_would_empty: false, switch_to: None, glaive_in_flight: false, in_base_form: true, remaining }
+        Now { can_alt_fire: true, can_fire: true, gauge_pct: 0.0, magazine_pct: 1.0, tennokai: false, battery_would_empty: false, switch_to: None, glaive_in_flight: false, in_base_form: true, can_perfect_reload: false, beacon_needed: false, beacon_sent: false, remaining }
     }
 
     /// An ordinary gun: the trigger, and no flash to convert a swing.
@@ -719,7 +734,7 @@ prio: 3
             assert_eq!(word(f), f.id(), "{f:?}");
         }
         seen.extend(["shoot".into(), "charged".into(), "alt_fire".into(),
-                     "semi_auto".into(), "auto".into(), "aimed".into(), "detonate".into(), "recall".into()]);
+                     "semi_auto".into(), "auto".into(), "aimed".into(), "detonate".into(), "recall".into(), "perfect_reload".into()]);
         let mut sorted = seen.clone();
         sorted.sort();
         sorted.dedup();
@@ -745,7 +760,7 @@ prio: 3
         // heavy build makes all engagement.
         let none = |_: &str| 0.0;
         let flash = Now { can_alt_fire: true, can_fire: true, gauge_pct: 0.0, magazine_pct: 1.0, tennokai: true, battery_would_empty: false, switch_to: None, glaive_in_flight: false,
-                          in_base_form: true, remaining: &none };
+                          in_base_form: true, can_perfect_reload: false, beacon_needed: false, beacon_sent: false, remaining: &none };
         let converted = |a: &Apl| a.pick_rule(&flash)
             .is_some_and(|r| r.action == Action::Heavy && r.when == When::Tennokai);
         assert!(converted(&for_fight(&Apl::default(), &light)), "the light combo converts");
@@ -759,9 +774,9 @@ prio: 3
         let none = |_: &str| 0.0;
         // IN THE FORM THE GAUGE FILLS IN, which is where `transform_in` is the
         // question; the way back is asked from the other half, below.
-        let at = |pct: f64| Now { can_alt_fire: true, can_fire: true, gauge_pct: pct, magazine_pct: 1.0, tennokai: false, battery_would_empty: false, switch_to: None, glaive_in_flight: false, in_base_form: true, remaining: &none };
+        let at = |pct: f64| Now { can_alt_fire: true, can_fire: true, gauge_pct: pct, magazine_pct: 1.0, tennokai: false, battery_would_empty: false, switch_to: None, glaive_in_flight: false, in_base_form: true, can_perfect_reload: false, beacon_needed: false, beacon_sent: false, remaining: &none };
         assert_eq!(apl.pick(&at(1.0)), Action::TransformIn, "full: go in");
-        let spent = Now { can_alt_fire: true, can_fire: true, gauge_pct: 0.0, magazine_pct: 1.0, tennokai: false, battery_would_empty: false, switch_to: None, glaive_in_flight: false, in_base_form: false, remaining: &none };
+        let spent = Now { can_alt_fire: true, can_fire: true, gauge_pct: 0.0, magazine_pct: 1.0, tennokai: false, battery_would_empty: false, switch_to: None, glaive_in_flight: false, in_base_form: false, can_perfect_reload: false, beacon_needed: false, beacon_sent: false, remaining: &none };
         assert_eq!(apl.pick(&spent), Action::TransformOut, "spent: come back");
         // …AND THE WAY OUT IS NOT OFFERED IN THE FORM YOU WOULD BE LEAVING FROM
         // ANYWAY: a fight opens in the base form with an empty gauge, which is
@@ -782,7 +797,7 @@ prio: 3
         assert_eq!(past_full.pick(&at(35.0 / 30.0)), Action::TransformIn);
         assert_eq!(past_full.pick(&at(1.0)), Action::Shoot, "exactly full is not past full");
         // …AND AN EMPTY MAGAZINE IS A RELOAD WHATEVER THE GAUGE SAYS.
-        let dry = Now { can_alt_fire: true, can_fire: false, gauge_pct: 0.5, magazine_pct: 0.0, tennokai: false, battery_would_empty: false, switch_to: None, glaive_in_flight: false, in_base_form: true, remaining: &none };
+        let dry = Now { can_alt_fire: true, can_fire: false, gauge_pct: 0.5, magazine_pct: 0.0, tennokai: false, battery_would_empty: false, switch_to: None, glaive_in_flight: false, in_base_form: true, can_perfect_reload: false, beacon_needed: false, beacon_sent: false, remaining: &none };
         assert_eq!(apl.pick(&dry), Action::Reload);
     }
 
@@ -795,7 +810,7 @@ prio: 3
             Rule { action: Action::Reload, when: When::Always },
         ]);
         let none = |_: &str| 0.0;
-        let at = |pct: f64| Now { can_alt_fire: true, can_fire: true, gauge_pct: 0.0, magazine_pct: pct, tennokai: false, battery_would_empty: false, switch_to: None, glaive_in_flight: false, in_base_form: true, remaining: &none };
+        let at = |pct: f64| Now { can_alt_fire: true, can_fire: true, gauge_pct: 0.0, magazine_pct: pct, tennokai: false, battery_would_empty: false, switch_to: None, glaive_in_flight: false, in_base_form: true, can_perfect_reload: false, beacon_needed: false, beacon_sent: false, remaining: &none };
         assert_eq!(apl.pick_rule(&at(0.4)).map(|r| &r.when), Some(&When::MagazineAtMost { pct: 0.5 }));
         assert_eq!(apl.pick_rule(&at(0.8)).map(|r| &r.when), Some(&When::Always), "only the second holds");
         assert_eq!(apl.pick(&at(1.0)), Action::Shoot, "a full magazine reloads nothing");
@@ -814,7 +829,7 @@ prio: 3
 charged_throw");
         let none = |_: &str| 0.0;
         let now = |flying: bool| Now { can_alt_fire: true, can_fire: true, gauge_pct: 0.0, magazine_pct: 1.0, tennokai: false,
-                                       battery_would_empty: false, switch_to: None, glaive_in_flight: flying, in_base_form: true, remaining: &none };
+                                       battery_would_empty: false, switch_to: None, glaive_in_flight: flying, in_base_form: true, can_perfect_reload: false, beacon_needed: false, beacon_sent: false, remaining: &none };
         assert_eq!(apl.pick(&now(false)), Action::ChargedThrow);
         assert_eq!(apl.pick(&now(true)), Action::Detonate);
     }

@@ -15,9 +15,9 @@ transforms_to: ballistica_incarnon
 
 # see notes: bulk_intake_stats_are_2
 unmodeled:
-  - reason: client_secondary_other_behavior
-  - reason: client_accuracy_runtime
-  - "The Burst Shot is not modelled; this entry carries only the Charged Shot."
+- reason: client_secondary_other_behavior
+- The Burst Shot is not modelled; this entry carries only the Charged Shot.
+
 accuracy: 4
 disposition: 1.2
 polarities: [vazarin]

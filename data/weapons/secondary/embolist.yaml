@@ -72,7 +72,6 @@ source:
   url: https://wiki.warframe.com/w/Embolist
 
 unmodeled:
-  - reason: client_secondary_other_behavior
-  - reason: client_beam_target_ramp
+- reason: client_secondary_other_behavior
 
 # see notes: client_secondary_calibration

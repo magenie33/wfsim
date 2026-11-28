@@ -62,10 +62,6 @@ attack:
     reduction: 0.5
   damage: { impact: 5.76, puncture: 6.72, slash: 3.52 }   # total 16
 
-unmodeled:
-  - reason: client_accuracy_runtime
-  - reason: silent_weapon
-
 source:
   url: https://wiki.warframe.com/w/Baza_Prime
 

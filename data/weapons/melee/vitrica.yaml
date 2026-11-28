@@ -28,17 +28,13 @@ combo_duration_seconds: 10.0
 co_behavior: additive_with_base_damage
 
 unmodeled:
-- reason: client_melee_timing
-- reason: client_melee_slam
-- reason: client_melee_geometry
-- 'Power Spike''s partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number
-  reads low.'
 - reason: melee_attack_unmodelled
   attacks: Glass Explosion
 - reason: melee_own_combo_unmodelled
   combos: aerial attack
 - reason: melee_passive_unmodelled
-  passive: "every slam sends a ground wave, 10 Impact, that shatters glassed enemies \u2014 40 m from a slam, 80 m and a forced Impact status from a heavy slam"
+  passive: every slam sends a ground wave, 10 Impact, that shatters glassed enemies — 40 m from a slam, 80 m and a forced Impact status from a heavy slam
+
 attack:
   trigger: melee
   shot_type: hit_scan

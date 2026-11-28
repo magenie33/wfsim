@@ -7,13 +7,7 @@ inherits: bo
 form: heavy
 transform_group: bo
 co_behavior: additive_with_base_damage
-unmodeled:
-  - reason: client_melee_legacy
-  - reason: client_melee_geometry
-  - reason: heavy_charge_share_assumed
-    published: 0.5
-    charge: 0.1667
-    swing: 0.3333
+
 attack:
   trigger: melee
   shot_type: hit_scan

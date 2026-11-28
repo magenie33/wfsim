@@ -57,8 +57,7 @@ attack:
   # the rule for a source that cannot be reached.
   damage: { impact: 10.0 }
 unmodeled:
-  - "The cold field is not modelled, and it is most of the weapon: each grenade leaves a 1.5 m field dealing 20 Cold a second at 30% status, with no published duration. Only the grenade's 10 Impact is counted, so the number reads low."
-  - reason: companion_fires_it
+- 'The cold field is not modelled, and it is most of the weapon: each grenade leaves a 1.5 m field dealing 20 Cold a second at 30% status, with no published duration. Only the grenade''s 10 Impact is counted, so the number reads low.'
 
 source:
   url: https://wiki.warframe.com/w/Cryotra

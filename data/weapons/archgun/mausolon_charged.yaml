@@ -90,10 +90,7 @@ attack:
     status_chance: 0.50
 
 unmodeled:
-  # PROSE, not a reason: one weapon has it, and the file's own rule is that a
-  # reason earns its place by repeating.
-  - "Lifted's crowd control is not modelled; its 1 s status is, and Condition Overload counts it."
-  - reason: arch_gun_deployer_cooldown
+- Lifted's crowd control is not modelled; its 1 s status is, and Condition Overload counts it.
 
 source:
   url: https://wiki.warframe.com/w/Mausolon

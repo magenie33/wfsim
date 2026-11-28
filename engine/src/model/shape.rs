@@ -36,6 +36,7 @@ pub enum FieldStacking {
 #[serde(default, deny_unknown_fields)]
 pub struct MeleeFieldScaling {
     pub duration_per_combo: bool,
+    pub duration_per_combo_seconds: f64,
     pub tick_rate_from_attack_speed: bool,
     pub radius_from_melee_range: bool,
     pub damage_per_combo: bool,

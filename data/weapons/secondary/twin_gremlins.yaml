@@ -54,10 +54,6 @@ attack:
   # see notes: no_range_row_attack_5
   damage: { impact: 12.33, puncture: 12.33, slash: 12.33 }   # total 36.99
 
-unmodeled:
-  - reason: client_accuracy_runtime
-  - reason: bolt_corpse_ragdoll
-
 source:
   url: https://wiki.warframe.com/w/Twin_Gremlins
 

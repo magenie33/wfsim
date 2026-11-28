@@ -57,7 +57,4 @@ attack:
 source:
   url: https://wiki.warframe.com/w/Karak
 
-unmodeled:
-  - reason: client_accuracy_runtime
-
 # see notes: client_primary_calibration

@@ -103,13 +103,7 @@ attack:
   damage: { heat: 180.0 }          # Archwing: 90
 
 unmodeled:
-  # THE BEAM'S OWN AoE. The characteristics say "Beam deals radial damage
-  # varying from of 1 to 4 meters in a cone shape" and the infobox publishes NO
-  # radial row for the primary — its only one belongs to the grenades. So the
-  # shape is stated and the number is not, and inventing one would put damage on
-  # the board that nobody can check.
-  - "The beam's cone, 'radial damage varying from 1 to 4 meters in a cone shape' (wiki), has no published damage figure and is not modelled. Only the direct beam is applied, so against anything the cone would catch the number reads low."
-  - reason: arch_gun_deployer_cooldown
+- The beam's cone, 'radial damage varying from 1 to 4 meters in a cone shape' (wiki), has no published damage figure and is not modelled. Only the direct beam is applied, so against anything the cone would catch the number reads low.
 
 source:
   url: https://wiki.warframe.com/w/Cortege

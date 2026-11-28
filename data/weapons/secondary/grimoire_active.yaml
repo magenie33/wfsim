@@ -194,32 +194,14 @@ attack:
     damage: { electricity: 200 }   # total 200 (module 250 x0.8)
 
 unmodeled:
-  - reason: client_secondary_orb_packet
-  - reason: client_projectile_callbacks
-  # THE METER IS MODELLED as of 2026-08-28 — `meter:` above — so the loudest
-  # admission this roster had ("everything below is the ceiling rather than the
-  # average, and by a wide margin") is retired outright rather than reworded.
-  # This form has no mode of its own any more: you never hold a Tome's alt fire,
-  # so there is no "while you are in it" to report. It is played in the CYCLE.
-  - reason: explosion_ignores_cover
-  - reason: self_stagger
-  # THE ORB'S HEADSHOT RATE IS AN ASSUMPTION and a player deciding whether to
-  # trust this weapon's number cannot read a yaml (the rule `ricochet:`
-  # established, 2026-08-21). Prose rather than a reason because it is used
-  # once and carries one number.
-  - "Measured: about 10% of the orb's strikes land on a weak point (5 in 48
-    body hits). Where they land in a crowd depends on positions the sim does
-    not model, so a lined-up fight beats this number and a single tall target
-    may not reach it."
-  # WHAT THE POSITION MODEL FOUND, and the answer turned out to be the arena
-  # rather than any of this entry's numbers: the orb bounces
-  # off walls, and this arena has none. Everything here is right and the fight
-  # it is fired in is an open field.
-  - reason: orb_bounces_off_walls
-    speed: 2
-    open_field: four
-    total: six
-    worth: 55%
+- reason: client_secondary_orb_packet
+- reason: client_projectile_callbacks
+- 'Measured: about 10% of the orb''s strikes land on a weak point (5 in 48 body hits). Where they land in a crowd depends on positions the sim does not model, so a lined-up fight beats this number and a single tall target may not reach it.'
+- reason: orb_bounces_off_walls
+  speed: 2
+  open_field: four
+  total: six
+  worth: 55%
 
 source:
   url: https://wiki.warframe.com/w/Grimoire

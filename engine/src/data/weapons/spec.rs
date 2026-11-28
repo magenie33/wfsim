@@ -438,6 +438,10 @@ pub struct WeaponSpec {
     /// first of its kind in the roster.
     #[serde(default)]
     pub super_crit_on_status: Option<SuperCritSpec>,
+    #[serde(default)]
+    pub bespoke: Option<Box<BespokeSpec>>,
+    #[serde(default)]
+    pub innate_co_per_type: f64,
     /// WEAK-POINT STACKS — the Knell family's "Death Knell".
     #[serde(default)]
     pub weakpoint_stacks: Option<WeakpointStacksSpec>,

@@ -104,10 +104,9 @@ attack:
     status_chance: 0.349
 
 unmodeled:
-  - "The missiles home, which is not modelled; with one target at zero distance, homing and straight missiles land the same."
-  - "The 8-degree spread is not modelled; at zero distance all six missiles land on the one target."
-  - "The explosion's falloff is not published, so it is not modelled; the target stands at the centre and takes the full 228."
-  - reason: arch_gun_deployer_cooldown
+- The missiles home, which is not modelled; with one target at zero distance, homing and straight missiles land the same.
+- The 8-degree spread is not modelled; at zero distance all six missiles land on the one target.
+- The explosion's falloff is not published, so it is not modelled; the target stands at the centre and takes the full 228.
 
 source:
   url: https://wiki.warframe.com/w/Arbucep

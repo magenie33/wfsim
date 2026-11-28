@@ -61,11 +61,7 @@ attack:
     damage: { radiation: 1200 }   # total 1200
 
 unmodeled:
-  - reason: client_projectile_acceleration
-  - reason: client_projectile_callbacks
-  - reason: client_accuracy_runtime
-  - reason: explosion_ignores_cover
-  - reason: self_stagger
+- reason: client_projectile_callbacks
 
 source:
   url: https://wiki.warframe.com/w/Stahlta

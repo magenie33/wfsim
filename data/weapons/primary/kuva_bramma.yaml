@@ -115,10 +115,7 @@ attack:
       status_chance: 0.21
 
 unmodeled:
-  - reason: client_accuracy_runtime
-  - reason: explosion_ignores_cover
-  - reason: self_stagger
-  - "The alt-fire detonates the arrow mid-flight; the sim lets it land, so choosing when to burst it is not modelled."
+- The alt-fire detonates the arrow mid-flight; the sim lets it land, so choosing when to burst it is not modelled.
 
 source:
   url: https://wiki.warframe.com/w/Kuva_Bramma

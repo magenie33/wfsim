@@ -7,10 +7,9 @@ form: slide
 transform_group: zenistar
 co_behavior: additive_with_base_damage
 unmodeled:
-- reason: client_melee_timing
-- reason: client_melee_geometry
 - reason: melee_attack_unmodelled
   attacks: Attacks While Disc Deployed
+
 attack:
   trigger: melee
   shot_type: hit_scan

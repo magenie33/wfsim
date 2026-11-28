@@ -49,10 +49,4 @@ attack:
 source:
   url: https://wiki.warframe.com/w/Hysteria_(Stance)
 
-unmodeled:
-  - reason: client_melee_slam
-  - reason: client_melee_legacy
-  - reason: client_melee_geometry
-  - reason: client_melee_ability
-
 # see notes: client_melee_calibration

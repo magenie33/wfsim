@@ -115,12 +115,10 @@ attack:
   damage: { radiation: 760 }   # total 760
 
 unmodeled:
-  - reason: client_projectile_collision
-  - reason: client_accuracy_runtime
-  - "The projectile is a wall 4.4 m thick that sweeps everything in that band; the sim fires a ray, so only bodies on the line are hit and against a crowd the number reads low."
-  - "Shots bounce off surfaces up to 4 times, which can double a shot's hits off a wall behind the target (page); there are no surfaces here."
-  - "The guaranteed Impact proc reaches only 29 m but is applied at every distance here; past 29 m the damage is already at its falloff floor."
-  - "Its innate punch through does not pass surfaces when the projectile's centre hits one; there are no surfaces here."
+- The projectile is a wall 4.4 m thick that sweeps everything in that band; the sim fires a ray, so only bodies on the line are hit and against a crowd the number reads low.
+- Shots bounce off surfaces up to 4 times, which can double a shot's hits off a wall behind the target (page); there are no surfaces here.
+- The guaranteed Impact proc reaches only 29 m but is applied at every distance here; past 29 m the damage is already at its falloff floor.
+- Its innate punch through does not pass surfaces when the projectile's centre hits one; there are no surfaces here.
 
 source:
   url: https://wiki.warframe.com/w/Tenet_Arca_Plasmor

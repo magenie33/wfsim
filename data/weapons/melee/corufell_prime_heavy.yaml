@@ -7,13 +7,10 @@ form_name: Charged Projectile
 transform_group: corufell_prime
 co_behavior: independent
 unmodeled:
-- reason: client_melee_timing
 - reason: client_melee_special
-- reason: client_melee_geometry
 - reason: corufell_projectile_timing
 - reason: corufell_projectile_width
-- reason: corufell_signature_windup
-- reason: melee_slide_unpublished
+
 attack:
   trigger: melee
   shot_type: projectile

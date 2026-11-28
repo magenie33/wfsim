@@ -14,10 +14,7 @@ transform_group: vectis
 transforms_to: vectis_incarnon
 
 # see notes: bulk_intake_stats_are
-unmodeled:
-  - reason: client_accuracy_runtime
-  - reason: sniper_combo_miss
-    seconds: 2
+
 # THE TWO SNIPER MECHANICS. Both are the WEAPON's rather than the build's, the
 # counter builds only scoped in (M117), and neither is a stat on the panel — see
 # `data::weapons::SniperCombo` and `ScopeSpec` for the rules and their sources.

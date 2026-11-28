@@ -59,10 +59,9 @@ attack:
   # "This weapon deals pure Puncture damage" — one type, and the page says so.
   damage: { puncture: 40 }
 
-unmodeled:
-  - reason: client_accuracy_runtime
-  - "While aiming, headshots get +400% critical chance, additive with Point Strike (wiki). The engine has no headshot-only crit bonus, so the crit chance here is the unaimed one. It is most of the weapon: in a headshot-heavy fight the number reads well low."
-  - "The hip-fire half of the passive, +60% ammo efficiency: the sim aims, and reserves are infinite anyway."
+bespoke:
+  aimed_headshot_crit_chance_bonus: 4.0
+  hip_ammo_efficiency_bonus: 0.60
 
 source:
   url: https://wiki.warframe.com/w/AX-52

@@ -51,9 +51,7 @@ attack:
   damage: { impact: 6, puncture: 48, slash: 6 }   # total 60
 
 unmodeled:
-  - "Not offered here: the thrown-exclusive Concealed Explosives."
-  - reason: bolt_corpse_ragdoll
-  - reason: silent_weapon
+- 'Not offered here: the thrown-exclusive Concealed Explosives.'
 
 source:
   url: https://wiki.warframe.com/w/Spira_Prime

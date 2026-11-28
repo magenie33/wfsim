@@ -62,12 +62,12 @@ attack:
     start_m: 300.0
     end_m: 600.0
     reduction: 0.639534883721
-unmodeled:
-  - reason: client_accuracy_runtime
-  - reason: sniper_combo_miss
-    seconds: 2
-  - reason: zoom_steps
-  - "Voruna's signature bonus is not modelled: carried by her, the ammo pool doubles to 48."
+
+bespoke:
+  signature:
+    warframes: [voruna, voruna_prime]
+    ammo_max_bonus: 1.0
+
 source:
   url: https://wiki.warframe.com/w/Perigale
 

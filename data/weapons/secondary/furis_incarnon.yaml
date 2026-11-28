@@ -126,7 +126,4 @@ source:
   # crit 26%, 3.4x, status 24%, Heat 100; falloff per the module (see above,
   # the Genesis page's own prose gives a different Reduction).
 
-unmodeled:
-  - reason: client_accuracy_runtime
-
 # see notes: client_secondary_calibration

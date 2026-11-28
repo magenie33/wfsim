@@ -57,9 +57,7 @@ attack:
   damage: { puncture: 36, slash: 24 }   # total 60
 
 unmodeled:
-  - reason: client_accuracy_runtime
-  - "Target Analysis: each shot grants +4% flat critical and status chance, stacking to 5 for 2 s (wiki). The engine has no shot-counting buff, so a build here fires at 18% / 26% where held fire reaches 38% / 46%. It is most of the weapon; the number reads low."
-  - reason: zoom_steps
+- 'Target Analysis: each shot grants +4% flat critical and status chance, stacking to 5 for 2 s (wiki). The engine has no shot-counting buff, so a build here fires at 18% / 26% where held fire reaches 38% / 46%. It is most of the weapon; the number reads low.'
 
 source:
   url: https://wiki.warframe.com/w/Arca_Scisco

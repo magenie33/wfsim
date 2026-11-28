@@ -92,8 +92,4 @@ beam_ramp_floor: 0.2
 source:
   url: https://wiki.warframe.com/w/Cycron
 
-unmodeled:
-  - reason: client_beam_target_ramp
-  - reason: client_battery_defaults
-
 # see notes: client_secondary_calibration

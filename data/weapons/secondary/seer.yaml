@@ -64,8 +64,4 @@ attack:
 source:
   url: https://wiki.warframe.com/w/Seer
 
-unmodeled:
-  - reason: client_projectile_collision
-  - reason: client_accuracy_runtime
-
 # see notes: client_secondary_calibration

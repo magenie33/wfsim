@@ -84,9 +84,7 @@ attack:
     damage: { puncture: 168.0, slash: 204.0, blast: 302.0 }   # total 674
 
 unmodeled:
-  - reason: explosion_ignores_cover
-  - reason: self_stagger
-  - "A direct hit forces a knockdown (wiki). Enemies here are not knocked down; the number is unaffected."
+- A direct hit forces a knockdown (wiki). Enemies here are not knocked down; the number is unaffected.
 
 source:
   url: https://wiki.warframe.com/w/Kuva_Tonkor

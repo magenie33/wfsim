@@ -51,9 +51,7 @@ attack:
   damage: { puncture: 8, toxin: 32 }   # 40 a pellet, 160 a shot
 
 unmodeled:
-  - reason: client_special_spread
-  - reason: client_accuracy_runtime
-  - reason: silent_weapon
+- reason: client_special_spread
 
 source:
   url: https://wiki.warframe.com/w/Scyotid

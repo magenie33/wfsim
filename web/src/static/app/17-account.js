@@ -18,7 +18,7 @@ const ACCOUNT_SLOTS = [
 ];
 const AUTH_PATHS = { "/login": "login", "/signup": "signup", "/reset": "reset", "/account": "account",
   "/account/sync": "sync", "/contributors": "contributors", "/compute": "compute", "/clan": "clan", "/community/projects": "community_projects",
-  "/notifications": "notifications", "/account/recommendations": "recommendations" };
+  "/notifications": "notifications", "/account/recommendations": "recommendations", "/scope": "scope" };
 /// …and the pages an extension mounts (`EXT.pages`), routed the same way.
 const userProfilePath = (id = "me") => "/user/" + encodeURIComponent(id);
 const userProfileLink = (id, name, cls = "") => id
@@ -34,7 +34,7 @@ const authKindOf = (path) => /^\/(?:user|people)\/(me|[a-f0-9]{32})\/?$/.test(pa
 /// the settings pages carry `account_`, since `sync` alone could be any sync.
 const AUTH_VIEWS = { login: "login", signup: "signup", reset: "reset",
   account: "account", sync: "account_sync", contributors: "contributors", compute: "compute", clan: "clan", community_projects: "community_projects",
-  notifications: "notifications", recommendations: "recommendations", profile: "profile", calculation: "calculation" };
+  notifications: "notifications", recommendations: "recommendations", profile: "profile", calculation: "calculation", scope: "scope" };
 const authView = (kind) => AUTH_VIEWS[kind] || (EXT.pages[kind] || {}).view || "other";
 /// The pages of a signed-in account; every other kind is a way in.
 const isSettings = (kind) => kind === "account" || kind === "sync" || kind === "recommendations" || !!(EXT.pages[kind] || {}).settings;
@@ -906,6 +906,7 @@ function renderAuthPage(kind) {
     authFlow = { kind, step: 1, email: "", sentAt: 0, error: authFlow.kind === null ? authFlow.error : null, open: null };
   }
   clearInterval(authTimer);
+  if (kind === "scope") { modellingScopePage(main); return; }
   if (!accountState.loaded) { main.innerHTML = ""; return; }
   if (kind === "profile" || kind === "calculation") { computationPage(main, kind); return; }
   // THE COMPUTE PAGE IS EVERYONE'S TOO: this browser's half needs no account.

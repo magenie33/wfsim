@@ -42,7 +42,4 @@ source:
   url: https://wiki.warframe.com/w/Ballistica_Prime
   # wiki module `Attacks[].AttackName`: "Normal Shot"
 
-unmodeled:
-  - reason: client_accuracy_runtime
-
 # see notes: client_secondary_calibration

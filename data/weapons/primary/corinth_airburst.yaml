@@ -57,12 +57,6 @@ attack:
     takes_blast_radius_mods: true
     damage: { blast: 404 }   # total 404
 
-unmodeled:
-  - reason: client_projectile_collision
-  - reason: client_accuracy_runtime
-  - reason: explosion_ignores_cover
-  - reason: self_stagger
-
 source:
   url: https://wiki.warframe.com/w/Corinth
 reload_style: "by_round"

@@ -16,9 +16,8 @@ transforms_to: angstrum_incarnon
 
 # see notes: bulk_intake_stats_are_2
 unmodeled:
-  - reason: client_projectile_acceleration
-  - reason: client_accuracy_runtime
-  - "The Single Rocket Explosion is not modelled; this entry carries only the Single Rocket Impact."
+- The Single Rocket Explosion is not modelled; this entry carries only the Single Rocket Impact.
+
 accuracy: 26.67
 disposition: 1.2
 polarities: [vazarin]

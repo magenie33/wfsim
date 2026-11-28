@@ -59,10 +59,7 @@ attack:
   damage: { impact: 5, puncture: 75, slash: 20 }   # total 100
 
 unmodeled:
-  - reason: client_accuracy_runtime
-  - "Not offered here: the bow-exclusive Thunderbolt, which on this weapon turns every bolt into a grenade, a second damage source."
-  - reason: bolt_corpse_ragdoll
-  - reason: silent_weapon
+- 'Not offered here: the bow-exclusive Thunderbolt, which on this weapon turns every bolt into a grenade, a second damage source.'
 
 source:
   url: https://wiki.warframe.com/w/Zhuge

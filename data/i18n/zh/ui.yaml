@@ -3956,6 +3956,38 @@ ui:
   "Project homepage": 项目主页
   "Source code": 源代码
 
+  "Modelling scope": 建模范围与待实现项
+  "Modelling scope & all remaining items →": 查看完整建模范围与待实现清单 →
+  "Completed mechanics are retired from item warnings. Remaining item-specific gaps are listed live below toward zero, while shared simulation boundaries are stated once here.": 已完成的机制已从条目提示中移除。尚未实现的专属机制在此实时汇总并逐步清零，全局共用的模拟边界在此统一说明。
+  "clean": 完整建模
+  "with notes": 含说明项
+  "Shared simulation boundaries": 模拟边界（全局统一说明）
+  "Stealth, noise & awareness": 潜行、噪音与警戒
+  "Targets start alert at 0 s; stealth multipliers and weapon noise ratings do not alter combat numbers.": 目标从 0 秒起处于警戒状态；潜行倍率与武器噪音等级不改变战斗数值。
+  "Self-stagger, ragdoll, cover & incoming hits": 自我击退、布娃娃、掩体与受击
+  "Targets hold formation without firing back unless a target entry declares a dispel or aura; knockdowns, ragdolls, cover and blocking counters do not change uptime.": 除自带驱散或光环的目标外，敌人保持阵型且不反击；击倒、布娃娃、掩体与格挡反击不改变输出覆盖率。
+  "Single active weapon & holster": 单武器驻场与收枪状态
+  "Each run scores one weapon without swapping mid-fight; holstered reload and swap buffs stay off unless driven by a weapon play mode.": 单次模拟评估一把驻场武器，中途不切枪；除非由武器打法模式驱动，否则收枪装填与切枪增益保持关闭。
+  "Ground Arch-Gun cooldown": 地面曲翼枪械冷却
+  "Heavy weapon redeploy cooldowns after exhausting reserves sit outside single-weapon runs; ammo pools follow the scenario's ammo rule.": 重武器耗尽备弹后的重召冷却不在单武器模拟范围内；弹药池遵循当前场景的弹药规则。
+  "Melee, slam & modular tables": 近战动作轴、震地与模块化部件表
+  "Stance combos use calibrated cycle averages; uncalibrated slam shockwaves or modular part combinations remain disclosed on the affected items.": 架势连段采用校准后的循环均值；尚未校准的震地冲击波或模块化部件组合仍在对应条目上如实标注。
+  "Companion cadence": 同伴开火节奏
+  "Companion weapons fire continuously at the scenario target ceiling without AI target-switching, revival pauses or range breaks.": 同伴武器按场景目标上限持续开火，不模拟 AI 转火停顿、复苏中断或超出射程停火。
+  "Remaining item-specific disclosures": 待实现与特定条目说明
+  "Incarnon perks": 灵化进化项
+  "Targets & abilities": 目标与技能
+  "Search weapons, mods, arcanes or mechanics…": 搜索武器、MOD、赋能或机制说明…
+  "Not modelled yet": 待实现
+  "Live game bug": 游戏实测异常
+  "Simulation boundary": 模拟边界
+  "this mod's combat effect is not modelled yet": 这张 MOD 的战斗效果尚未建模
+  "this arcane's combat effect is not modelled yet": 这个赋能的战斗效果尚未建模
+  "this perk is not modelled yet": 这个进化项尚未建模
+  "Show all ({n})": 显示全部（{n}）
+  "No matching unmodelled items.": 没有匹配的待实现条目。
+  "on a weak-point kill": 弱点击杀时
+
 effect_phrases:
   - ['^slot ([0-9]+) is fixed to different mods in the start and final requirements$', '起点与最终要求在第 $1 槽固定了不同的 MOD']
   - ['^arcane seat ([0-9]+) conflicts with the final requirements$', '第 $1 个赋能槽位的 pin 与最终要求冲突']

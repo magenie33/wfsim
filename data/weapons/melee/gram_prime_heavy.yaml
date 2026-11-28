@@ -7,10 +7,9 @@ form: heavy
 transform_group: gram_prime
 co_behavior: additive_with_base_damage
 unmodeled:
-- reason: client_melee_timing
-- reason: client_melee_geometry
 - reason: melee_passive_unmodelled
   passive: a stance's mini-slam, one without the full slam visual, is multiplied by the combo multiplier and can crit
+
 attack:
   trigger: melee
   shot_type: hit_scan

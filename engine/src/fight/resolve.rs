@@ -195,6 +195,8 @@ pub(super) fn resolve_the_shot(
     body: &mut Body,
     weakpoint_pile: &mut LiveStacks,
     double_tap: &mut DoubleTap,
+    spool: &Spool,
+    bespoke: &mut BespokeState,
     // MELEE ANIMOSITY'S PILE when this swing is a heavy attack, else zero.
     heavy_crit_relative: f64,
 ) -> Resolved {
@@ -251,7 +253,19 @@ pub(super) fn resolve_the_shot(
         );
         // The cost of one round, the expression the spend below pays — one
         // spelling, so the last-round gate and the payment cannot drift.
-        let round_cost = active.ammo_cost * (1.0 - efficiency);
+        let shots_now = spool_after_pause(active, spool, t);
+        let base_cost = match active.bespoke.as_ref().and_then(|b| b.pellet_spool) {
+            Some(ps) => ps.ammo_cost_at(shots_now),
+            None => active.ammo_cost,
+        };
+        let mut round_cost = base_cost * (1.0 - efficiency);
+        if active.bespoke.as_ref().is_some_and(|b| b.clip_explosion_bonus_per_round > 0.0) {
+            bespoke.clip_rounds_consumed = ammo.loaded.max(0.0);
+            round_cost = ammo.loaded.max(round_cost);
+        } else {
+            bespoke.clip_rounds_consumed = 0.0;
+        }
+        bespoke.vendetta_spent_this_shot = false;
         // THE LAST-ROUND GATE (Final Fusillade, Forceful Finality, Synth
         // Charge), read BEFORE the round is spent: this pull is in the magazine's
         // last BURST if the rest of its burst EMPTIES the magazine, at what each
@@ -314,8 +328,21 @@ pub(super) fn resolve_the_shot(
         // …AND A WARFRAME'S. Wrathful Advance is *"a flat value applied AFTER
         // mods"*, which is this bucket exactly: it lands on every attack part
         // and is never multiplied by a crit-chance card.
+        let bespoke_flat_crit = active.bespoke.as_deref().map_or(0.0, |b| {
+            let beacon = if b.beacon_crit_chance_bonus > 0.0 && t < bespoke.beacon_until {
+                b.beacon_crit_chance_bonus
+            } else {
+                0.0
+            };
+            let dice = match (&b.dice_roll, bespoke.dice_face) {
+                (Some(dr), 1 | 6) => dr.crit_chance_bonus,
+                _ => 0.0,
+            };
+            beacon + dice
+        });
         let flat_crit = contribs.flat_crit_chance
-            + crate::data::abilities::flat_crit_at(&params.abilities_now(), t);
+            + crate::data::abilities::flat_crit_at(&params.abilities_now(), t)
+            + bespoke_flat_crit;
         let weakened_cc = WEAKENED_FLAT_CC_PER_STACK * debuffs.weakened_active(t) as f64;
         // Relative, shared by every stage: Crosshairs' on-headshot buff and
         // its per-stack-expiry kill stacks (assumes constant aiming), plus the
@@ -386,13 +413,28 @@ pub(super) fn resolve_the_shot(
         // number, one scope out.
         // DEATH KNELL'S TWO NUMBERS, read once per SHOT — every stacking buff
         // in this loop follows that rule. Both add to the FINISHED value.
-        let (weakpoint_cd, weakpoint_sc) = match params.weakpoint_stacks {
+        let bespoke_flat_sc = active.bespoke.as_deref().map_or(0.0, |b| {
+            let frenzy = b.status_frenzy.filter(|_| t < bespoke.status_frenzy_until).map_or(0.0, |sf| sf.flat_status_chance);
+            let vendetta = b.vendetta.filter(|_| bespoke.vendetta_attacks_left > 0).map_or(0.0, |v| v.flat_status_chance);
+            let heavy_hit = if b.heavy_hit_flat_status_chance > 0.0 && t < bespoke.heavy_hit_status_until {
+                b.heavy_hit_flat_status_chance
+            } else {
+                0.0
+            };
+            let dice = match (&b.dice_roll, bespoke.dice_face) {
+                (Some(dr), 2 | 6) => dr.status_chance_bonus,
+                _ => 0.0,
+            };
+            frenzy + vendetta + heavy_hit + dice
+        });
+        let (weakpoint_cd, mut weakpoint_sc) = match params.weakpoint_stacks {
             Some(w) => {
                 let n = f64::from(weakpoint_pile.current(t, w.duration_seconds));
                 (w.crit_multiplier * n, w.status_chance * n)
             }
             None => (0.0, 0.0),
         };
+        weakpoint_sc += bespoke_flat_sc;
         let sc_arc_shot = arc.total(&params.arcane.buffs, ArcGrant::StatusChance, t)
             + params.sc_per_tendril * f64::from(tendril.count)
             // WEEPING WOUNDS, the same sentence on the status side: `Status
@@ -511,7 +553,19 @@ pub(super) fn resolve_the_shot(
                     + buff_total(active, crate::model::BuffGrant::Multishot, buff_stacks, t)
                         * scaled_ms_base
             };
-        let rounds = Rounds::roll(active.base_multishot.round().max(1.0) as u32, ms_eff, &mut d.spine);
+        let (roll_base_pellets, ms_eff) = match active.bespoke.as_ref().and_then(|b| b.pellet_spool) {
+            Some(ps) if !ms_locked => {
+                let spooled = ps.pellets_at(shots_now);
+                let ratio = ms_eff / active.base_multishot.max(1.0);
+                (spooled.max(1), f64::from(spooled) * ratio)
+            }
+            Some(ps) => {
+                let spooled = ps.pellets_at(shots_now);
+                (spooled.max(1), f64::from(spooled))
+            }
+            None => (active.base_multishot.round().max(1.0) as u32, ms_eff),
+        };
+        let rounds = Rounds::roll(roll_base_pellets, ms_eff, &mut d.spine);
         let rolled = rounds.total();
         // DOUBLE TAP, computed ONCE for the whole pull and applied to every
         // pellet of it. VERBATIM: "the bonus is applied on hit to all pellets as

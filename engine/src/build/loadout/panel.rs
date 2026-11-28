@@ -664,6 +664,8 @@ pub struct ResolvedPanel {
     pub no_resupply: bool,
     /// Untouched by mods — the passive's numbers are the weapon's own.
     pub super_crit_on_status: Option<crate::model::SuperCritSpec>,
+    pub bespoke: Option<Box<crate::model::BespokeSpec>>,
+    pub empty_reload_radial: Option<ResolvedRadial>,
     pub heavy_status: Option<crate::model::HeavyStatusSpec>,
     pub physical_mod_bonus: Option<Box<crate::model::PhysicalModBonus>>,
     /// See [`WeaponBase::weakpoint_stacks`].

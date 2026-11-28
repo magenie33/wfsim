@@ -86,8 +86,4 @@ source:
 
 # see notes: client_primary_inputs
 
-unmodeled:
-  - reason: client_projectile_collision
-  - reason: client_accuracy_runtime
-
 # see notes: client_primary_calibration

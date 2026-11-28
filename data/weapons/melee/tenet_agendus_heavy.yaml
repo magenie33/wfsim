@@ -6,15 +6,10 @@ form: heavy
 transform_group: tenet_agendus
 co_behavior: additive_with_base_damage
 unmodeled:
-- reason: client_melee_timing
 - reason: client_melee_special
-- reason: client_melee_geometry
-- reason: melee_slide_unpublished
-- The first heavy projectile has no exported animation duration or release event. It launches at the start
-  of a nominal one-second motion after the package two-second charge; the page states a one-second wind-up.
-  These clocks are unmeasured.
-- The disk forces Impact only within 20 m. This range gate is not modelled, so the disk applies no forced
-  Impact.
+- The first heavy projectile has no exported animation duration or release event. It launches at the start of a nominal one-second motion after the package two-second charge; the page states a one-second wind-up. These clocks are unmeasured.
+- The disk forces Impact only within 20 m. This range gate is not modelled, so the disk applies no forced Impact.
+
 attack:
   trigger: melee
   shot_type: hit_scan

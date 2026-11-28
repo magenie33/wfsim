@@ -103,9 +103,7 @@ attack:
 # down would be a second copy of a constant that could drift from it.
 
 unmodeled:
-  - reason: client_beam_target_ramp
-  - reason: client_accuracy_runtime
-  - "In game the chain can pass through corpses (page); here a body that dies is removed, so a chain that would hop through a corpse to an enemy behind it finds nothing."
+- In game the chain can pass through corpses (page); here a body that dies is removed, so a chain that would hop through a corpse to an enemy behind it finds nothing.
 
 source:
   url: https://wiki.warframe.com/w/Tenet_Glaxion

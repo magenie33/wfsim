@@ -64,10 +64,10 @@ attack:
     over_shots: 8.0
 
 unmodeled:
-  - reason: client_rate_spool
-  - reason: client_accuracy_runtime
-  - "Accuracy improves the longer it fires (wiki); this entry uses the settled spread."
-  - reason: spool_rebuilds_after_reload
+- Accuracy improves the longer it fires (wiki); this entry uses the settled spread.
+
+bespoke:
+  spindown_seconds: 1.0
 
 source:
   url: https://wiki.warframe.com/w/Tenora_Prime

@@ -156,9 +156,6 @@ source:
 
 # see notes: client_primary_inputs
 
-unmodeled:
-  - reason: client_beam_target_ramp
-  - reason: client_accuracy_runtime
 beam_ramp_floor: 0.2
 
 # see notes: client_primary_calibration

@@ -90,7 +90,4 @@ beam_ramp_floor: 0.5
 source:
   url: https://wiki.warframe.com/w/Tenet_Quanta
 
-unmodeled:
-  - reason: client_beam_target_ramp
-
 # see notes: client_primary_calibration

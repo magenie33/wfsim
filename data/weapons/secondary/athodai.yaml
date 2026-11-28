@@ -57,8 +57,7 @@ attack:
   damage: { heat: 48, puncture: 22 }   # total 70
 
 unmodeled:
-  - reason: client_accuracy_runtime
-  - "Overdrive: a weak-point kill grants +100% fire rate, +100% ammo efficiency and -100% recoil for 8 s, and disables the alt-fire meanwhile (wiki). The engine does not model kill-triggered buffs, so this entry fires at its listed rate throughout."
+- 'Overdrive: a weak-point kill grants +100% fire rate, +100% ammo efficiency and -100% recoil for 8 s, and disables the alt-fire meanwhile (wiki). The engine does not model kill-triggered buffs, so this entry fires at its listed rate throughout.'
 
 source:
   url: https://wiki.warframe.com/w/Athodai

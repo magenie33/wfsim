@@ -119,10 +119,6 @@ attack:
   # fire" — and the split says so, per pellet.
   damage: { impact: 2, puncture: 13, slash: 19, toxin: 7 }   # 41 a pellet, 287 a shot
 
-unmodeled:
-  - reason: client_accuracy_runtime
-  - reason: spool_rebuilds_after_reload
-
 source:
   url: https://wiki.warframe.com/w/Coda_Bubonico
 

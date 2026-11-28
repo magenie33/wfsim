@@ -46,7 +46,4 @@ source:
   url: https://wiki.warframe.com/w/EFV-5_Jupiter
 reload_seconds: 2.1
 
-unmodeled:
-  - reason: client_accuracy_runtime
-
 # see notes: client_primary_calibration

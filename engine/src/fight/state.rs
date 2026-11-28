@@ -110,6 +110,67 @@ pub(super) struct SniperComboCount {
     pub(super) last_hit: f64,
 }
 
+/// Per-seat runtime state for weapon-declared bespoke mechanics.
+#[derive(Clone)]
+pub(super) struct BespokeState {
+    pub(super) lock_slots: [Option<(usize, u32)>; 4],
+    pub(super) lock_polled_at: f64,
+    pub(super) perfect_reload_heat_active: bool,
+    pub(super) empty_reload_burst_at: Option<f64>,
+    pub(super) beacon_until: f64,
+    pub(super) last_nonrepeating_proc: Option<DamageType>,
+    pub(super) super_status_armed: bool,
+    pub(super) status_frenzy_until: f64,
+    pub(super) heavy_hit_status_until: f64,
+    pub(super) vendetta_kills: u32,
+    pub(super) vendetta_kill_mark: u32,
+    pub(super) vendetta_attacks_left: u32,
+    pub(super) vendetta_spent_this_shot: bool,
+    pub(super) heavy_kill_expiries: Vec<f64>,
+    pub(super) slam_capacitor_stacks: u32,
+    pub(super) slam_capacitor_kill_mark: u32,
+    pub(super) dice_hits: u32,
+    pub(super) dice_pity: f64,
+    pub(super) dice_face: u8,
+    pub(super) clip_rounds_consumed: f64,
+    pub(super) deployed_until: f64,
+    pub(super) shot_aimed_generation: u32,
+    pub(super) overkill_respawn_pellets: u32,
+    pub(super) overkill_respawn_headshots: u32,
+}
+
+#[wfsim_gas_macro::metered]
+impl BespokeState {
+    pub(super) fn new() -> Self {
+        Self {
+            lock_slots: [None; 4],
+            lock_polled_at: f64::NEG_INFINITY,
+            perfect_reload_heat_active: false,
+            empty_reload_burst_at: None,
+            beacon_until: f64::NEG_INFINITY,
+            last_nonrepeating_proc: None,
+            super_status_armed: false,
+            status_frenzy_until: f64::NEG_INFINITY,
+            heavy_hit_status_until: f64::NEG_INFINITY,
+            vendetta_kills: 0,
+            vendetta_kill_mark: 0,
+            vendetta_attacks_left: 0,
+            vendetta_spent_this_shot: false,
+            heavy_kill_expiries: Vec::new(),
+            slam_capacitor_stacks: 0,
+            slam_capacitor_kill_mark: 0,
+            dice_hits: 0,
+            dice_pity: 0.0,
+            dice_face: 0,
+            clip_rounds_consumed: 0.0,
+            deployed_until: 0.0,
+            shot_aimed_generation: 0,
+            overkill_respawn_pellets: 0,
+            overkill_respawn_headshots: 0,
+        }
+    }
+}
+
 /// A HELD TRIGGER'S SPOOL — shots since it was released, and when the next was due.
 pub(super) struct Spool {
     /// **THE RUN'S FRAME** (`data::casting::FrameRuntime`), `None` when nothing
@@ -276,6 +337,9 @@ impl IncarnonState {
                 // where it ARRIVES (`fight::flight`), which is the only instant it flies.
                 glaive_in_flight: false,
                 in_base_form: true,
+                can_perfect_reload: params.bespoke.as_ref().is_some_and(|b| b.perfect_reload.is_some()),
+                beacon_needed: false,
+                beacon_sent: false,
                 remaining,
             };
         };
@@ -333,6 +397,9 @@ impl IncarnonState {
             switch_to: None,
             glaive_in_flight: false,
             in_base_form: self.in_base_form,
+            can_perfect_reload: params.bespoke.as_ref().is_some_and(|b| b.perfect_reload.is_some()),
+            beacon_needed: false,
+            beacon_sent: false,
             remaining,
         }
     }

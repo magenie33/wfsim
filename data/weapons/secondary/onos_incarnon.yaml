@@ -16,9 +16,6 @@ transforms_from: onos
 # charges remaining, `0x1348490` resets focus and switches to Behavior 2 (`power_shot`,
 # 50 charges: 2,200 Heat trace + 1,100 Heat 3 m radial), then returns to Behavior 1;
 # below 50 charges the beam stays clamped at 2.5x until empty.
-unmodeled:
-  - reason: explosion_ignores_cover
-  - reason: self_stagger
 
 gauge_form:
   gauge:

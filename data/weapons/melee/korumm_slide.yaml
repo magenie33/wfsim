@@ -7,12 +7,11 @@ form: slide
 transform_group: korumm
 co_behavior: additive_with_base_damage
 unmodeled:
-  - reason: client_melee_timing
-  - reason: client_melee_geometry
-  - reason: melee_attack_unmodelled
-    attacks: "Tactical Combo Slam Attack"
-  - reason: melee_own_combo_unmodelled
-    combos: "block combo"
+- reason: melee_attack_unmodelled
+  attacks: Tactical Combo Slam Attack
+- reason: melee_own_combo_unmodelled
+  combos: block combo
+
 attack:
   trigger: melee
   shot_type: hit_scan

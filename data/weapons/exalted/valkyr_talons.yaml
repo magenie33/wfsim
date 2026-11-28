@@ -61,13 +61,8 @@ combo_duration_seconds: 5.0
 co_behavior: additive_with_base_damage
 
 unmodeled:
-  - reason: client_melee_slam
-  - reason: client_melee_legacy
-  - reason: client_melee_geometry
-  - reason: client_melee_ability
-  - "Hysteria drains 5 Energy a second while the claws are out; Energy is not modelled, so they stay out for the whole fight."
-  - "Every hit restores 100 health; nothing damages the Tenno here, so it adds nothing."
-  - "One attack input's animation length is unpublished: the wiki gives each combo's total at 1.0x attack speed, so totals are exact and inputs are split evenly. This shifts a status tick by fractions of a second and changes no total."
+- Hysteria drains 5 Energy a second while the claws are out; Energy is not modelled, so they stay out for the whole fight.
+- Every hit restores 100 health; nothing damages the Tenno here, so it adds nothing.
 
 attack:
   # see notes: swing_trigger_pull_engine

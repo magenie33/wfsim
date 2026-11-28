@@ -8,13 +8,10 @@ transform_group: falcor
 co_behavior: additive_with_base_damage
 unmodeled:
 - reason: client_melee_special
-- reason: client_melee_timing
-- reason: glaive_bounce_count_assumed
-- reason: glaive_bounce_explosion_assumed
-- reason: glaive_detonation_ends_bounces
 - reason: glaive_throw_tennokai_unmodelled
 - reason: glaive_throw_animosity_unmodelled
 - The glaive seeks enemies by itself (wiki, Volatile Rebound); here it flies straight and bounces where reflection takes it.
+
 attack:
   trigger: melee
   shot_type: projectile

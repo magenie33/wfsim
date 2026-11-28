@@ -102,16 +102,9 @@ attack:
     status_chance: 0.26
 
 unmodeled:
-  # THE WEAPON'S OWN LOOP, and the biggest thing missing from its number. The
-  # alt-fire lifts and the primary cashes it in — the two forms feed each other,
-  # which is exactly what a cycle is for. What cannot be written down is HOW
-  # MANY: "up to 13" has no floor published and the count plainly depends on
-  # where the body is while it floats, which this arena does not model. A
-  # measurement decides it (docs/MEASUREMENTS.md), not a guess.
-  - "The Lifted synergy is not modelled: the wiki gives up to 13 extra direct-hit instances against a Lifted enemy, and its alt-fire guarantees Lifted. Only the Lifted status is applied (Condition Overload counts it), so the primary reads low while the target is lifted."
-  - "Primary Compression's 444% case is not modelled: the catalog gives a second value for aiming during the alt-fire, a state the sim does not have. The ordinary 100% applies."
-  - "The radial's falloff is not modelled; the one target at the centre always takes the full 72, never the 58 at the rim."
-  - reason: arch_gun_deployer_cooldown
+- 'The Lifted synergy is not modelled: the wiki gives up to 13 extra direct-hit instances against a Lifted enemy, and its alt-fire guarantees Lifted. Only the Lifted status is applied (Condition Overload counts it), so the primary reads low while the target is lifted.'
+- 'Primary Compression''s 444% case is not modelled: the catalog gives a second value for aiming during the alt-fire, a state the sim does not have. The ordinary 100% applies.'
+- The radial's falloff is not modelled; the one target at the centre always takes the full 72, never the 58 at the rim.
 
 source:
   url: https://wiki.warframe.com/w/Mausolon

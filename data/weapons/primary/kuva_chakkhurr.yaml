@@ -101,11 +101,6 @@ attack:
     takes_blast_radius_mods: true
     damage: { puncture: 52.0, slash: 29.0, blast: 25.0 }   # total 106
 
-unmodeled:
-  - reason: client_projectile_collision
-  - reason: client_accuracy_runtime
-  - reason: explosion_ignores_cover
-
 source:
   url: https://wiki.warframe.com/w/Kuva_Chakkhurr
 

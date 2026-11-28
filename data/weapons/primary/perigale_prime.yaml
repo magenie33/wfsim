@@ -62,11 +62,8 @@ attack:
     end_m: 600.0
     reduction: 0.663043478261
 unmodeled:
-  - reason: client_accuracy_runtime
-  - reason: sniper_combo_miss
-    seconds: 2
-  - reason: zoom_steps
-  - "Voruna's signature bonus is not modelled: carried by her, the ammo pool grows to 56."
+- 'Voruna''s signature bonus is not modelled: carried by her, the ammo pool grows to 56.'
+
 source:
   url: https://wiki.warframe.com/w/Perigale_Prime
 

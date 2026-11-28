@@ -153,14 +153,12 @@ attack:
 # the 20% floor exactly, so no `beam_ramp_floor` override.
 
 unmodeled:
-  - reason: client_secondary_reload_grenade
-  - reason: client_beam_target_ramp
-  - reason: client_accuracy_runtime
-  - "Unmeasured: when in the reload the grenade lands. The page says it is thrown mid-reload without a time, so it lands halfway through; the throw itself takes no time."
-  - "The explosion's self-stagger, which costs the wielder time when the target stands inside the blast, is not modelled."
-  - "Galvanized Shot's bug on the grenade's direct hit (multiplicative with base damage; the Bugs section of the wiki's Catabolyst page) is not modelled."
-  - "Interrupting the reload to throw again without reloading, the exploit the page describes, is not modelled."
-  - "This weapon never reloads on its own; the sim reloads it, so forgetting to costs nothing here."
+- reason: client_secondary_reload_grenade
+- 'Unmeasured: when in the reload the grenade lands. The page says it is thrown mid-reload without a time, so it lands halfway through; the throw itself takes no time.'
+- The explosion's self-stagger, which costs the wielder time when the target stands inside the blast, is not modelled.
+- Galvanized Shot's bug on the grenade's direct hit (multiplicative with base damage; the Bugs section of the wiki's Catabolyst page) is not modelled.
+- Interrupting the reload to throw again without reloading, the exploit the page describes, is not modelled.
+- This weapon never reloads on its own; the sim reloads it, so forgetting to costs nothing here.
 
 source:
   url: https://wiki.warframe.com/w/Coda_Catabolyst

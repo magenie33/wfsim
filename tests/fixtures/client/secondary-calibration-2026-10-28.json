@@ -1112,9 +1112,7 @@
         "disposition": 1.2,
         "mastery_rank": 4
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=240",
         "AmmoClipSize": "AmmoClipSize=70"
@@ -1248,9 +1246,7 @@
         "disposition": 1.2,
         "mastery_rank": 12
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=400",
         "AmmoClipSize": "AmmoClipSize=80"
@@ -1384,10 +1380,7 @@
         "disposition": 1.2,
         "mastery_rank": 8
       },
-      "limits": [
-        "client_accuracy_runtime",
-        "client_projectile_acceleration"
-      ],
+      "limits": [],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=20",
         "AmmoClipSize": "AmmoClipSize=10"
@@ -1528,10 +1521,7 @@
         "disposition": 1.2,
         "mastery_rank": 14
       },
-      "limits": [
-        "client_accuracy_runtime",
-        "client_projectile_acceleration"
-      ],
+      "limits": [],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=24",
         "AmmoClipSize": "AmmoClipSize=8"
@@ -1669,9 +1659,7 @@
         "disposition": 1.2,
         "mastery_rank": 8
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=30"
       },
@@ -1809,9 +1797,7 @@
         "disposition": 1.2,
         "mastery_rank": 13
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=40"
       },
@@ -1955,9 +1941,7 @@
         "disposition": 1.2,
         "mastery_rank": 2
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=4"
       },
@@ -2097,9 +2081,7 @@
         "disposition": 1.2,
         "mastery_rank": 10
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=8"
       },
@@ -2238,9 +2220,7 @@
         "disposition": 1.2,
         "mastery_rank": 8
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=36"
       },
@@ -2381,9 +2361,7 @@
         "disposition": 1.2,
         "mastery_rank": 12
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=40",
         "AmmoCapacity": "AmmoCapacity=320"
@@ -2520,9 +2498,7 @@
         "disposition": 1.2,
         "mastery_rank": 3
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=30"
       },
@@ -2652,9 +2628,7 @@
         "disposition": 1.2,
         "mastery_rank": 4
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=12"
       },
@@ -2784,9 +2758,7 @@
         "disposition": 1.2,
         "mastery_rank": 15
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=16"
       },
@@ -2916,9 +2888,7 @@
         "disposition": 1.2,
         "mastery_rank": 12
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=16"
       },
@@ -3048,9 +3018,7 @@
         "disposition": 1.2,
         "mastery_rank": 15
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=16"
       },
@@ -3181,10 +3149,7 @@
         "disposition": 1.2,
         "mastery_rank": 9
       },
-      "limits": [
-        "client_accuracy_runtime",
-        "client_rate_spool"
-      ],
+      "limits": [],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=420",
         "AmmoClipSize": "AmmoClipSize=70"
@@ -3318,10 +3283,7 @@
         "disposition": 1.2,
         "mastery_rank": 12
       },
-      "limits": [
-        "client_accuracy_runtime",
-        "client_rate_spool"
-      ],
+      "limits": [],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=880",
         "AmmoClipSize": "AmmoClipSize=80"
@@ -3452,9 +3414,7 @@
         "disposition": 1.2,
         "mastery_rank": 14
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=8"
       },
@@ -3619,9 +3579,7 @@
         "disposition": 1.2,
         "mastery_rank": 8
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=28"
       },
@@ -3754,9 +3712,7 @@
         "disposition": 1.2,
         "mastery_rank": 10
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=40",
         "AmmoCapacity": "AmmoCapacity=400"
@@ -3889,9 +3845,7 @@
         "disposition": 1.2,
         "mastery_rank": 8
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=12"
       },
@@ -4021,9 +3975,7 @@
         "disposition": 1.2,
         "mastery_rank": 12
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=12"
       },
@@ -4154,9 +4106,7 @@
         "disposition": 1.2,
         "mastery_rank": 4
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=400",
         "AmmoClipSize": "AmmoClipSize=100"
@@ -4287,10 +4237,7 @@
         "disposition": 1.2,
         "mastery_rank": 4
       },
-      "limits": [
-        "client_accuracy_runtime",
-        "client_projectile_acceleration"
-      ],
+      "limits": [],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=18",
         "AmmoClipSize": "AmmoClipSize=3",
@@ -4531,9 +4478,7 @@
         "disposition": 1.2,
         "mastery_rank": 10
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=288",
         "AmmoClipSize": "AmmoClipSize=36",
@@ -4669,9 +4614,7 @@
         "disposition": 1.2,
         "mastery_rank": 10
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=48",
         "AmmoClipSize": "AmmoClipSize=24"
@@ -4814,9 +4757,7 @@
         "attack.infinite_body_punch_through": true,
         "attack.projectile_width_m": 1.6
       },
-      "limits": [
-        "client_beam_target_ramp"
-      ],
+      "limits": [],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=48",
         "AmmoClipSize": "AmmoClipSize=24"
@@ -4919,9 +4860,7 @@
         "disposition": 1.2,
         "mastery_rank": 14
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=72",
         "AmmoClipSize": "AmmoClipSize=24"
@@ -5064,9 +5003,7 @@
         "attack.infinite_body_punch_through": true,
         "attack.projectile_width_m": 4.0
       },
-      "limits": [
-        "client_beam_target_ramp"
-      ],
+      "limits": [],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=72",
         "AmmoClipSize": "AmmoClipSize=24"
@@ -5170,10 +5107,7 @@
         "disposition": 1.2,
         "mastery_rank": 5
       },
-      "limits": [
-        "client_accuracy_runtime",
-        "client_beam_target_ramp"
-      ],
+      "limits": [],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=350",
         "AmmoClipSize": "AmmoClipSize=70",
@@ -5390,7 +5324,6 @@
         "mastery_rank": 6
       },
       "limits": [
-        "client_accuracy_runtime",
         "client_secondary_other_behavior"
       ],
       "economy": {
@@ -5795,7 +5728,6 @@
         "mastery_rank": 2
       },
       "limits": [
-        "client_accuracy_runtime",
         "client_secondary_other_behavior"
       ],
       "economy": {
@@ -6190,9 +6122,7 @@
         "attack.charge_seconds": 0.4,
         "attack.projectile_speed_mps": 80
       },
-      "limits": [
-        "client_projectile_collision"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=16",
         "MaxCharges": "MaxCharges=36"
@@ -6321,9 +6251,7 @@
         "disposition": 1.2,
         "mastery_rank": 14
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=32",
         "MaxCharges": "MaxCharges=36",
@@ -6461,9 +6389,7 @@
         "attack.charge_seconds": 0.4,
         "attack.projectile_speed_mps": 80
       },
-      "limits": [
-        "client_projectile_collision"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=32",
         "MaxCharges": "MaxCharges=36",
@@ -6590,9 +6516,7 @@
           }
         }
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=32",
         "MaxCharges": "MaxCharges=36",
@@ -6742,9 +6666,7 @@
         "disposition": 1.2,
         "mastery_rank": 7
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=15"
       },
@@ -6888,9 +6810,7 @@
         "disposition": 1.2,
         "mastery_rank": 6
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=5"
       },
@@ -7029,9 +6949,7 @@
         },
         "disposition": 1.2
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=2",
         "MaxCharges": "MaxCharges=40"
@@ -7166,9 +7084,7 @@
           }
         }
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=2",
         "MaxCharges": "MaxCharges=40"
@@ -7305,9 +7221,7 @@
         "disposition": 1.2,
         "mastery_rank": 4
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=4",
         "MaxCharges": "MaxCharges=40"
@@ -7443,9 +7357,7 @@
           }
         }
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=4",
         "MaxCharges": "MaxCharges=40"
@@ -7824,8 +7736,6 @@
         "attack.reload_grenade.from_empty.radial.status_chance": 0.59
       },
       "limits": [
-        "client_accuracy_runtime",
-        "client_beam_target_ramp",
         "client_secondary_reload_grenade"
       ],
       "economy": {
@@ -8160,9 +8070,7 @@
       "applied": {
         "disposition": 1.2
       },
-      "limits": [
-        "client_modular_secondary_assembly"
-      ],
+      "limits": [],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=70"
       },
@@ -8410,10 +8318,7 @@
         "disposition": 1.2,
         "mastery_rank": 4
       },
-      "limits": [
-        "client_accuracy_runtime",
-        "client_rate_spool"
-      ],
+      "limits": [],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=420",
         "AmmoClipSize": "AmmoClipSize=60",
@@ -8540,9 +8445,7 @@
           }
         }
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=420",
         "AmmoClipSize": "AmmoClipSize=60",
@@ -8708,8 +8611,6 @@
         "attack.reload_grenade.from_empty.radial.status_chance": 0.59
       },
       "limits": [
-        "client_accuracy_runtime",
-        "client_beam_target_ramp",
         "client_secondary_reload_grenade"
       ],
       "economy": {
@@ -9312,9 +9213,7 @@
         "disposition": 1.2,
         "mastery_rank": 8
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=11"
       },
@@ -9456,10 +9355,7 @@
           }
         }
       },
-      "limits": [
-        "client_accuracy_runtime",
-        "client_clip_burst"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=11"
       },
@@ -9599,10 +9495,7 @@
         "disposition": 1.2,
         "mastery_rank": 8
       },
-      "limits": [
-        "client_battery_defaults",
-        "client_beam_target_ramp"
-      ],
+      "limits": [],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=320",
         "AmmoClipSize": "AmmoClipSize=40",
@@ -9821,9 +9714,7 @@
           }
         }
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=10",
         "MaxCharges": "MaxCharges=20"
@@ -9963,9 +9854,7 @@
         "disposition": 1.2,
         "mastery_rank": 6
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=5"
       },
@@ -10102,9 +9991,7 @@
         "disposition": 1.2,
         "mastery_rank": 10
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=400",
         "AmmoClipSize": "AmmoClipSize=100"
@@ -10236,9 +10123,7 @@
         "disposition": 1.2,
         "mastery_rank": 7
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=480",
         "AmmoClipSize": "AmmoClipSize=120"
@@ -10371,9 +10256,7 @@
         "disposition": 1.2,
         "mastery_rank": 17
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=480",
         "AmmoClipSize": "AmmoClipSize=160",
@@ -10506,9 +10389,7 @@
         "disposition": 1.2,
         "mastery_rank": 11
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=60",
         "AmmoClipSize": "AmmoClipSize=12",
@@ -10635,9 +10516,7 @@
           }
         }
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=60",
         "AmmoClipSize": "AmmoClipSize=12",
@@ -10766,9 +10645,7 @@
         "disposition": 1.2,
         "mastery_rank": 14
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=15"
       },
@@ -10911,9 +10788,7 @@
           }
         }
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=15"
       },
@@ -11068,7 +10943,6 @@
         "mastery_rank": 9
       },
       "limits": [
-        "client_beam_target_ramp",
         "client_secondary_other_behavior"
       ],
       "economy": {
@@ -11425,7 +11299,6 @@
         "mastery_rank": 8
       },
       "limits": [
-        "client_accuracy_runtime",
         "client_secondary_charge_packet"
       ],
       "economy": {
@@ -11581,8 +11454,6 @@
         }
       },
       "limits": [
-        "client_accuracy_runtime",
-        "client_projectile_acceleration",
         "client_projectile_callbacks"
       ],
       "economy": {
@@ -11740,7 +11611,6 @@
         "mastery_rank": 14
       },
       "limits": [
-        "client_accuracy_runtime",
         "client_secondary_charge_packet"
       ],
       "economy": {
@@ -11896,8 +11766,6 @@
         }
       },
       "limits": [
-        "client_accuracy_runtime",
-        "client_projectile_acceleration",
         "client_projectile_callbacks"
       ],
       "economy": {
@@ -12056,10 +11924,7 @@
         "disposition": 1.2,
         "mastery_rank": 14
       },
-      "limits": [
-        "client_accuracy_runtime",
-        "client_projectile_collision"
-      ],
+      "limits": [],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=40",
         "AmmoClipSize": "AmmoClipSize=5"
@@ -12205,9 +12070,7 @@
           }
         }
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=40",
         "AmmoClipSize": "AmmoClipSize=5"
@@ -12339,9 +12202,7 @@
         "disposition": 1.2,
         "mastery_rank": 1
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=35",
         "MaxCharges": "MaxCharges=280"
@@ -12462,9 +12323,7 @@
         "attack.range_m": 16.0,
         "attack.punch_through_m": 0.0
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=35",
         "MaxCharges": "MaxCharges=280"
@@ -12954,9 +12813,7 @@
       "applied": {
         "disposition": 1.2
       },
-      "limits": [
-        "client_modular_secondary_assembly"
-      ],
+      "limits": [],
       "economy": {
         "BatteryRegenDelay": "BatteryRegenDelay=3",
         "BatteryRegenDelayFromEmpty": "BatteryRegenDelayFromEmpty=3",
@@ -13211,8 +13068,7 @@
         "mastery_rank": 10
       },
       "limits": [
-        "client_ammo_runtime",
-        "client_projectile_acceleration"
+        "client_ammo_runtime"
       ],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=10",
@@ -13702,9 +13558,7 @@
         "disposition": 1.2,
         "mastery_rank": 7
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=320",
         "AmmoClipSize": "AmmoClipSize=16"
@@ -13846,9 +13700,7 @@
           }
         }
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=320",
         "AmmoClipSize": "AmmoClipSize=16"
@@ -13986,9 +13838,7 @@
           }
         }
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=320",
         "AmmoClipSize": "AmmoClipSize=16"
@@ -14126,9 +13976,7 @@
           }
         }
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=320",
         "AmmoClipSize": "AmmoClipSize=16"
@@ -14268,9 +14116,7 @@
         "disposition": 1.2,
         "mastery_rank": 12
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=320",
         "AmmoClipSize": "AmmoClipSize=16"
@@ -14412,9 +14258,7 @@
           }
         }
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=320",
         "AmmoClipSize": "AmmoClipSize=16"
@@ -14552,9 +14396,7 @@
           }
         }
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=320",
         "AmmoClipSize": "AmmoClipSize=16"
@@ -14692,9 +14534,7 @@
           }
         }
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=320",
         "AmmoClipSize": "AmmoClipSize=16"
@@ -14835,9 +14675,7 @@
         "disposition": 1.2,
         "mastery_rank": 10
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=10",
         "AmmoClipSize": "AmmoClipSize=1"
@@ -14971,9 +14809,7 @@
         "disposition": 1.2,
         "mastery_rank": 14
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=20",
         "AmmoClipSize": "AmmoClipSize=1"
@@ -15110,11 +14946,7 @@
         "disposition": 1.2,
         "mastery_rank": 5
       },
-      "limits": [
-        "client_accuracy_runtime",
-        "client_rate_spool",
-        "client_spool_pellets"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=40"
       },
@@ -15247,9 +15079,7 @@
         "disposition": 1.2,
         "mastery_rank": 8
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=144",
         "AmmoClipSize": "AmmoClipSize=12"
@@ -15385,9 +15215,7 @@
         "disposition": 1.2,
         "mastery_rank": 13
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=144",
         "AmmoClipSize": "AmmoClipSize=12"
@@ -15528,9 +15356,7 @@
         },
         "disposition": 1.2
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=14"
       },
@@ -15662,10 +15488,7 @@
         "disposition": 1.2,
         "mastery_rank": 5
       },
-      "limits": [
-        "client_accuracy_runtime",
-        "client_projectile_acceleration"
-      ],
+      "limits": [],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=15",
         "AmmoClipSize": "AmmoClipSize=3"
@@ -15898,9 +15721,7 @@
           }
         }
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=10",
         "MaxCharges": "MaxCharges=20"
@@ -16045,9 +15866,7 @@
         "disposition": 1.2,
         "mastery_rank": 13
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=11"
       },
@@ -16187,9 +16006,7 @@
         "disposition": 1.2,
         "mastery_rank": 15
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=21",
         "AmmoCapacity": "AmmoCapacity=210"
@@ -16329,10 +16146,7 @@
           }
         }
       },
-      "limits": [
-        "client_accuracy_runtime",
-        "client_clip_burst"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=21",
         "AmmoCapacity": "AmmoCapacity=210"
@@ -16465,9 +16279,7 @@
         "disposition": 1.2,
         "mastery_rank": 13
       },
-      "limits": [
-        "client_beam_target_ramp"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=77"
       },
@@ -16575,10 +16387,7 @@
         "disposition": 1.2,
         "mastery_rank": 15
       },
-      "limits": [
-        "client_accuracy_runtime",
-        "client_projectile_collision"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=9",
         "AmmoCapacity": "AmmoCapacity=27"
@@ -16726,9 +16535,7 @@
         "disposition": 1.2,
         "mastery_rank": 13
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=684",
         "AmmoClipSize": "AmmoClipSize=114"
@@ -16859,10 +16666,7 @@
         "disposition": 1.2,
         "mastery_rank": 14
       },
-      "limits": [
-        "client_accuracy_runtime",
-        "client_projectile_collision"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=12",
         "MaxCharges": "MaxCharges=216"
@@ -17001,11 +16805,7 @@
           }
         }
       },
-      "limits": [
-        "client_accuracy_runtime",
-        "client_projectile_acceleration",
-        "client_projectile_collision"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=12",
         "MaxCharges": "MaxCharges=216"
@@ -17144,9 +16944,7 @@
         },
         "disposition": 1.2
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=15",
         "MaxCharges": "MaxCharges=24"
@@ -17362,9 +17160,7 @@
         "disposition": 1.2,
         "mastery_rank": 14
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=20",
         "MaxCharges": "MaxCharges=24"
@@ -17581,9 +17377,7 @@
         "disposition": 1.2,
         "mastery_rank": 7
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=15",
         "MaxCharges": "MaxCharges=24"
@@ -17799,9 +17593,7 @@
         "disposition": 1.2,
         "mastery_rank": 3
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "MaxCharges": "MaxCharges=20"
       },
@@ -17929,10 +17721,7 @@
           }
         }
       },
-      "limits": [
-        "client_accuracy_runtime",
-        "client_projectile_collision"
-      ],
+      "limits": [],
       "economy": {
         "MaxCharges": "MaxCharges=20"
       },
@@ -18100,9 +17889,7 @@
         "disposition": 1.2,
         "mastery_rank": 8
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "MaxCharges": "MaxCharges=20",
         "AmmoClipSize": "AmmoClipSize=8"
@@ -18231,10 +18018,7 @@
           }
         }
       },
-      "limits": [
-        "client_accuracy_runtime",
-        "client_projectile_collision"
-      ],
+      "limits": [],
       "economy": {
         "MaxCharges": "MaxCharges=20",
         "AmmoClipSize": "AmmoClipSize=8"
@@ -18403,9 +18187,7 @@
         "disposition": 1.2,
         "mastery_rank": 10
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=8"
       },
@@ -18536,9 +18318,7 @@
         "disposition": 1.2,
         "mastery_rank": 14
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=8",
         "AmmoCapacity": "AmmoCapacity=160"
@@ -18671,9 +18451,7 @@
         "disposition": 1.2,
         "mastery_rank": 9
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=8"
       },
@@ -18808,9 +18586,7 @@
         "disposition": 1.2,
         "mastery_rank": 7
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {},
       "behavior_index": 0,
       "role_types": {
@@ -18938,9 +18714,7 @@
         "disposition": 1.2,
         "mastery_rank": 0
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=35",
         "MaxCharges": "MaxCharges=280"
@@ -19061,9 +18835,7 @@
         "attack.range_m": 16.0,
         "attack.punch_through_m": 0.0
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=35",
         "MaxCharges": "MaxCharges=280"
@@ -19589,11 +19361,7 @@
         "disposition": 1.2,
         "mastery_rank": 14
       },
-      "limits": [
-        "client_accuracy_runtime",
-        "client_projectile_acceleration",
-        "client_projectile_collision"
-      ],
+      "limits": [],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=210",
         "AmmoClipSize": "AmmoClipSize=20",
@@ -20012,9 +19780,7 @@
         "disposition": 1.2,
         "mastery_rank": 8
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=8"
       },
@@ -20146,10 +19912,7 @@
           }
         }
       },
-      "limits": [
-        "client_accuracy_runtime",
-        "client_clip_burst"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=8"
       },
@@ -20281,9 +20044,7 @@
         "disposition": 1.2,
         "mastery_rank": 14
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=8"
       },
@@ -20415,10 +20176,7 @@
           }
         }
       },
-      "limits": [
-        "client_accuracy_runtime",
-        "client_clip_burst"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=8"
       },
@@ -20554,10 +20312,7 @@
         "disposition": 1.2,
         "mastery_rank": 6
       },
-      "limits": [
-        "client_accuracy_runtime",
-        "client_battery_defaults"
-      ],
+      "limits": [],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=8",
         "AmmoClipSize": "AmmoClipSize=10",
@@ -20807,10 +20562,7 @@
         "disposition": 1.2,
         "mastery_rank": 8
       },
-      "limits": [
-        "client_accuracy_runtime",
-        "client_projectile_acceleration"
-      ],
+      "limits": [],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=18",
         "AmmoClipSize": "AmmoClipSize=3",
@@ -21051,9 +20803,7 @@
         "disposition": 1.2,
         "mastery_rank": 11
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=70",
         "AmmoCapacity": "AmmoCapacity=600"
@@ -21195,9 +20945,7 @@
         "disposition": 1.2,
         "mastery_rank": 12
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=10"
       },
@@ -21478,9 +21226,7 @@
         "disposition": 1.2,
         "mastery_rank": 13
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=12"
       },
@@ -21619,9 +21365,7 @@
         "disposition": 1.2,
         "mastery_rank": 9
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=504",
         "AmmoClipSize": "AmmoClipSize=72"
@@ -21769,9 +21513,7 @@
           }
         }
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=504",
         "AmmoClipSize": "AmmoClipSize=72"
@@ -21916,7 +21658,6 @@
         "mastery_rank": 6
       },
       "limits": [
-        "client_accuracy_runtime",
         "client_secondary_other_behavior"
       ],
       "economy": {
@@ -22275,9 +22016,7 @@
         "attack.charge_seconds": 0.4,
         "attack.projectile_speed_mps": 80
       },
-      "limits": [
-        "client_projectile_collision"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=20",
         "MaxCharges": "MaxCharges=36"
@@ -22379,9 +22118,7 @@
       "applied": {
         "disposition": 1.2
       },
-      "limits": [
-        "client_modular_secondary_assembly"
-      ],
+      "limits": [],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=700"
       },
@@ -22610,7 +22347,6 @@
         "mastery_rank": 14
       },
       "limits": [
-        "client_accuracy_runtime",
         "client_secondary_return_ammo"
       ],
       "economy": {
@@ -22756,9 +22492,7 @@
         "disposition": 1.2,
         "mastery_rank": 14
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=450",
         "AmmoClipSize": "AmmoClipSize=75"
@@ -22993,7 +22727,6 @@
         "mastery_rank": 12
       },
       "limits": [
-        "client_accuracy_runtime",
         "client_special_spread"
       ],
       "economy": {
@@ -23156,7 +22889,6 @@
         }
       },
       "limits": [
-        "client_accuracy_runtime",
         "client_projectile_callbacks",
         "client_secondary_toggle_reload"
       ],
@@ -23384,10 +23116,7 @@
         "disposition": 1.2,
         "mastery_rank": 10
       },
-      "limits": [
-        "client_accuracy_runtime",
-        "client_rate_spool"
-      ],
+      "limits": [],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=480",
         "AmmoClipSize": "AmmoClipSize=120"
@@ -23513,10 +23242,7 @@
         },
         "disposition": 1.2
       },
-      "limits": [
-        "client_accuracy_runtime",
-        "client_projectile_collision"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=8"
       },
@@ -23657,9 +23383,7 @@
         "disposition": 1.2,
         "mastery_rank": 14
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=180",
         "AmmoClipSize": "AmmoClipSize=90"
@@ -23815,9 +23539,7 @@
           }
         }
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=180",
         "AmmoClipSize": "AmmoClipSize=90"
@@ -23971,9 +23693,7 @@
         "disposition": 1.2,
         "mastery_rank": 3
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=15",
         "MaxCharges": "MaxCharges=120"
@@ -24109,9 +23829,7 @@
           }
         }
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=15",
         "MaxCharges": "MaxCharges=120"
@@ -24248,9 +23966,7 @@
         "disposition": 1.2,
         "mastery_rank": 14
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=24",
         "MaxCharges": "MaxCharges=120"
@@ -24386,9 +24102,7 @@
           }
         }
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=24",
         "MaxCharges": "MaxCharges=120"
@@ -25005,9 +24719,7 @@
       "applied": {
         "disposition": 1.2
       },
-      "limits": [
-        "client_modular_secondary_assembly"
-      ],
+      "limits": [],
       "economy": {
         "BatteryRegenDelay": "BatteryRegenDelay=3",
         "BatteryRegenDelayFromEmpty": "BatteryRegenDelayFromEmpty=3",
@@ -25259,7 +24971,6 @@
         "mastery_rank": 10
       },
       "limits": [
-        "client_accuracy_runtime",
         "client_ammo_runtime",
         "client_secondary_charge_packet"
       ],
@@ -25422,7 +25133,6 @@
         }
       },
       "limits": [
-        "client_accuracy_runtime",
         "client_ammo_runtime"
       ],
       "economy": {
@@ -25580,9 +25290,7 @@
         "disposition": 1.2,
         "mastery_rank": 7
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=399",
         "AmmoClipSize": "AmmoClipSize=57"
@@ -26586,9 +26294,7 @@
         "disposition": 1.2,
         "mastery_rank": 11
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=30"
       },
@@ -26732,9 +26438,7 @@
         "disposition": 1.2,
         "mastery_rank": 14
       },
-      "limits": [
-        "client_beam_target_ramp"
-      ],
+      "limits": [],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=320",
         "AmmoClipSize": "AmmoClipSize=40",
@@ -26844,9 +26548,7 @@
         "disposition": 1.2,
         "mastery_rank": 16
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=6"
       },
@@ -26986,10 +26688,7 @@
           }
         }
       },
-      "limits": [
-        "client_accuracy_runtime",
-        "client_clip_burst"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=6"
       },
@@ -27231,9 +26930,7 @@
           }
         }
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=460",
         "AmmoClipSize": "AmmoClipSize=92"
@@ -27379,10 +27076,7 @@
         "disposition": 1.2,
         "mastery_rank": 6
       },
-      "limits": [
-        "client_accuracy_runtime",
-        "client_battery_defaults"
-      ],
+      "limits": [],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=8",
         "AmmoClipSize": "AmmoClipSize=10",
@@ -27511,8 +27205,6 @@
         "attack.radial.falloff_reduction": 0.4
       },
       "limits": [
-        "client_battery_defaults",
-        "client_projectile_acceleration",
         "client_projectile_callbacks",
         "client_secondary_clip_charge"
       ],
@@ -27700,9 +27392,7 @@
         "disposition": 1.2,
         "mastery_rank": 14
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=80",
         "AmmoClipSize": "AmmoClipSize=8"
@@ -27844,9 +27534,7 @@
       "applied": {
         "disposition": 1.2
       },
-      "limits": [
-        "client_modular_secondary_assembly"
-      ],
+      "limits": [],
       "economy": {},
       "role_types": {
         "fire:Type": "/Lotus/Types/Game/LotusWeaponProjectileFireBehavior",
@@ -28093,9 +27781,7 @@
         "disposition": 1.2,
         "mastery_rank": 9
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=1200",
         "AmmoClipSize": "AmmoClipSize=120"
@@ -28222,9 +27908,7 @@
         "disposition": 1.2,
         "mastery_rank": 5
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=30"
       },
@@ -28359,11 +28043,7 @@
         "disposition": 1.2,
         "mastery_rank": 10
       },
-      "limits": [
-        "client_accuracy_runtime",
-        "client_rate_spool",
-        "client_spool_pellets"
-      ],
+      "limits": [],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=240",
         "AmmoClipSize": "AmmoClipSize=80"
@@ -28505,9 +28185,7 @@
         "disposition": 1.2,
         "mastery_rank": 9
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=120",
         "AmmoClipSize": "AmmoClipSize=2"
@@ -28644,9 +28322,7 @@
         "disposition": 1.2,
         "mastery_rank": 5
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=420",
         "AmmoClipSize": "AmmoClipSize=28"
@@ -28780,9 +28456,7 @@
         "disposition": 1.2,
         "mastery_rank": 7
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=440",
         "AmmoClipSize": "AmmoClipSize=40"
@@ -29040,9 +28714,7 @@
         "disposition": 1.2,
         "mastery_rank": 4
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "MaxCharges": "MaxCharges=24"
       },
@@ -29176,9 +28848,7 @@
           }
         }
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "MaxCharges": "MaxCharges=24"
       },
@@ -29314,9 +28984,7 @@
         "disposition": 1.2,
         "mastery_rank": 10
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "MaxCharges": "MaxCharges=24"
       },
@@ -29450,9 +29118,7 @@
           }
         }
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "MaxCharges": "MaxCharges=24"
       },
@@ -29589,9 +29255,7 @@
         "disposition": 1.2,
         "mastery_rank": 10
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=10"
       },
@@ -29722,9 +29386,7 @@
         "disposition": 1.2,
         "mastery_rank": 8
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=434",
         "AmmoClipSize": "AmmoClipSize=62"
@@ -29858,9 +29520,7 @@
         "disposition": 1.2,
         "mastery_rank": 13
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=520",
         "AmmoClipSize": "AmmoClipSize=70"
@@ -30094,9 +29754,7 @@
       "applied": {
         "disposition": 1.2
       },
-      "limits": [
-        "client_modular_secondary_assembly"
-      ],
+      "limits": [],
       "economy": {
         "BatteryRegenDelay": "BatteryRegenDelay=3",
         "BatteryRegenDelayFromEmpty": "BatteryRegenDelayFromEmpty=3",
@@ -30346,9 +30004,7 @@
         "disposition": 1.2,
         "mastery_rank": 14
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=8",
         "MaxCharges": "MaxCharges=0"
@@ -30480,9 +30136,7 @@
         "disposition": 1.2,
         "mastery_rank": 4
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=420",
         "AmmoClipSize": "AmmoClipSize=14"
@@ -30616,9 +30270,7 @@
         "disposition": 1.2,
         "mastery_rank": 4
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=420",
         "AmmoClipSize": "AmmoClipSize=20"
@@ -30749,9 +30401,7 @@
         "disposition": 1.2,
         "mastery_rank": 10
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=3"
       },
@@ -30886,9 +30536,7 @@
         "disposition": 1.2,
         "mastery_rank": 14
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=8"
       },
@@ -31025,9 +30673,7 @@
         "disposition": 1.2,
         "mastery_rank": 6
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=8",
         "MaxCharges": "MaxCharges=12"
@@ -31297,9 +30943,7 @@
         "disposition": 1.2,
         "mastery_rank": 13
       },
-      "limits": [
-        "client_accuracy_runtime"
-      ],
+      "limits": [],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=12",
         "MaxCharges": "MaxCharges=12"
@@ -31574,7 +31218,6 @@
         "mastery_rank": 11
       },
       "limits": [
-        "client_accuracy_runtime",
         "client_projectile_callbacks"
       ],
       "economy": {

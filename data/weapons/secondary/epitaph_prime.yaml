@@ -72,7 +72,6 @@ source:
   url: https://wiki.warframe.com/w/Epitaph_Prime
 
 unmodeled:
-  - reason: client_secondary_charge_packet
-  - reason: client_accuracy_runtime
+- reason: client_secondary_charge_packet
 
 # see notes: client_secondary_calibration

@@ -68,8 +68,7 @@ attack:
   damage: { electricity: 25, puncture: 8 }   # total 33
 
 unmodeled:
-  - reason: client_accuracy_runtime
-  - "Switching modes takes 1 s of animation (0.5 s on Wisp); the sim never switches, so each mode is measured as the whole weapon."
+- Switching modes takes 1 s of animation (0.5 s on Wisp); the sim never switches, so each mode is measured as the whole weapon.
 
 source:
   url: https://wiki.warframe.com/w/Fulmin_Prime

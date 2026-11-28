@@ -46,7 +46,4 @@ reload_start_seconds: 0.5
 reload_per_shell_seconds: 0.5
 reload_end_seconds: 0.25
 
-unmodeled:
-  - reason: client_accuracy_runtime
-
 # see notes: client_primary_calibration

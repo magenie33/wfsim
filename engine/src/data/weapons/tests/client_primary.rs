@@ -51,9 +51,7 @@ fn selected_primary_forms_match_their_actual_damage_component_and_nominal_rate()
             assert_eq!(beam.chain_damage_per_hop, expected["chain_damage_per_hop"].as_f64().unwrap());
             assert_eq!(beam.chain_compounds, expected["chain_compounds"].as_bool().unwrap());
             assert_eq!(ramp.per_target, expected["per_target"].as_bool().unwrap());
-            assert!(w.unmodeled_parts.iter().any(|part| part.reason.as_deref() == Some("client_beam_target_ramp")));
         }
-        assert!(w.unmodeled.iter().any(|line| line.contains("spread growth")), "{id}: remaining live envelope");
     }
 }
 

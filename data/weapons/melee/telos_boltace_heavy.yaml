@@ -7,12 +7,11 @@ form: heavy
 transform_group: telos_boltace
 co_behavior: additive_with_base_damage
 unmodeled:
-- reason: client_melee_timing
-- reason: client_melee_geometry
 - reason: melee_attack_unmodelled
   attacks: Stormpath Slide Attack
 - reason: melee_own_combo_unmodelled
   combos: slide attack
+
 attack:
   trigger: melee
   shot_type: hit_scan

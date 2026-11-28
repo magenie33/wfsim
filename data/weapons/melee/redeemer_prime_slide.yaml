@@ -7,9 +7,8 @@ form: slide
 transform_group: redeemer_prime
 co_behavior: additive_with_base_damage
 unmodeled:
-  - reason: client_melee_timing
-  - reason: client_melee_geometry
-  - reason: gunblade_light_shots_unmodelled
+- reason: gunblade_light_shots_unmodelled
+
 attack:
   trigger: melee
   shot_type: hit_scan

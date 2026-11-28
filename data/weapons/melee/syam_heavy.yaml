@@ -6,14 +6,11 @@ form: heavy
 transform_group: syam
 co_behavior: independent
 unmodeled:
-- reason: client_melee_timing
 - reason: client_melee_special
-- reason: client_melee_geometry
 - Shockwave flight speed is unpublished; damage lands at the package release event without travel time.
-- The first wave is about 8 m wide and horizontal, while the second is narrow and vertical. Both are traced as rays; terrain
-  traversal and repeated contacts are not modelled.
-- Killing Blow applies only when a projectile lands during a wind-up animation. The simulation applies it to every heavy projectile
-  instead of checking that animation window.
+- The first wave is about 8 m wide and horizontal, while the second is narrow and vertical. Both are traced as rays; terrain traversal and repeated contacts are not modelled.
+- Killing Blow applies only when a projectile lands during a wind-up animation. The simulation applies it to every heavy projectile instead of checking that animation window.
+
 attack:
   trigger: melee
   shot_type: projectile

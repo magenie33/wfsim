@@ -6,11 +6,7 @@ inherits: keratinos
 form: heavy
 transform_group: keratinos
 co_behavior: additive_with_base_damage
-unmodeled:
-- reason: client_melee_timing
-- reason: client_melee_geometry
-- reason: melee_passive_unmodelled
-  passive: a heavy attack at 12x combo grants +2.8 m range to every melee attack for 180 s
+
 attack:
   trigger: melee
   shot_type: hit_scan
@@ -36,6 +32,14 @@ attack:
   combo_script:
     tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/InfTransformClawMeleeTree
     context: CC_GROUND_HEAVY
+bespoke:
+  stacking_buffs:
+    - trigger: direct_hit
+      grant: melee_range
+      per_stack: 2.8
+      max_stacks: 1
+      duration_seconds: 180.0
+
 source:
   url: https://wiki.warframe.com/w/Keratinos
 

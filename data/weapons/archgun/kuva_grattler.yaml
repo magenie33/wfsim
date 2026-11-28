@@ -103,8 +103,5 @@ attack:
     crit_multiplier: 2.0
     status_chance: 0.27
 
-unmodeled:
-  - reason: arch_gun_deployer_cooldown
-
 source:
   url: https://wiki.warframe.com/w/Kuva_Grattler

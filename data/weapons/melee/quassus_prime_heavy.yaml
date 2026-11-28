@@ -6,13 +6,11 @@ form: heavy
 transform_group: quassus_prime
 co_behavior: additive_with_base_damage
 unmodeled:
-- reason: client_melee_timing
 - reason: client_melee_special
-- reason: client_melee_geometry
-- The package gives the two heavy animations but no projectile release event. Each volley is released halfway through its
-  animation; exact release timing is unmeasured.
+- The package gives the two heavy animations but no projectile release event. Each volley is released halfway through its animation; exact release timing is unmeasured.
 - A separate close-range fan strike is not modelled.
 - Xaku's accuracy bonus and occasional merging of dagger hits and their Slash procs are not modelled.
+
 attack:
   trigger: melee
   shot_type: projectile

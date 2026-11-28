@@ -83,8 +83,7 @@ attack:
   projectile_speed_mps: 300
   damage: { impact: 100.0, puncture: 50.0, slash: 350.0 }   # 500 total
 unmodeled:
-  - "The wave's wide, flat hitbox is not modelled; this fight has no geometry for it."
-  - reason: arch_gun_deployer_cooldown
+- The wave's wide, flat hitbox is not modelled; this fight has no geometry for it.
 
 source:
   url: https://wiki.warframe.com/w/Fluctus

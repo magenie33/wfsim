@@ -81,7 +81,4 @@ source:
   # Attack stats and the 3x multishot are the wiki module's own
   # `Attacks[1].Multishot`.
 
-unmodeled:
-  - reason: client_accuracy_runtime
-
 # see notes: client_primary_calibration

@@ -34,6 +34,10 @@ co_behavior: additive_with_base_damage
 
 attack:
   # see notes: cone_half_angle_from_2
+  sustained_fire_rate:
+    native_consumer: automatic_zero_duration_refire
+    ContinuousFireRateAtten: [0.2, 1.0]
+    ContinuousMaxShots: 8
   spread:
     min_deg: 5.0
     max_deg: 20.0
@@ -60,12 +64,14 @@ attack:
   damage: { impact: 6, puncture: 6, slash: 18 }   # 30 a pellet, 360 a shot
 
 unmodeled:
-  - reason: client_rate_spool
-  - reason: client_spool_pellets
-  - reason: client_accuracy_runtime
-  - "The pellet count spools up too, one more per consecutive shot (page); this entry fires the full count from the first shot. No fire-rate ramp is published either, so the rate is the settled one."
-  - reason: auto_spool_ramp
-    rate: 3.67
+- The pellet count spools up too, one more per consecutive shot (page); this entry fires the full count from the first shot. No fire-rate ramp is published either, so the rate is the settled one.
+
+bespoke:
+  spindown_seconds: 1.5
+  pellet_spool:
+    initial_pellets: 1
+    max_pellets: 12
+    ammo_divisor: 3
 
 source:
   url: https://wiki.warframe.com/w/Kohm

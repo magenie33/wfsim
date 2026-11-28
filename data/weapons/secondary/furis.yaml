@@ -105,7 +105,4 @@ attack:
 source:
   url: https://wiki.warframe.com/w/Furis
 
-unmodeled:
-  - reason: client_accuracy_runtime
-
 # see notes: client_secondary_calibration

@@ -43,11 +43,8 @@ attack:
     puncture: 14.31
     slash: 143.1
 
-unmodeled:
-  - reason: client_accuracy_runtime
-  - reason: client_clip_burst
-  - "The burst empties the magazine, and this entry fires a fixed count, the unmodded magazine. Magazine mods lengthen the burst (page), so a build with one reads low."
-  - reason: bolt_corpse_ragdoll
+bespoke:
+  burst_empties_magazine: true
 
 source:
   url: https://wiki.warframe.com/w/Nagantaka

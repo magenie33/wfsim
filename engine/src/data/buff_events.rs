@@ -94,6 +94,16 @@ pub fn of_builtin(id: &str) -> Option<Option<&'static str>> {
         // away. A ruler cannot say "no heavy attacks happen" the way it can say
         // "nothing dies".
         "melee_incarnon" | "melee_combo" => return Some(None),
+        _ if id.starts_with("bespoke_headshot_kill_") => "headshot_kill",
+        _ if id.starts_with("bespoke_headshot_") => "headshot",
+        _ if id.starts_with("bespoke_kill_") => "kill",
+        _ if id.starts_with("bespoke_firing_") => "firing",
+        _ if id.starts_with("bespoke_hit_") => "hit",
+        _ if id.starts_with("bespoke_crit_") => "crit",
+        _ if id.starts_with("bespoke_status_applied_") => "status_applied",
+        _ if id.starts_with("bespoke_gas_status_") => "hit_enemy_with_status",
+        _ if id.starts_with("bespoke_reload_complete_") => "reload_complete",
+        _ if id.starts_with("bespoke_reload_from_empty_") => "reload_from_empty",
         _ => return None,
     }))
 }
@@ -111,7 +121,7 @@ mod tests {
         let mut spelled: Vec<&str> = Vec::new();
         for t in [
             BuffTrigger::Kill, BuffTrigger::Hit, BuffTrigger::Crit, BuffTrigger::PlainHit,
-            BuffTrigger::Headshot, BuffTrigger::ConsecutiveHeadshot,
+            BuffTrigger::Headshot, BuffTrigger::HeadshotKill, BuffTrigger::ConsecutiveHeadshot,
             BuffTrigger::PunchThrough, BuffTrigger::StatusApplied,
             BuffTrigger::HitEnemyWithStatus(crate::rules::damage::DamageType::Heat),
             BuffTrigger::ReloadComplete, BuffTrigger::ReloadFromEmpty,

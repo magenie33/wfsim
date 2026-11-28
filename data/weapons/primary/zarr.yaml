@@ -99,10 +99,8 @@ attack:
       status_chance: 0.1
 
 unmodeled:
-  - reason: explosion_ignores_cover
-  - reason: self_stagger
-  - reason: cluster_bomblet_co
-    row: "Zarr | Cannon Child Bomb | Projectile | 15 | 25 | 167% | Adding"
+- reason: cluster_bomblet_co
+  row: Zarr | Cannon Child Bomb | Projectile | 15 | 25 | 167% | Adding
 
 source:
   url: https://wiki.warframe.com/w/Zarr

@@ -47,10 +47,8 @@ attack:
     count: 11
     delay_seconds: 0.08     # module BurstDelay
 
-unmodeled:
-  - reason: client_clip_burst
-  - reason: client_accuracy_runtime
-  - "The burst empties the magazine, and this entry fires a fixed count, the unmodded magazine. Magazine mods lengthen the burst (page), so a build with one reads low."
+bespoke:
+  burst_empties_magazine: true
 
 source:
   url: https://wiki.warframe.com/w/Cyanex

@@ -111,12 +111,8 @@ attack:
     status_chance: 0.24
 
 unmodeled:
-  - reason: explosion_ignores_cover
-  - "The rockets can be guided by aiming and fired from behind cover, at half speed while guided (20 m/s against 40). The target here does not move, so guidance changes nothing."
-  - "A rocket that hits nothing detonates after 6 s; the sim does not model a miss."
-  - reason: holstered_reload
-    pct: 10
-  - reason: self_stagger
+- The rockets can be guided by aiming and fired from behind cover, at half speed while guided (20 m/s against 40). The target here does not move, so guidance changes nothing.
+- A rocket that hits nothing detonates after 6 s; the sim does not model a miss.
 
 source:
   url: https://wiki.warframe.com/w/Tenet_Envoy

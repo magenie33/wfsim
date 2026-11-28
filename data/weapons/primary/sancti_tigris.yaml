@@ -60,8 +60,7 @@ attack:
   damage: { impact: 21, puncture: 21, slash: 168 }   # 210 a pellet, 1260 a shot
 
 unmodeled:
-  - reason: client_accuracy_runtime
-  - "The Purity syndicate effect heals and cleanses the wielder and nearby allies (wiki). There is no health and no ally here; the number is unaffected."
+- The Purity syndicate effect heals and cleanses the wielder and nearby allies (wiki). There is no health and no ally here; the number is unaffected.
 
 source:
   url: https://wiki.warframe.com/w/Sancti_Tigris

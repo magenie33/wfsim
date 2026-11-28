@@ -69,7 +69,4 @@ attack:
 source:
   url: https://wiki.warframe.com/w/Akjagara_Prime
 
-unmodeled:
-  - reason: client_accuracy_runtime
-
 # see notes: client_secondary_calibration

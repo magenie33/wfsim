@@ -6,11 +6,7 @@ inherits: slaytra
 form: heavy
 transform_group: slaytra
 co_behavior: additive_with_base_damage
-unmodeled:
-- reason: client_melee_timing
-- reason: client_melee_geometry
-- reason: melee_passive_unmodelled
-  passive: its innate +100% Slash status duration
+
 attack:
   trigger: melee
   shot_type: hit_scan

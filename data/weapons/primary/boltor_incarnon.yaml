@@ -81,7 +81,4 @@ source:
   # Attack stats from the wiki module's (private/scripts/wiki_weapons.py)
   # "Incarnon Form" attack, including its own Multishot of 3.
 
-unmodeled:
-  - reason: client_accuracy_runtime
-
 # see notes: client_primary_calibration

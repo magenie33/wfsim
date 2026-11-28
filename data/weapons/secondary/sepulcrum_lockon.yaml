@@ -62,10 +62,7 @@ attack:
     damage: { heat: 480 }   # total 480
 
 unmodeled:
-  - reason: client_accuracy_runtime
-  - "Lock-on marks several targets and sends a missile at each (wiki); the engine fires at the aimed body only, so against a crowd the number reads low by the number marked."
-  - reason: explosion_ignores_cover
-  - reason: self_stagger
+- Lock-on marks several targets and sends a missile at each (wiki); the engine fires at the aimed body only, so against a crowd the number reads low by the number marked.
 
 source:
   url: https://wiki.warframe.com/w/Sepulcrum

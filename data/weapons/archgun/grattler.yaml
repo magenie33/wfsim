@@ -42,6 +42,10 @@ no_resupply: true
 co_behavior: independent
 
 attack:
+  sustained_fire_rate:
+    native_consumer: automatic_zero_duration_refire
+    ContinuousFireRateAtten: [0.2, 1.0]
+    ContinuousMaxShots: 8
   extra_hit_reads: { impact: 0.4, slash: 0.25, puncture: 0.35 }   # see notes: extra_hit_reads
   # see notes: cone_half_angle_from
   spread:
@@ -86,10 +90,8 @@ attack:
     crit_multiplier: 2.0
     status_chance: 0.25
 
-unmodeled:
-  - reason: auto_spool_ramp
-    rate: 6.25
-  - reason: arch_gun_deployer_cooldown
+bespoke:
+  spindown_seconds: 1.0
 
 source:
   url: https://wiki.warframe.com/w/Grattler

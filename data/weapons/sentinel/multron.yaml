@@ -63,8 +63,7 @@ attack:
       hip_min_deg: 4.0
       hip_max_deg: 10.0
 unmodeled:
-  - "The dart's 1.5 s explosion delay is not modelled: the blast arrives with the dart, so a short fight gets its damage early."
-  - reason: companion_fires_it
+- 'The dart''s 1.5 s explosion delay is not modelled: the blast arrives with the dart, so a short fight gets its damage early.'
 
 source:
   url: https://wiki.warframe.com/w/Multron

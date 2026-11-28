@@ -95,10 +95,7 @@ attack:
     damage: { electricity: 50 }   # total 50
 
 unmodeled:
-  - reason: client_projectile_acceleration
-  - reason: client_ammo_runtime
-  - reason: explosion_ignores_cover
-  - reason: self_stagger
+- reason: client_ammo_runtime
 
 source:
   url: https://wiki.warframe.com/w/Grimoire

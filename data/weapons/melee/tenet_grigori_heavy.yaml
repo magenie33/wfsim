@@ -6,15 +6,10 @@ form: heavy
 transform_group: tenet_grigori
 co_behavior: additive_with_base_damage
 unmodeled:
-- reason: client_melee_timing
 - reason: client_melee_special
-- reason: client_melee_geometry
-- reason: melee_slide_unpublished
-- The disk launches on the second standing heavy only. Heavy-slide activation, combo-scaled lifetime,
-  surface ricochets and repeat disk hits are not modelled. This profile follows the infobox one-metre-per-second
-  flight speed and fixed ten-metre range.
-- The disk release uses the second heavy GunbladeGunshot marker. The handler mapping is unmeasured; the
-  first heavy LaunchProjectile marker does not emit a disk here.
+- The disk launches on the second standing heavy only. Heavy-slide activation, combo-scaled lifetime, surface ricochets and repeat disk hits are not modelled. This profile follows the infobox one-metre-per-second flight speed and fixed ten-metre range.
+- The disk release uses the second heavy GunbladeGunshot marker. The handler mapping is unmeasured; the first heavy LaunchProjectile marker does not emit a disk here.
+
 attack:
   trigger: melee
   shot_type: hit_scan

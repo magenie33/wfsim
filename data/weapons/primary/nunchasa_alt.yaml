@@ -45,9 +45,7 @@ attack:
       hip_min_deg: 6.0
       hip_max_deg: 18.0
 unmodeled:
-  - reason: client_projectile_collision
-  - reason: client_projectile_callbacks
-  - reason: client_accuracy_runtime
+- reason: client_projectile_callbacks
 
 source:
   url: https://wiki.warframe.com/w/Nunchasa

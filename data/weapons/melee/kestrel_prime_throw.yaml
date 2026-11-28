@@ -8,17 +8,12 @@ form: throw
 transform_group: kestrel_prime
 co_behavior: additive_with_base_damage
 unmodeled:
-  - reason: client_melee_special
-  - reason: client_melee_legacy
-  - reason: glaive_bounce_count_assumed
-  - reason: glaive_bounce_explosion_assumed
-  - reason: glaive_detonation_ends_bounces
-  - reason: glaive_throw_animation_assumed
-  - reason: glaive_throw_tennokai_unmodelled
-  - reason: glaive_throw_animosity_unmodelled
-  - "The detonation's 40% falloff and 3.6 m are the page's; the module states no falloff, and 4 m on the charged throw. Unmeasured."
-  - "The Throw Recall Explosion's 12% crit chance is the module's, against 22% on every other quick-throw row; unmeasured."
-  - "The throw forces Ragdoll (the module's ForcedProcs), a state this arena does not have."
+- reason: client_melee_special
+- reason: glaive_throw_tennokai_unmodelled
+- reason: glaive_throw_animosity_unmodelled
+- The detonation's 40% falloff and 3.6 m are the page's; the module states no falloff, and 4 m on the charged throw. Unmeasured.
+- The Throw Recall Explosion's 12% crit chance is the module's, against 22% on every other quick-throw row; unmeasured.
+
 attack:
   trigger: melee
   shot_type: projectile

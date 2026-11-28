@@ -62,7 +62,6 @@ source:
   url: https://wiki.warframe.com/w/Paracyst
 
 unmodeled:
-  - reason: client_projectile_callbacks
-  - reason: client_accuracy_runtime
+- reason: client_projectile_callbacks
 
 # see notes: client_primary_calibration

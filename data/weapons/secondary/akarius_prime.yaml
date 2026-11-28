@@ -18,12 +18,11 @@ max_rank: 30
 # WHAT THIS SIM DOES NOT MODEL ABOUT IT. Read off the weapon PAGE rather than
 # the module, which carries none of it (WEAPON_INTAKE §"READ THE PAGE").
 unmodeled:
-  - reason: client_projectile_acceleration
-  - reason: client_accuracy_runtime
-  - "Homing is resolved only with an explicit scene_3d; the default planar scene assumes its configured hit parts."
-  - "The +50% reload speed while sprinting is not modelled: the player stands still here (Gauss and Gauss Prime double it to +100%)."
-  - "Self-stagger is not modelled: an explosion at the wielder's feet can interrupt the 2-round burst so only one rocket fires (wiki)."
-  - "Live equipped muzzle/pose, target installation and projectile sweep are unbound; the experimental scene consumes supplied state."
+- Homing is resolved only with an explicit scene_3d; the default planar scene assumes its configured hit parts.
+- 'The +50% reload speed while sprinting is not modelled: the player stands still here (Gauss and Gauss Prime double it to +100%).'
+- 'Self-stagger is not modelled: an explosion at the wielder''s feet can interrupt the 2-round burst so only one rocket fires (wiki).'
+- Live equipped muzzle/pose, target installation and projectile sweep are unbound; the experimental scene consumes supplied state.
+
 accuracy: 26.7
 disposition: 1.2
 polarities: [naramon, naramon, madurai]

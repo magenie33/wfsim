@@ -14,10 +14,7 @@ transform_group: gorgon_wraith
 transforms_to: gorgon_wraith_incarnon
 
 # see notes: bulk_intake_stats_are
-unmodeled:
-  - reason: client_rate_spool
-  - reason: client_accuracy_runtime
-  - reason: spool_rebuilds_after_reload
+
 accuracy: 16.67
 disposition: 1.2
 polarities: []
@@ -72,6 +69,9 @@ attack:
   damage: { impact: 22.95, slash: 1.35, puncture: 2.7 }   # total 27.0
 
 # incarnon_evolutions: definitions live in data/evolutions/gorgon_wraith_*.yaml.
+
+bespoke:
+  spindown_seconds: 0.75
 
 source:
   url: https://wiki.warframe.com/w/Gorgon_Wraith

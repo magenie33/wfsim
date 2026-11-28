@@ -38,10 +38,6 @@ attack:
   # see notes: no_range_row_attack
   damage: { impact: 171, puncture: 9.5, slash: 9.5 }   # total 190
 
-unmodeled:
-  - reason: client_accuracy_runtime
-  - reason: silent_weapon
-
 source:
   url: https://wiki.warframe.com/w/Cernos
 

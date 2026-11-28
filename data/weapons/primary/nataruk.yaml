@@ -61,10 +61,8 @@ attack:
   damage: { puncture: 405, slash: 45 }   # total 450
 
 unmodeled:
-  - reason: client_ammo_runtime
-  - reason: client_special_spread
-  - reason: client_accuracy_runtime
-  - reason: silent_weapon
+- reason: client_ammo_runtime
+- reason: client_special_spread
 
 source:
   url: https://wiki.warframe.com/w/Nataruk

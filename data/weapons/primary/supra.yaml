@@ -64,10 +64,8 @@ attack:
   # see notes: no_range_row_attack_3
   damage: { impact: 4, puncture: 30, slash: 6 }   # total 40
 
-unmodeled:
-  - reason: client_rate_spool
-  - reason: client_accuracy_runtime
-  - reason: spool_rebuilds_after_reload
+bespoke:
+  spindown_seconds: 0.25
 
 source:
   url: https://wiki.warframe.com/w/Supra

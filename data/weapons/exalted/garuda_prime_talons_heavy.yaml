@@ -6,9 +6,7 @@ inherits: garuda_prime_talons
 form: heavy
 transform_group: garuda_prime_talons
 co_behavior: additive_with_base_damage
-unmodeled:
-  - reason: client_melee_timing
-  - reason: client_melee_geometry
+
 attack:
   trigger: melee
   shot_type: hit_scan

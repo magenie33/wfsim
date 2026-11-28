@@ -75,7 +75,4 @@ attack:
 source:
   url: https://wiki.warframe.com/w/Tenet_Tetra
 
-unmodeled:
-  - reason: client_accuracy_runtime
-
 # see notes: client_primary_calibration

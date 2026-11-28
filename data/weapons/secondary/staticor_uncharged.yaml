@@ -46,10 +46,7 @@ attack:
     damage: { radiation: 88 }   # total 88
 
 unmodeled:
-  - reason: client_ammo_runtime
-  - reason: client_accuracy_runtime
-  - reason: explosion_ignores_cover
-  - reason: self_stagger
+- reason: client_ammo_runtime
 
 source:
   url: https://wiki.warframe.com/w/Staticor

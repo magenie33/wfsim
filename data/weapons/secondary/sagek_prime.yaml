@@ -63,9 +63,10 @@ attack:
     puncture: 8.5
     slash: 12.0
 
-unmodeled:
-  - reason: client_accuracy_runtime
-  - "Critical hits have a 6% chance to set the next shot's status chance to 500% (wiki). The engine does not model this crit-triggered status lock, so it procs at its card's 1%. It is most of the weapon; the number reads low."
+bespoke:
+  super_status_on_crit:
+    chance: 0.06
+    status_chance: 5.0
 
 source:
   url: https://wiki.warframe.com/w/Sagek_Prime

@@ -77,7 +77,4 @@ attack:
 source:
   url: https://wiki.warframe.com/w/Telos_Boltor
 
-unmodeled:
-  - reason: client_accuracy_runtime
-
 # see notes: client_primary_calibration

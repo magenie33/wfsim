@@ -1630,3 +1630,12 @@ Warframe roots open Build Library; `/builder` opens the existing editor.
 `?build=` and embedded links keep their editor intent. The library lists this
 browser's saved frame builds through the shared build card renderer and links
 each record to its existing editor. It does not claim published board results.
+
+## Modelling scope page
+
+`/scope` presents modelling coverage and remaining disclosures in one place,
+linked from the site footer and from `#stats-passive` when a weapon carries an
+item-specific note. It reads `/api/meta` directly to display live clean/total
+counts for weapons, mods, arcanes and Incarnon perks, states global simulation
+boundaries once, and provides a searchable category register linking each
+remaining item-specific disclosure to its editor or reference page.

@@ -6,18 +6,14 @@ form: heavy
 transform_group: coda_caustacyst
 co_behavior: additive_with_base_damage
 unmodeled:
-- reason: client_melee_timing
 - reason: client_melee_special
-- reason: client_melee_geometry
 - reason: melee_attack_unmodelled
   attacks: Corrosive Pool
-- The page's Notes give the wave a 3 m width and 37.5 m maximum travel, while Characteristics gives 5 m and 30 m. This model
-  uses Notes; neither geometry is calibrated.
-- The wave's combo multiplier, doubled heavy critical-chance bonus and Condition Overload use the general heavy-attack rules;
-  these interactions are unmeasured.
+- The page's Notes give the wave a 3 m width and 37.5 m maximum travel, while Characteristics gives 5 m and 30 m. This model uses Notes; neither geometry is calibrated.
+- The wave's combo multiplier, doubled heavy critical-chance bonus and Condition Overload use the general heavy-attack rules; these interactions are unmeasured.
 - The corrosive trail's independent damage buckets, rectangular coverage, persistent pool contacts and blindness are not modelled.
-- The Coda page repeats the original wave's 225 damage and 9%/2x/37% crit and status. Those projectile stats have no in-game
-  calibration.
+- The Coda page repeats the original wave's 225 damage and 9%/2x/37% crit and status. Those projectile stats have no in-game calibration.
+
 attack:
   trigger: melee
   shot_type: hit_scan

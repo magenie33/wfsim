@@ -1073,6 +1073,8 @@ pub struct WeaponBase {
     /// Gotva Prime's passive: a status-triggered crit-chance SET. See
     /// `data::weapons::SuperCritSpec`.
     pub super_crit_on_status: Option<crate::model::SuperCritSpec>,
+    pub bespoke: Option<Box<crate::model::BespokeSpec>>,
+    pub empty_reload_radial: Option<Box<crate::model::RadialBase>>,
     pub physical_mods: Option<Box<crate::model::PhysicalModBase>>,
     pub heavy_status: Option<HeavyStatusSpec>,
     /// [`crate::data::weapons::WeaponSpec::weakpoint_stacks`] — no mod moves it.
@@ -1507,6 +1509,8 @@ pub struct WeaponBase {
 pub struct LockOn {
     pub range_m: f64,
     pub acquire_deg: f64,
+    #[serde(default)]
+    pub lose_deg: Option<f64>,
     pub targets: u32,
     pub far_miss_share: f64,
     pub far_head_share: f64,

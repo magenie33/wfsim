@@ -74,7 +74,4 @@ attack:
 source:
   url: https://wiki.warframe.com/w/Kuva_Sobek
 
-unmodeled:
-  - reason: client_accuracy_runtime
-
 # see notes: client_primary_calibration

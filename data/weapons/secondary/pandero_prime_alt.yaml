@@ -41,10 +41,10 @@ attack:
 
   range_m: 300
 unmodeled:
-  - reason: client_clip_burst
-  - reason: client_accuracy_runtime
-  - "The burst empties the magazine, and this entry fires a fixed count, the unmodded magazine. Magazine mods lengthen the burst (page), so a build with one reads low."
-  - "The alt-fire prevents zoom, so Hydraulic Crosshairs and Sharpened Bullets do not work on it (page); this entry does not apply that limit, so with those mods it reads high."
+- The alt-fire prevents zoom, so Hydraulic Crosshairs and Sharpened Bullets do not work on it (page); this entry does not apply that limit, so with those mods it reads high.
+
+bespoke:
+  burst_empties_magazine: true
 
 source:
   url: https://wiki.warframe.com/w/Pandero_Prime

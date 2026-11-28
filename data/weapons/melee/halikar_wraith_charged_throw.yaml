@@ -8,13 +8,9 @@ transform_group: halikar_wraith
 co_behavior: additive_with_base_damage
 unmodeled:
 - reason: client_melee_special
-- reason: client_melee_timing
-- reason: glaive_bounce_count_assumed
-- reason: glaive_bounce_explosion_assumed
-- reason: glaive_detonation_ends_bounces
 - reason: glaive_throw_tennokai_unmodelled
 - reason: glaive_throw_animosity_unmodelled
-- A throw's 50% chance to disarm is not modelled; nothing here is armed.
+
 attack:
   trigger: melee
   shot_type: projectile

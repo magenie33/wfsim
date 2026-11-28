@@ -116,10 +116,8 @@ attack:
       status_chance: 0.31
 
 unmodeled:
-  - reason: cluster_bomblet_co
-    row: "Kuva Zarr | Cannon Child Bomb | Projectile | 15 | 50 | 333% | Adding"
-  - reason: explosion_ignores_cover
-  - reason: self_stagger
+- reason: cluster_bomblet_co
+  row: Kuva Zarr | Cannon Child Bomb | Projectile | 15 | 50 | 333% | Adding
 
 source:
   url: https://wiki.warframe.com/w/Kuva_Zarr

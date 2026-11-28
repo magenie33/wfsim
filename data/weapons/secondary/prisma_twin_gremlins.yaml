@@ -54,10 +54,6 @@ attack:
   # see notes: no_range_row_attack_5
   damage: { impact: 2.97, puncture: 12.69, slash: 11.34 }   # total 27
 
-unmodeled:
-  - reason: client_accuracy_runtime
-  - reason: bolt_corpse_ragdoll
-
 source:
   url: https://wiki.warframe.com/w/Prisma_Twin_Gremlins
 

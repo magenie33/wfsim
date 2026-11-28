@@ -75,11 +75,9 @@ attack:
     damage: { blast: 650 }   # total 650
 
 unmodeled:
-  - "The grenades arm only after 7.5 m and deal much less damage without exploding (wiki). The sim applies the explosion at every range, so a fight set inside 7.5 m reads high by the whole explosion, 90% of the weapon."
-  - "A direct hit forces a knockdown (wiki). Enemies here are not knocked down; the number is unaffected."
-  - "Not offered here: Precision Strike and the launcher-exclusive Adhesive Blast."
-  - reason: explosion_ignores_cover
-  - reason: self_stagger
+- The grenades arm only after 7.5 m and deal much less damage without exploding (wiki). The sim applies the explosion at every range, so a fight set inside 7.5 m reads high by the whole explosion, 90% of the weapon.
+- A direct hit forces a knockdown (wiki). Enemies here are not knocked down; the number is unaffected.
+- 'Not offered here: Precision Strike and the launcher-exclusive Adhesive Blast.'
 
 source:
   url: https://wiki.warframe.com/w/Tonkor

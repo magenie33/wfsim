@@ -27,14 +27,6 @@ combo_duration_seconds: 5.0
 
 co_behavior: additive_with_base_damage
 
-unmodeled:
-- reason: client_melee_timing
-- reason: client_melee_slam
-- reason: client_melee_geometry
-- 'Power Spike''s partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number
-  reads low.'
-- reason: melee_passive_unmodelled
-  passive: 'Frenzy: applying a status grants +15% attack speed, +100% Toxin and +25% flat Status Chance for 6 s, not refreshed while active'
 attack:
   trigger: melee
   shot_type: hit_scan
@@ -69,6 +61,13 @@ attack:
   combo_script:
     tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/PolearmMeleeTree
     context: CC_GROUND
+bespoke:
+  status_frenzy:
+    duration_seconds: 6.0
+    attack_speed_multiplier: 1.15
+    flat_status_chance: 0.25
+    toxin_damage_bonus: 1.0
+
 source:
   url: https://wiki.warframe.com/w/Lesion
 

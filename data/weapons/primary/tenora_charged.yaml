@@ -37,9 +37,8 @@ attack:
   damage: { impact: 48, puncture: 144, slash: 48 }   # total 240
 
 unmodeled:
-  - reason: client_ammo_runtime
-  - reason: client_accuracy_runtime
-  - "The charge is automatic and need not be held (wiki), as in the sim."
+- reason: client_ammo_runtime
+- The charge is automatic and need not be held (wiki), as in the sim.
 
 source:
   url: https://wiki.warframe.com/w/Tenora

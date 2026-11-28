@@ -45,9 +45,6 @@ attack:
   range_m: 16.0
   damage: { heat: 100 }   # total 100
 
-unmodeled:
-  - reason: client_beam_target_ramp
-
 source:
   url: https://wiki.warframe.com/w/Athodai_Prime
 

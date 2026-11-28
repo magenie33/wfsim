@@ -8,16 +8,11 @@ form: heavy
 transform_group: korumm
 co_behavior: additive_with_base_damage
 unmodeled:
-  - reason: client_melee_legacy
-  - reason: client_melee_geometry
-  - reason: melee_attack_unmodelled
-    attacks: "Tactical Combo Slam Attack"
-  - reason: melee_own_combo_unmodelled
-    combos: "block combo"
-  - reason: heavy_charge_share_assumed
-    published: 0.9
-    charge: 0.3
-    swing: 0.6
+- reason: melee_attack_unmodelled
+  attacks: Tactical Combo Slam Attack
+- reason: melee_own_combo_unmodelled
+  combos: block combo
+
 attack:
   trigger: melee
   shot_type: hit_scan

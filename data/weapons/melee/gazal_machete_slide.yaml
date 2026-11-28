@@ -7,10 +7,9 @@ form: slide
 transform_group: gazal_machete
 co_behavior: additive_with_base_damage
 unmodeled:
-  - reason: client_melee_timing
-  - reason: client_melee_geometry
-  - reason: melee_passive_unmodelled
-    passive: "with a Djinn, each Fatal Attraction grants it +25% damage as Corrosive for 30 s"
+- reason: melee_passive_unmodelled
+  passive: with a Djinn, each Fatal Attraction grants it +25% damage as Corrosive for 30 s
+
 attack:
   trigger: melee
   shot_type: hit_scan

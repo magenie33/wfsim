@@ -14,10 +14,7 @@ transform_group: soma
 transforms_to: soma_incarnon
 
 # see notes: bulk_intake_stats_are
-unmodeled:
-  - reason: client_rate_spool
-  - reason: client_accuracy_runtime
-  - reason: spool_rebuilds_after_reload
+
 accuracy: 28.57
 disposition: 1.2
 polarities: [madurai, madurai]
@@ -72,6 +69,9 @@ attack:
   damage: { impact: 1.2, slash: 6, puncture: 4.8 }   # total 12.0
 
 # incarnon_evolutions: definitions live in data/evolutions/soma_*.yaml.
+
+bespoke:
+  spindown_seconds: 0.5
 
 source:
   url: https://wiki.warframe.com/w/Soma

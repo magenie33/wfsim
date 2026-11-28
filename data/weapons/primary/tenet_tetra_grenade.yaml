@@ -90,11 +90,8 @@ attack:
     status_chance: 0.30
 
 unmodeled:
-  - reason: client_accuracy_runtime
-  - "The grenade's damage scales with how full the magazine is (page), and this entry always fires the full-magazine grenade. Every later shot in a magazine reads high unless the rifle is reloaded first, which is how it is played."
-  - reason: explosion_ignores_cover
-  - "The alt-fire cannot be reloaded early to skip its delay, and Kinetic Ricochet does not affect it; the sim does not interrupt reloads, so neither changes anything here."
-  - reason: self_stagger
+- The grenade's damage scales with how full the magazine is (page), and this entry always fires the full-magazine grenade. Every later shot in a magazine reads high unless the rifle is reloaded first, which is how it is played.
+- The alt-fire cannot be reloaded early to skip its delay, and Kinetic Ricochet does not affect it; the sim does not interrupt reloads, so neither changes anything here.
 
 source:
   url: https://wiki.warframe.com/w/Tenet_Tetra

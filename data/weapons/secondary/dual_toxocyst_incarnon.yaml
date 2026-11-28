@@ -131,7 +131,4 @@ source:
   # note: Stats from the wiki's structured Lua data module; economy from the
   # Incarnon Genesis page.
 
-unmodeled:
-  - reason: client_accuracy_runtime
-
 # see notes: client_secondary_calibration

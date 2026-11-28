@@ -6,11 +6,7 @@ inherits: ekhein
 form: slide
 transform_group: ekhein
 co_behavior: additive_with_base_damage
-unmodeled:
-  - reason: client_melee_timing
-  - reason: client_melee_geometry
-  - reason: melee_passive_unmodelled
-    passive: "Heavy Insight: a heavy attack that lands grants +80% damage and +20% attack speed for 8 s"
+
 attack:
   trigger: melee
   shot_type: hit_scan

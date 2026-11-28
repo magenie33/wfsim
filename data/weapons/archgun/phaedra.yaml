@@ -60,6 +60,10 @@ co_behavior: additive_with_base_damage
 
 attack:
   # see notes: cone_half_angle_from
+  sustained_fire_rate:
+    native_consumer: automatic_zero_duration_refire
+    ContinuousFireRateAtten: [0.5, 1.0]
+    ContinuousMaxShots: 20
   spread:
     min_deg: 1
     max_deg: 7
@@ -75,8 +79,9 @@ attack:
   # see notes: wall_ramp_full_damage_6
   range_m: 300.0
   damage: { impact: 29.0, puncture: 75.4, slash: 11.6 }   # 116 total
-unmodeled:
-  - reason: arch_gun_deployer_cooldown
+
+bespoke:
+  spindown_seconds: 0.5
 
 source:
   url: https://wiki.warframe.com/w/Phaedra

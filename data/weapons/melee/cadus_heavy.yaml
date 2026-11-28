@@ -8,15 +8,10 @@ form: heavy
 transform_group: cadus
 co_behavior: additive_with_base_damage
 unmodeled:
-  - reason: client_melee_legacy
-  - reason: client_melee_geometry
-  - reason: heavy_charge_share_assumed
-    published: 0.5
-    charge: 0.1667
-    swing: 0.3333
-  - reason: melee_heavy_total_disputed
-    infobox: 6.54
-    table: 5
+- reason: melee_heavy_total_disputed
+  infobox: 6.54
+  table: 5
+
 attack:
   trigger: melee
   shot_type: hit_scan

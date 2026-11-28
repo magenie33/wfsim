@@ -72,9 +72,7 @@ attack:
   damage: { puncture: 200, cold: 200 }   # total 400
 
 unmodeled:
-  - reason: client_projectile_callbacks
-  - reason: client_accuracy_runtime
-  - reason: projectile_must_be_led
+- reason: client_projectile_callbacks
 
 source:
   url: https://wiki.warframe.com/w/Nunchasa

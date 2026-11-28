@@ -35,12 +35,9 @@ co_behavior: independent
 
 # Source/runtime limits are shared in client_scourge_inputs.
 unmodeled:
-  - reason: client_projectile_acceleration
-  - reason: client_projectile_callbacks
-  - reason: client_scourge_throw
-  - reason: client_scourge_field
-  - reason: client_accuracy_runtime
-  - "It reloads 33% of its magazine a second while holstered or deployed; it is never holstered here."
+- reason: client_projectile_callbacks
+- reason: client_scourge_throw
+- reason: client_scourge_field
 
 attack:
   extra_hit_reads: even   # see notes: extra_hit_reads

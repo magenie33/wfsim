@@ -88,10 +88,14 @@ attack:
   damage: { impact: 4.0, puncture: 4.0, slash: 12.0 }   # 20 per pellet
 
 unmodeled:
-  - reason: client_rate_spool
-  - reason: client_spool_pellets
-  - reason: client_accuracy_runtime
-  - "The pellet count spools from 1 to 12, and this entry fires 12 from the first shot. The fire-rate spool is modelled and the pellet spool is not, so a short burst reads high."
+- The pellet count spools from 1 to 12, and this entry fires 12 from the first shot. The fire-rate spool is modelled and the pellet spool is not, so a short burst reads high.
+
+bespoke:
+  spindown_seconds: 2.0
+  pellet_spool:
+    initial_pellets: 1
+    max_pellets: 12
+    ammo_divisor: 3
 
 source:
   url: https://wiki.warframe.com/w/Kuva_Kohm

@@ -6,11 +6,7 @@ inherits: keratinos
 form: slide
 transform_group: keratinos
 co_behavior: additive_with_base_damage
-unmodeled:
-  - reason: client_melee_timing
-  - reason: client_melee_geometry
-  - reason: melee_passive_unmodelled
-    passive: "a heavy attack at 12x combo grants +2.8 m range to every melee attack for 180 s"
+
 attack:
   trigger: melee
   shot_type: hit_scan

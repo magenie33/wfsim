@@ -8,14 +8,10 @@ form: throw
 transform_group: glaive
 co_behavior: additive_with_base_damage
 unmodeled:
-  - reason: client_melee_special
-  - reason: client_melee_legacy
-  - reason: glaive_bounce_count_assumed
-  - reason: glaive_bounce_explosion_assumed
-  - reason: glaive_detonation_ends_bounces
-  - reason: glaive_throw_animation_assumed
-  - reason: glaive_throw_tennokai_unmodelled
-  - reason: glaive_throw_animosity_unmodelled
+- reason: client_melee_special
+- reason: glaive_throw_tennokai_unmodelled
+- reason: glaive_throw_animosity_unmodelled
+
 attack:
   trigger: melee
   shot_type: projectile

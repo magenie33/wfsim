@@ -6,9 +6,7 @@ inherits: ohma
 form: heavy
 transform_group: ohma
 co_behavior: additive_with_base_damage
-unmodeled:
-  - reason: client_melee_timing
-  - reason: client_melee_geometry
+
 attack:
   trigger: melee
   shot_type: hit_scan

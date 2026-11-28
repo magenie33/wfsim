@@ -4471,3 +4471,29 @@ body:has(.config-page[data-route-pending]:not([hidden])) :is(#execution-dock,#ju
 body:has(.config-page[data-route-pending]:not([hidden])) #booting{display:none}
 
 .config-page[data-route-pending="prerender"] .library-summary-body{display:block}
+.unmod-foot{margin-top:6px;font-size:11.5px;opacity:.85}
+.unmod-foot a{color:inherit;text-decoration:underline;text-underline-offset:2px}
+.settings.solo.scope-page{max-width:960px}
+.scope-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin:14px 0 22px}
+.scope-stat{padding:12px 14px;border:1px solid var(--line);border-radius:8px;background:var(--panel)}
+.scope-stat-k{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.scope-stat-v{font-size:22px;margin:4px 0 2px;font-variant-numeric:tabular-nums}
+.scope-stat-v span{font-size:14px;color:var(--muted)}
+.scope-stat-sub{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.scope-bounds{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px}
+.scope-bound{padding:10px 12px;border:1px solid var(--line);border-radius:6px;display:flex;flex-direction:column;gap:4px;font-size:12.5px;line-height:1.45}
+.scope-bound span{color:var(--muted)}
+.scope-toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:12px}
+.scope-tabs{display:flex;flex-wrap:wrap;gap:6px}
+.scope-search{min-width:240px;flex:1;max-width:340px;padding:6px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg);font-size:13px}
+.scope-list{display:flex;flex-direction:column;gap:8px}
+.scope-row{padding:10px 12px;border:1px solid var(--line);border-radius:6px;background:var(--panel)}
+.scope-row-head{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:4px}
+.scope-badge{font-size:11px;padding:1px 6px;border-radius:4px;border:1px solid var(--line);color:var(--muted)}
+.scope-link{font-weight:600;color:var(--fg);text-decoration:none}
+.scope-link:hover{text-decoration:underline}
+.scope-pill{margin-left:auto;font-size:11px;padding:1px 7px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+.scope-pill.todo{border-color:rgba(235,175,75,.45);color:var(--gold,#e6b450)}
+.scope-pill.bug{border-color:rgba(225,95,95,.45);color:#e07070}
+.scope-lines{display:flex;flex-direction:column;gap:3px;font-size:12.5px;color:var(--muted);line-height:1.45}
+.scope-more,.scope-empty{padding:14px 0;text-align:center;color:var(--muted);font-size:13px}

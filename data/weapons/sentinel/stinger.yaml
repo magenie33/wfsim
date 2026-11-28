@@ -54,8 +54,7 @@ attack:
       hip_min_deg: 0.0
       hip_max_deg: 0.0
 unmodeled:
-  - "The Toxin embed, a second attack dealing damage over 3 s on top of the hit (page), is not modelled; only the hit is carried."
-  - reason: companion_fires_it
+- The Toxin embed, a second attack dealing damage over 3 s on top of the hit (page), is not modelled; only the hit is carried.
 
 source:
   url: https://wiki.warframe.com/w/Stinger

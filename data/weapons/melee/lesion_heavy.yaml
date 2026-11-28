@@ -7,15 +7,7 @@ inherits: lesion
 form: heavy
 transform_group: lesion
 co_behavior: additive_with_base_damage
-unmodeled:
-  - reason: client_melee_legacy
-  - reason: client_melee_geometry
-  - reason: heavy_charge_share_assumed
-    published: 0.9
-    charge: 0.3
-    swing: 0.6
-  - reason: melee_passive_unmodelled
-    passive: "Frenzy: applying a status grants +15% attack speed, +100% Toxin and +25% flat Status Chance for 6 s, not refreshed while active"
+
 attack:
   trigger: melee
   shot_type: hit_scan

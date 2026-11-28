@@ -70,8 +70,5 @@ attack:
   infinite_body_punch_through: true
   damage: { puncture: 400.0, heat: 600.0, radiation: 800.0 }   # 1800
 
-unmodeled:
-  - reason: arch_gun_deployer_cooldown
-
 source:
   url: https://wiki.warframe.com/w/Mandonel

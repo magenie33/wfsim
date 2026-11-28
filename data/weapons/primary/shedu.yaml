@@ -92,14 +92,17 @@ battery:
 # engine's default for a radial.
 co_behavior: independent
 
-unmodeled:
-  - reason: client_battery_defaults
-  - reason: client_accuracy_runtime
-  - "The battery discharge when the magazine empties, a 20 m pulse for 100 Impact, is not built yet. Its rule is published: base damage, faction damage and Firestorm apply; elemental and multishot bonuses do not, and blast-radius mods reach it. Its status is a 100% chance, not a forced proc. The number reads low."
-  - "The discharge also strips Sentient and Shadow Stalker damage resistances; no target here has any."
-  - "+30% Movement Speed while aiming and the explosion's self-stagger are not read here."
-
 attack:
+  empty_reload_radial:
+    radius_m: 20.0
+    falloff_start_m: 19.0
+    falloff_reduction: 0.0
+    crit_chance: 0.0
+    crit_multiplier: 1.0
+    status_chance: 1.0
+    takes_multishot: false
+    takes_blast_radius_mods: true
+    damage: { impact: 100 }
   extra_hit_reads: { impact: 0.4, slash: 0.25, puncture: 0.35 }   # see notes: extra_hit_reads
   # see notes: cone_half_angle_from
   spread:

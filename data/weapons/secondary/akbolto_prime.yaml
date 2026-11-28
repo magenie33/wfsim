@@ -57,10 +57,6 @@ attack:
   # see notes: no_range_row_attack_3
   damage: { impact: 4.4, puncture: 37.84, slash: 1.76 }   # total 44
 
-unmodeled:
-  - reason: client_accuracy_runtime
-  - reason: bolt_corpse_ragdoll
-
 source:
   url: https://wiki.warframe.com/w/Akbolto_Prime
 

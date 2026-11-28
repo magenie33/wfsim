@@ -62,10 +62,9 @@ attack:
   damage: { puncture: 12 }   # total 12
 
 unmodeled:
-  - reason: client_secondary_return_ammo
-  - reason: client_accuracy_runtime
-  - "The explosion comes on the reload: rounds lodge in surfaces and explode in 1.5 m when reloading, up to 32 at a time (wiki). The engine's explosions go off on impact, so the 48 Blast a round is not counted, and against anything that survives a magazine the number reads low by about four fifths."
-  - "It uses no ammo pickups and has a reserve of zero (module); reserves are infinite here, so the limit it is built around does not apply."
+- reason: client_secondary_return_ammo
+- 'The explosion comes on the reload: rounds lodge in surfaces and explode in 1.5 m when reloading, up to 32 at a time (wiki). The engine''s explosions go off on impact, so the 48 Blast a round is not counted, and against anything that survives a magazine the number reads low by about four fifths.'
+- It uses no ammo pickups and has a reserve of zero (module); reserves are infinite here, so the limit it is built around does not apply.
 
 source:
   url: https://wiki.warframe.com/w/Riot-848

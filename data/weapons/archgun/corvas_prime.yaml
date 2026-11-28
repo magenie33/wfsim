@@ -75,8 +75,5 @@ attack:
   range_m: 70.0
   damage: { impact: 430.0, heat: 530.0 }   # 960, and the same in Archwing
 
-unmodeled:
-  - reason: arch_gun_deployer_cooldown
-
 source:
   url: https://wiki.warframe.com/w/Corvas_Prime

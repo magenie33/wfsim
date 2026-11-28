@@ -26,10 +26,9 @@ grip_type: ""
 co_behavior: additive_with_base_damage
 
 unmodeled:
-  - reason: cluster_bomblet_co
-    row: "Phantasma Prime | Alt-fire Child Bomb | Projectile | 3 | 3 | 100% | Multiplying"
-  - reason: cluster_bomblet_stagger
-  - "The escalating ammo cost the wiki lists under Bugs (2/2/2/3/3/4/6 through a magazine, and -1 damage per extra ammo) is not modelled, so the number reads slightly high."
+- reason: cluster_bomblet_co
+  row: Phantasma Prime | Alt-fire Child Bomb | Projectile | 3 | 3 | 100% | Multiplying
+- The escalating ammo cost the wiki lists under Bugs (2/2/2/3/3/4/6 through a magazine, and -1 damage per extra ammo) is not modelled, so the number reads slightly high.
 
 attack:
   extra_hit_reads: even   # see notes: extra_hit_reads

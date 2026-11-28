@@ -1184,7 +1184,6 @@ impl FightParams {
         // initializer without borrowing a field that has already been given
         // away.
         let recharging = arcane.rechargeable_magazine;
-        let arc_reload_bonus = arcane.reload_bonus;
         let crate::arena::Arena {
             scene_3d,
             apl: apl_inserted,
@@ -1521,12 +1520,12 @@ impl FightParams {
             echo_multiplier: panel.echo_multiplier,
             battery: match (panel.battery, recharging, panel.recharge_per_second) {
                 (_, true, Some(rate)) if rate > 0.0 => {
-                    let delay =
-                        reload_span(panel.reload_seconds, panel.reload_bonus, arc_reload_bonus);
+                    let base_delay =
+                        panel.reload_seconds * crate::rules::sim::reload_divisor(1.0 + panel.reload_bonus);
                     Some(crate::model::Battery {
                         regen_per_second: rate,
-                        delay_empty_seconds: delay,
-                        delay_partial_seconds: delay,
+                        delay_empty_seconds: base_delay,
+                        delay_partial_seconds: base_delay,
                         empty_animation_seconds: None,
                     })
                 }
@@ -1535,30 +1534,7 @@ impl FightParams {
             burst: panel.burst,
             frenzy: false,
             magazine_size: panel.magazine_size,
-            // …AND A BATTERY'S "RELOAD" IS THE DELAY PLUS THE REFILL.
-            //
-            // That is the Shedu's own model — its listed 1.25 s reload IS
-            // `delay_empty + magazine/rate` — and its yaml states the sum, so
-            // nothing extra is needed there. Pax Charge publishes only the
-            // DELAY ("base recharge delay is equal to the reload time displayed
-            // on the weapon"), so the refill has to be added here or an empty
-            // magazine comes back 29/50 = 0.6 s too early on a Tombfinger.
-            //
-            // PRE-SCALED, because `live_reload_time` divides this by the
-            // reload-speed bucket again at fire time and the RATE is "**not**
-            // affected by mods or abilities". Compensating for the arcane's own
-            // static bonus makes the common case exact; a LIVE reload buff on
-            // top still shortens the refill slightly, which is admitted on the
-            // arcane's card.
-            reload_seconds: match (recharging, panel.recharge_per_second) {
-                (true, Some(rate)) if rate > 0.0 => {
-                    let b = panel.reload_bonus;
-                    let refill = panel.magazine_size / rate;
-                    panel.reload_seconds + refill * crate::rules::sim::reload_divisor(1.0 + b + arc_reload_bonus)
-                        / crate::rules::sim::reload_divisor(1.0 + b)
-                }
-                _ => panel.reload_seconds,
-            },
+            reload_seconds: panel.reload_seconds,
             // A CHARGE-BACKED form is "not affected by Ammo Efficiency" (wiki,
             // Torid Incarnon) and every other weapon is. `incarnon.is_some()`
             // is the same marker the magazine rule reads, so the two cannot
@@ -1660,6 +1636,8 @@ impl FightParams {
             headshot_streak: panel.headshot_streak,
             crit_damage_below_status_count: panel.crit_damage_below_status_count,
             super_crit_on_status: panel.super_crit_on_status,
+            bespoke: panel.bespoke.clone(),
+            empty_reload_radial: panel.empty_reload_radial,
             heavy_status: panel.heavy_status,
             weakpoint_stacks: panel.weakpoint_stacks,
             spawn_on_kill: panel.spawn_on_kill,

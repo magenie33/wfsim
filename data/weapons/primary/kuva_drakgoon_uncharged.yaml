@@ -36,10 +36,8 @@ attack:
   damage: { impact: 4.6, puncture: 4.6, slash: 13.8 }   # 23 per pellet
 
 unmodeled:
-  - reason: client_special_spread
-  - reason: client_accuracy_runtime
-  - reason: bounce_headshot_assumed
-  - reason: ricochet_terrain
+- reason: client_special_spread
+- reason: bounce_headshot_assumed
 
 source:
   url: https://wiki.warframe.com/w/Kuva_Drakgoon

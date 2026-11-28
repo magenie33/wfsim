@@ -14,10 +14,7 @@ transform_group: prisma_gorgon
 transforms_to: prisma_gorgon_incarnon
 
 # see notes: bulk_intake_stats_are
-unmodeled:
-  - reason: client_rate_spool
-  - reason: client_accuracy_runtime
-  - reason: spool_rebuilds_after_reload
+
 accuracy: 20
 disposition: 1.2
 polarities: []
@@ -72,6 +69,9 @@ attack:
   damage: { impact: 17.25, slash: 2.3, puncture: 3.45 }   # total 23.0
 
 # incarnon_evolutions: definitions live in data/evolutions/prisma_gorgon_*.yaml.
+
+bespoke:
+  spindown_seconds: 1.0
 
 source:
   url: https://wiki.warframe.com/w/Prisma_Gorgon

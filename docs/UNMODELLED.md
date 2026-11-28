@@ -909,11 +909,20 @@ a player ("the whole reason a player carries it"). An assumption opens
 "Unpublished:". The Chinese is written from the finished English, never
 alongside it.
 
+## Arena boundary axioms
+
+Global properties of the arena are stated once here rather than repeated as per-weapon banners:
+
+- **Stealth, ragdoll, cover and self-stagger.** Enemies do not patrol or alert, corpses do not ragdoll into crowds, blasts cross no cover, and the wielder has no hitbox to take self-stagger or crowd control.
+- **Holster, deployer cooldown and zoom selection.** One weapon is held for the engagement, so holstered reload does not tick and ground Arch-Gun five-minute deployer cooldowns do not apply after reserves run dry. Scoped weapons sit at the selected zoom level.
+- **Melee, slam, glaive and modular conventions.** Melee combos, heavy attacks, heavy slams and glaive throws run on their action timelines and posed arena geometry, using published Zaw and Kitgun component assembly tables. Focus passives such as Naramon Power Spike belong to Operator configuration rather than individual melee entries.
+- **Companion weapons and claws.** Companion guns and beast claws fire on their scenario cadence without companion movement, revival downtime or precept AI.
+
 ## Steflos and Corufell families
 
-Steflos and Steflos Prime use the published approximate 2 m projectile width, damage, flight speed and distance falloff. Lifetime-dependent range, lifetime extensions and size growth are not applied; the Citrine signature speed bonus is not applied.
+Steflos and Steflos Prime use the published approximate 2 m projectile width, damage, flight speed, distance falloff and Citrine signature projectile-speed bonus. Lifetime-dependent range, lifetime extensions and size growth are not applied.
 
-Corufell and Corufell Prime have a Charged Projectile heavy mode with their own damage, crit, status, flight speed, falloff, infinite body punch through and combo spending. Both consecutive inputs use the package release event and animation; the package charge conflicts with the wiki and remains uncalibrated. Projectile width and maximum flight range are unpublished. Prime's innate wind-up factor is multiplied by the mod factor without a measured stacking rule. The Citrine signature bonus and sliding scythe heavy are not modelled. Tennokai converts light inputs into the projectile profile.
+Corufell and Corufell Prime have a Charged Projectile heavy mode with their own damage, crit, status, flight speed, falloff, infinite body punch through, combo spending and Citrine signature wind-up bonus. Both consecutive inputs use the package release event and animation; the package charge conflicts with the wiki and remains uncalibrated. Projectile width and maximum flight range are unpublished. The sliding scythe heavy is not modelled. Tennokai converts light inputs into the projectile profile.
 
 ## Special heavy attacks
 

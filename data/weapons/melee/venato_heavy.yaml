@@ -6,12 +6,7 @@ inherits: venato
 form: heavy
 transform_group: venato
 co_behavior: additive_with_base_damage
-unmodeled:
-- reason: client_melee_timing
-- reason: client_melee_geometry
-- reason: melee_slide_unpublished
-- reason: melee_passive_unmodelled
-  passive: wielded by Caliban, attacks have a 50% chance of an extra combo point
+
 attack:
   trigger: melee
   shot_type: hit_scan

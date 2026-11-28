@@ -139,14 +139,9 @@ attack:
     status_chance: 0.26
 
 unmodeled:
-  - reason: client_radial_critical
-  - reason: client_accuracy_runtime
-  - "The wiki's Condition Overload catalog gives this weapon's radial its own row, 333% of its base; that row is not entered here yet, so the radial takes 100% and a status-stacking build reads low on it."
-  - "The catalog says the explosion takes Condition Overload computed on the direct hit's base, 200 against the radial's own 60. That base is not entered, so the radial takes none and a status-stacking build reads low on it."
-  - reason: explosion_ignores_cover
-  - reason: holstered_reload
-    pct: 33
-  - reason: self_stagger
+- reason: client_radial_critical
+- The wiki's Condition Overload catalog gives this weapon's radial its own row, 333% of its base; that row is not entered here yet, so the radial takes 100% and a status-stacking build reads low on it.
+- The catalog says the explosion takes Condition Overload computed on the direct hit's base, 200 against the radial's own 60. That base is not entered, so the radial takes none and a status-stacking build reads low on it.
 
 source:
   url: https://wiki.warframe.com/w/Tenet_Ferrox

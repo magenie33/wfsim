@@ -57,10 +57,7 @@ attack:
   damage: { electricity: 440, impact: 110 }   # total 550
 
 unmodeled:
-  - reason: client_projectile_collision
-  - reason: client_accuracy_runtime
-  - "The guaranteed Impact proc reaches only 9 m, scaling with Projectile Speed (wiki); it is applied at every range here, so further out the number reads high by one forced proc."
-  - reason: silent_weapon
+- The guaranteed Impact proc reaches only 9 m, scaling with Projectile Speed (wiki); it is applied at every range here, so further out the number reads high by one forced proc.
 
 source:
   url: https://wiki.warframe.com/w/Fulmin_Prime

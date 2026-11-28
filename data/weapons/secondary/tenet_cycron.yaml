@@ -103,9 +103,8 @@ attack:
 beam_ramp_floor: 0.2
 
 unmodeled:
-  - reason: client_beam_target_ramp
-  - "In game the chain can pass through corpses (page); here a body that dies is removed."
-  - "Ruinous Extension extends the beam to 36 m (page); beam-range mods are shown on the card but not applied until a measurement shows whether they add a flat or a percentage amount."
+- In game the chain can pass through corpses (page); here a body that dies is removed.
+- Ruinous Extension extends the beam to 36 m (page); beam-range mods are shown on the card but not applied until a measurement shows whether they add a flat or a percentage amount.
 
 source:
   url: https://wiki.warframe.com/w/Tenet_Cycron

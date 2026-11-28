@@ -99,8 +99,4 @@ source:
   # note: Stats from the wiki page infobox and the module's Attacks[0]
   # ("Normal Attack"): Impact 64 / Slash 96.
 
-unmodeled:
-  - reason: client_projectile_collision
-  - reason: client_accuracy_runtime
-
 # see notes: client_secondary_calibration

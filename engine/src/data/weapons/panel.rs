@@ -629,6 +629,8 @@ fn panel_for_spec(s: &WeaponSpec, metadata: &'static WeaponSpec, frenzy_active: 
         has_reserve: s.ammo_max.is_some_and(|a| a > 0.0),
         ammo_pickup: s.ammo_pickup.unwrap_or(0.0),
         super_crit_on_status: s.super_crit_on_status,
+        bespoke: s.bespoke.clone(),
+        empty_reload_radial: s.attack.empty_reload_radial.as_ref().map(|r| Box::new(a_radial(r))),
         heavy_status: s.heavy_status,
         physical_mods: s.physical_mods.as_deref().copied().map(|rules| {
             assert!(rules.multiplier.is_finite() && rules.multiplier >= 0.0, "invalid physical mod potency");
@@ -647,7 +649,12 @@ fn panel_for_spec(s: &WeaponSpec, metadata: &'static WeaponSpec, frenzy_active: 
         tendril_max: s.tendrils.map_or(0, |t| t.max),
         tendril_range_m: s.tendrils.as_ref().map_or(0.0, |t| t.range_m),
         tendril_acquire_deg: s.tendrils.as_ref().map_or(0.0, |t| t.acquire_deg),
-        sniper_combo: s.sniper_combo,
+        sniper_combo: s.sniper_combo.or_else(|| {
+            s.bespoke.as_ref().and_then(|b| b.scoped_combo.map(|c| SniperCombo {
+                min: c.min,
+                seconds: c.duration_seconds,
+            }))
+        }),
         // Every zoom level rides HERE and `resolve` spends one, the only layer
         // that knows whether the Tenno is aiming, at which level — and that a
         // form cannot zoom.
@@ -677,7 +684,7 @@ fn panel_for_spec(s: &WeaponSpec, metadata: &'static WeaponSpec, frenzy_active: 
         no_resupply: s.no_resupply,
         base_reload,
         by_round_reload,
-        innate_co_per_type: 0.0,
+        innate_co_per_type: s.innate_co_per_type,
         gated: Vec::new(),
         tenno_scaled: Vec::new(),
         cannot_zoom: s.cannot_zoom,
@@ -865,7 +872,10 @@ fn panel_for_spec(s: &WeaponSpec, metadata: &'static WeaponSpec, frenzy_active: 
         crit_multiplier_below_crit_chance: None,
         // Set by Headcracker at `data::evolutions::apply`.
         // Filled by `data::evolutions::apply`; see `StackingBuff`.
-        stacking_buffs: Vec::new(),
+        stacking_buffs: s
+            .bespoke
+            .as_ref()
+            .map_or_else(Vec::new, |b| b.stacking_buffs.iter().filter_map(|sb| sb.to_stacking_buff()).collect()),
         post_mod_crit_chance: 0.0,
         post_mod_status_chance: 0.0,
         // Evolutions ADD to this (Caput Mortuum); a weapon's innate share is

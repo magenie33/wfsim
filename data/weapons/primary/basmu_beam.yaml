@@ -54,7 +54,4 @@ battery:
   delay_empty_seconds: 2.0
   delay_partial_seconds: 0.2
 
-unmodeled:
-  - reason: client_accuracy_runtime
-
 # see notes: client_primary_calibration

@@ -64,11 +64,6 @@ attack:
   range_m: 300.0
   damage: { impact: 72, puncture: 108 }   # total 180
 
-unmodeled:
-  - reason: client_accuracy_runtime
-  - reason: silent_weapon
-  - "The laser sight highlights weak points on screen, an aiming aid; the sim draws headshots from the fight's headshot rate."
-
 source:
   url: https://wiki.warframe.com/w/Vesper_77
 

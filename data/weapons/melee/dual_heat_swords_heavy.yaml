@@ -6,9 +6,7 @@ inherits: dual_heat_swords
 form: heavy
 transform_group: dual_heat_swords
 co_behavior: additive_with_base_damage
-unmodeled:
-  - reason: client_melee_timing
-  - reason: client_melee_geometry
+
 attack:
   trigger: melee
   shot_type: hit_scan

@@ -73,11 +73,6 @@ attack:
     puncture: 8.96
     slash: 7.83999916
 
-unmodeled:
-  - reason: holstered_reload
-    pct: 10
-  - "The very heavy side-to-side recoil (page) makes its accuracy hold only for the first shot; the sim has no recoil."
-
 source:
   url: https://wiki.warframe.com/w/Tenet_Diplos
 

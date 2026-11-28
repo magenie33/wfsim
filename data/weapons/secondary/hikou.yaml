@@ -51,8 +51,7 @@ attack:
   damage: { impact: 2.6, puncture: 15.6, slash: 7.8 }   # total 26
 
 unmodeled:
-  - "Not offered here: the thrown-exclusive Concealed Explosives, a second damage source on a weapon with this fire rate."
-  - reason: silent_weapon
+- 'Not offered here: the thrown-exclusive Concealed Explosives, a second damage source on a weapon with this fire rate.'
 
 source:
   url: https://wiki.warframe.com/w/Hikou

@@ -1,23 +1,30 @@
 use super::*;
 
-/// Live reload time for the active form: the arcane's reload-speed sources
-/// (Merciless r5 static, Conjunction Voltage stacks) and Lethal
-/// Rearmament's headshot stacks join the form's reload-speed BUCKET —
-/// time = base / (1 + bucket + live additions).
+/// Battery delay scales with reload speed while `capacity / regen_per_second` stays constant.
 #[wfsim_gas_macro::metered]
-pub(super) fn live_reload_time(
+pub(super) fn live_reload_time_for_capacity(
     form: &FightParams,
     outer: &FightParams,
     arc: &mut ArcRuntime,
     live_rs: f64,
     t: f64,
-    // A RELOAD FROM EMPTY takes the weapon's own term too (the Catabolyst
-    // family's -20%), in the mods' bucket — "additive with Quickdraw".
     from_empty: bool,
+    capacity: f64,
 ) -> f64 {
     let add = outer.arcane.reload_bonus
         + arc.total(&outer.arcane.buffs, ArcGrant::ReloadSpeed, t)
         + live_rs;
+    if let Some(b) = form.battery {
+        let bucket = form.reload_bonus + if from_empty { form.reload_from_empty_speed } else { 0.0 };
+        let divisor = crate::rules::sim::reload_divisor(1.0 + bucket + add);
+        let delay = if from_empty { b.delay_empty_seconds } else { b.delay_partial_seconds };
+        let scaled_delay = delay / divisor;
+        let refill = capacity / b.regen_per_second.max(1e-9);
+        return match b.empty_animation_seconds.filter(|_| from_empty) {
+            Some(anim) => (anim / divisor).max(scaled_delay + refill),
+            None => scaled_delay + refill,
+        };
+    }
     let (secs, bucket) = match form.reload_from_empty_speed {
         innate if from_empty && innate != 0.0 => {
             let b = form.reload_bonus;

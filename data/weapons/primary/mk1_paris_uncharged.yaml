@@ -41,8 +41,4 @@ source:
   url: https://wiki.warframe.com/w/MK1-Paris
   # wiki module (private/scripts/wiki_weapons.py) `Attacks[].AttackName`: "Uncharged Shot"
 
-
-unmodeled:
-  - reason: client_accuracy_runtime
-
 # see notes: client_primary_calibration

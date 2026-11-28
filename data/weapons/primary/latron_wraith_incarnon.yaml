@@ -51,8 +51,7 @@ co_behavior: independent
 # A contact explosion and a surface rebound share the arriving projectile.
 # The 3D scene follows each leg to the next contact or the lifetime limit.
 unmodeled:
-  - reason: client_accuracy_runtime
-  - reason: client_latron_rebound
+- reason: client_latron_rebound
 
 attack:
   # see notes: cone_half_angle_from

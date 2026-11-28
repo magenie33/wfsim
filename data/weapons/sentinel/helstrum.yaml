@@ -66,9 +66,8 @@ attack:
       hip_min_deg: 0.0
       hip_max_deg: 0.0
 unmodeled:
-  - "The missiles home, which is not modelled; with one target at zero distance, homing and straight missiles land the same."
-  - "The explosion's falloff is not published, so it is not modelled; the target stands at the centre and takes the full 30."
-  - reason: companion_fires_it
+- The missiles home, which is not modelled; with one target at zero distance, homing and straight missiles land the same.
+- The explosion's falloff is not published, so it is not modelled; the target stands at the centre and takes the full 30.
 
 source:
   url: https://wiki.warframe.com/w/Helstrum

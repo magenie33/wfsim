@@ -9,12 +9,7 @@ transform_group: ooltha_one_handed
 co_behavior: additive_with_base_damage
 source:
   url: https://wiki.warframe.com/w/Ooltha
-unmodeled:
-- reason: client_melee_timing
-- reason: client_melee_geometry
-- reason: client_melee_assembly
-- reason: heavy_slam_cycle_assumed
-  cycle: 2
+
 attack:
   trigger: melee
   shot_type: hit_scan

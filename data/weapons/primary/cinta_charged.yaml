@@ -39,9 +39,7 @@ attack:
   damage: { puncture: 640, slash: 160 }   # total 800
 
 unmodeled:
-  - reason: client_accuracy_runtime
-  - "The perfect shot is not carried: the module gives a third attack, an arrow released in a window at 1.05 s, for more damage than this full draw. The engine has no way to describe a timing window, so one weapon cannot carry both. A player who hits the window does better than this number."
-  - reason: silent_weapon
+- 'The perfect shot is not carried: the module gives a third attack, an arrow released in a window at 1.05 s, for more damage than this full draw. The engine has no way to describe a timing window, so one weapon cannot carry both. A player who hits the window does better than this number.'
 
 source:
   url: https://wiki.warframe.com/w/Cinta

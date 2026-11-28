@@ -17,7 +17,7 @@ use crate::model::WeaponBase;
 use crate::model::{ChargeOn, FieldStacking, GaugeForm, LingeringBase, RadialBase};
 use crate::model::CoBehavior;
 use crate::rules::capacity::Polarity;
-use crate::model::{Battery, BurstSpec, ChargeCadence, CompressionSpec, FalloffSpec, FormKind, HeavyAttack, KillStreakSummonSpec, MeterSpec, OrbSpec, SniperCombo, SpawnOnKillSpec, SpreadSpec, SuperCritSpec, SustainedFireRate, WeakpointStacksSpec};
+use crate::model::{Battery, BespokeSpec, BurstSpec, ChargeCadence, CompressionSpec, FalloffSpec, FormKind, HeavyAttack, KillStreakSummonSpec, MeterSpec, OrbSpec, SniperCombo, SpawnOnKillSpec, SpreadSpec, SuperCritSpec, SustainedFireRate, WeakpointStacksSpec};
 
 pub mod kitguns;
 pub mod zaws;

@@ -101,7 +101,4 @@ source:
   url: https://wiki.warframe.com/w/Dual_Toxocyst
   # note: Stats from the wiki's structured Lua data module.
 
-unmodeled:
-  - reason: client_accuracy_runtime
-
 # see notes: client_secondary_calibration

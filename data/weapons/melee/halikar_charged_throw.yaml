@@ -8,14 +8,10 @@ transform_group: halikar
 co_behavior: additive_with_base_damage
 unmodeled:
 - reason: client_melee_special
-- reason: client_melee_timing
-- reason: glaive_bounce_count_assumed
-- reason: glaive_bounce_explosion_assumed
-- reason: glaive_detonation_ends_bounces
 - reason: glaive_throw_tennokai_unmodelled
 - reason: glaive_throw_animosity_unmodelled
 - The quick throw's 450 Blast detonation is the module's, the same as its bounce explosion where every other glaive doubles it; unmeasured.
-- A throw's 50% chance to disarm is not modelled; nothing here is armed.
+
 attack:
   trigger: melee
   shot_type: projectile

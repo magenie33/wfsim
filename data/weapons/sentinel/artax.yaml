@@ -50,8 +50,6 @@ attack:
   # see notes: range_wall_ramp_full
   range_m: 24.0
   damage: { cold: 5.0 }
-unmodeled:
-  - reason: companion_fires_it
 
 source:
   url: https://wiki.warframe.com/w/Artax

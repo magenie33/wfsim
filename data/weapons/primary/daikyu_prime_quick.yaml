@@ -41,11 +41,6 @@ attack:
   # see notes: no_range_row_attack
   damage: { impact: 112.5, puncture: 150, slash: 112.5 }   # total 375
 
-unmodeled:
-  - reason: client_accuracy_runtime
-  - reason: bolt_corpse_ragdoll
-  - reason: silent_weapon
-
 source:
   url: https://wiki.warframe.com/w/Daikyu_Prime
 

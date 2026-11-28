@@ -87,9 +87,8 @@ attack:
   damage: { viral: 52 }   # total 52
 
 unmodeled:
-  - reason: client_accuracy_runtime
-  - "Its drawback, converting health to ammo (up to 5% of max health), is not modelled: nothing shoots back and the Tenno has no health here, so the rifle is shown without its cost."
-  - "The 5% life steal on headshots adds nothing here: there is nothing to heal."
+- 'Its drawback, converting health to ammo (up to 5% of max health), is not modelled: nothing shoots back and the Tenno has no health here, so the rifle is shown without its cost.'
+- 'The 5% life steal on headshots adds nothing here: there is nothing to heal.'
 
 source:
   url: https://wiki.warframe.com/w/Coda_Hema

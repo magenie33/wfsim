@@ -72,11 +72,8 @@ attack:
     damage: { toxin: 61 }   # total 61
 
 unmodeled:
-  - reason: client_projectile_callbacks
-  - reason: client_accuracy_runtime
-  - "A headshot spawns six homing spores that explode in 3.3 m each, plus a further explosion (module). The engine has no hit that spawns projectiles, so none is counted, and in a headshot-heavy fight the number reads several times low."
-  - reason: explosion_ignores_cover
-  - reason: self_stagger
+- reason: client_projectile_callbacks
+- A headshot spawns six homing spores that explode in 3.3 m each, plus a further explosion (module). The engine has no hit that spawns projectiles, so none is counted, and in a headshot-heavy fight the number reads several times low.
 
 source:
   url: https://wiki.warframe.com/w/Zymos

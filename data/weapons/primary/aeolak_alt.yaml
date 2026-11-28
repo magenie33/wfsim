@@ -59,11 +59,6 @@ attack:
     takes_blast_radius_mods: true
     damage: { blast: 789 }   # total 789
 
-unmodeled:
-  - reason: client_accuracy_runtime
-  - reason: explosion_ignores_cover
-  - reason: self_stagger
-
 source:
   url: https://wiki.warframe.com/w/Aeolak
 

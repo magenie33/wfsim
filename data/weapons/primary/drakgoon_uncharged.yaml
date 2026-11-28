@@ -30,9 +30,8 @@ attack:
   damage: { impact: 8, puncture: 8, slash: 24 }   # 40 a pellet, 400 a shot
 
 unmodeled:
-  - reason: client_special_spread
-  - reason: client_accuracy_runtime
-  - "Shots ricochet once (wiki); there are no walls here."
+- reason: client_special_spread
+- Shots ricochet once (wiki); there are no walls here.
 
 source:
   url: https://wiki.warframe.com/w/Drakgoon

@@ -42,10 +42,6 @@ attack:
   # see notes: no_range_row_attack
   damage: { impact: 184.5, puncture: 10.25, slash: 10.25 }   # total 205
 
-unmodeled:
-  - reason: client_accuracy_runtime
-  - reason: silent_weapon
-
 source:
   url: https://wiki.warframe.com/w/Mutalist_Cernos
 

@@ -7,13 +7,10 @@ form: heavy_slam
 transform_group: quassus_prime
 co_behavior: additive_with_base_damage
 unmodeled:
-- reason: client_melee_slam
-- 'The climb is not timed: this loop takes the 150% radius of a slam dropped from 15 m and spends no time getting up there. A player who hops
-  instead gets less radius, down to the 2.5 m / listed floor; this fight has no vertical axis to tell the two apart.'
-- reason: melee_slide_unpublished
 - reason: melee_passive_unmodelled
   passive: a Warfan's slam hits twice, the heavy slam's second hit at the normal slam's figures
 - reason: special_heavy_profile_limits
+
 attack:
   trigger: melee
   shot_type: hit_scan

@@ -6,10 +6,7 @@ inherits: ankyros
 form: heavy
 transform_group: ankyros
 co_behavior: additive_with_base_damage
-unmodeled:
-- reason: client_melee_timing
-- reason: client_melee_geometry
-- reason: melee_slide_unpublished
+
 attack:
   trigger: melee
   shot_type: hit_scan

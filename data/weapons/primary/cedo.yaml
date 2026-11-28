@@ -59,10 +59,12 @@ attack:
     reduction: 0.966666666667
   damage: { puncture: 30 }   # 30 a pellet, 180 a shot
 
+innate_co_per_type: 0.60000002
+bespoke:
+  signature:
+    warframes: [lavos, lavos_prime]
+
 source:
   url: https://wiki.warframe.com/w/Cedo
-
-unmodeled:
-  - reason: client_accuracy_runtime
 
 # see notes: client_primary_calibration

@@ -134,7 +134,6 @@ source:
   # reload; the CO row is from Condition_Overload_(Mechanic).
 
 unmodeled:
-  - reason: client_special_spread
-  - reason: client_accuracy_runtime
+- reason: client_special_spread
 
 # see notes: client_primary_calibration

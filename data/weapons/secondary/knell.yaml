@@ -64,9 +64,10 @@ attack:
   range_m: 300.0
   damage: { impact: 63, puncture: 69, slash: 18 }   # total 150
 
-unmodeled:
-  - reason: client_accuracy_runtime
-  - reason: zoom_steps
+bespoke:
+  signature:
+    warframes: [harrow, harrow_prime]
+    flat_base_magazine: 1.0
 
 source:
   url: https://wiki.warframe.com/w/Knell

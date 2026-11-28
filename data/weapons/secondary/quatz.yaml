@@ -35,6 +35,17 @@ co_behavior: additive_with_base_damage
 
 attack:
   # see notes: cone_half_angle_from_2
+  empty_reload_radial:
+    radius_m: 8.0
+    falloff_start_m: 0.0
+    falloff_reduction: 0.0
+    crit_chance: 0.0
+    crit_multiplier: 1.0
+    status_chance: 1.0
+    forced_procs: [electricity]
+    takes_multishot: false
+    takes_blast_radius_mods: true
+    damage: { electricity: 10 }
   spread:
     min_deg: 2.0
     max_deg: 3.0
@@ -55,10 +66,6 @@ attack:
   # see notes: wall_ramp_full_damage_3
   range_m: 300.0
   damage: { electricity: 11, impact: 9, puncture: 2, slash: 7 }   # total 29
-
-unmodeled:
-  - reason: client_accuracy_runtime
-  - "Reloading from an empty magazine releases an 8 m shockwave, 10 Electricity at 100% status plus a forced Electricity proc (wiki). The engine has no reload-triggered explosion, so it is not counted."
 
 source:
   url: https://wiki.warframe.com/w/Quatz

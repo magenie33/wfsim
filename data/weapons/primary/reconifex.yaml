@@ -62,9 +62,17 @@ attack:
   range_m: 300
   damage: { impact: 16, puncture: 24 }   # total 40
 
-unmodeled:
-  - reason: client_accuracy_runtime
-  - "Pressing reload again 22-38% into a reload cuts it to 1 s and loads Heat rounds with +25% damage and guaranteed status (wiki). It is a timed input the sim does not press, so every reload is the full 5 s with ordinary rounds, and the number reads well low."
+bespoke:
+  perfect_reload:
+    window_pct: 0.22
+    heat_damage_bonus: 0.25
+    forces_heat_proc: true
+modes:
+  - id: perfect_reload
+    name: "Perfect Reload"
+    about: "Press reload at 22% of reload progress to finish reloading early and load Heat rounds (+25% Heat damage with guaranteed Heat status)."
+    rules:
+      - { action: { do: perfect_reload }, when: { if: cannot_fire } }
 
 source:
   url: https://wiki.warframe.com/w/Reconifex

@@ -87,10 +87,8 @@ attack:
     damage: { blast: 600 }   # total 600
 
 unmodeled:
-  - "Enemies can shoot down the rockets (wiki); nothing shoots back here, so every rocket arrives."
-  - "Not offered here: the launcher-exclusive Adhesive Blast, which sticks the rocket to what it hits and moves where it explodes."
-  - reason: explosion_ignores_cover
-  - reason: self_stagger
+- Enemies can shoot down the rockets (wiki); nothing shoots back here, so every rocket arrives.
+- 'Not offered here: the launcher-exclusive Adhesive Blast, which sticks the rocket to what it hits and moves where it explodes.'
 
 source:
   url: https://wiki.warframe.com/w/Ogris

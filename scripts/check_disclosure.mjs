@@ -354,6 +354,25 @@ for (const lang of ["en", "zh"]) {
     out.cleanWeapon = clean.id;
     out.cleanBanner = document.querySelector('.unmod-h') ? 'shown' : 'absent';
     out.cleanEvoChips = evoRows('.exchip.unmod').length;
+
+    // 9. Unified /scope page: live coverage counters, shared boundaries, and filterable register.
+    history.pushState({}, '', '/scope'); route(); await sleep(1200);
+    if (${JSON.stringify(process.env.WFSIM_BREAK === "scope")}) {
+      const sp = document.querySelector('.scope-page');
+      if (sp) sp.innerHTML = '';
+    }
+    out.scopeHead = (document.querySelector('.scope-page h1') || {}).textContent || '';
+    out.scopeStats = [...document.querySelectorAll('.scope-stat')].map(e => e.textContent.replace(/\s+/g, ' ').trim());
+    out.scopeBounds = [...document.querySelectorAll('.scope-bound')].map(e => e.textContent.replace(/\s+/g, ' ').trim());
+    const wTab = document.querySelector('[data-scope-cat="weapons"]');
+    if (wTab) wTab.click();
+    const sBox = document.getElementById('scope-search');
+    if (sBox) { sBox.value = 'stug'; sBox.dispatchEvent(new Event('input', { bubbles: true })); }
+    out.scopeStugHref = (document.querySelector('#scope-list .scope-link') || {}).getAttribute?.('href') || '';
+    out.scopeStugRows = document.querySelectorAll('#scope-list .scope-row').length;
+    if (sBox) { sBox.value = ''; sBox.dispatchEvent(new Event('input', { bubbles: true })); }
+    const aTab = document.querySelector('[data-scope-cat="all"]');
+    if (aTab) aTab.click();
     return out;
   })()`);
 
@@ -497,6 +516,15 @@ for (const lang of ["en", "zh"]) {
     r.zoomLines[0] || "(no line)");
   check(`[${lang}] …and a form that CAN zoom gets no such line`,
     r.zoomFalsePositives === 0, String(r.zoomFalsePositives));
+  check(`[${lang}] /scope renders its localized heading and four coverage cards`,
+    r.scopeHead.length >= 4 && cjk.test(r.scopeHead) === (lang === "zh") && (r.scopeStats || []).length === 4,
+    JSON.stringify({ head: r.scopeHead, stats: r.scopeStats }));
+  check(`[${lang}] /scope renders shared simulation boundaries in the display language`,
+    (r.scopeBounds || []).length === 6 && r.scopeBounds.every((b) => cjk.test(b) === (lang === "zh")),
+    JSON.stringify((r.scopeBounds || [])[0] || ""));
+  check(`[${lang}] /scope filters weapons and links directly to the builder`,
+    r.scopeStugRows >= 1 && r.scopeStugHref === "/weapons/Stug/builder",
+    `${r.scopeStugRows} rows, href=${r.scopeStugHref}`);
   await nativeWeakPointPanel(lang);
 }
 

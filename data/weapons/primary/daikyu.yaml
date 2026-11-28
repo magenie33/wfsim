@@ -78,12 +78,8 @@ attack:
     slash: 209.999965
 
 unmodeled:
-  - reason: client_accuracy_runtime
-  - "Fires only at full charge; an early release fires nothing. The sim always charges fully, so the number is the ceiling."
-  - "Not offered here: Spring-Loaded Broadhead, Amalgam Daikyu Target Acquired and the bow-exclusive Thunderbolt."
-  - reason: bolt_corpse_ragdoll
-  - reason: silent_weapon
-  - reason: zoom_steps
+- Fires only at full charge; an early release fires nothing. The sim always charges fully, so the number is the ceiling.
+- 'Not offered here: Spring-Loaded Broadhead, Amalgam Daikyu Target Acquired and the bow-exclusive Thunderbolt.'
 
 source:
   url: https://wiki.warframe.com/w/Daikyu

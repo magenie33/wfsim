@@ -7,12 +7,11 @@ form: heavy
 transform_group: verdilac
 co_behavior: additive_with_base_damage
 unmodeled:
-- reason: client_melee_timing
-- reason: client_melee_geometry
 - reason: melee_attack_unmodelled
   attacks: Energy Wave and Energy Wave Explosion
 - reason: melee_own_combo_unmodelled
   combos: block combo
+
 attack:
   trigger: melee
   shot_type: hit_scan

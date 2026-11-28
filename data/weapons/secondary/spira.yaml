@@ -51,9 +51,7 @@ attack:
   damage: { impact: 8.2, puncture: 49.2, slash: 24.6 }   # total 82
 
 unmodeled:
-  - "Not offered here: the thrown-exclusive Concealed Explosives."
-  - reason: bolt_corpse_ragdoll
-  - reason: silent_weapon
+- 'Not offered here: the thrown-exclusive Concealed Explosives.'
 
 source:
   url: https://wiki.warframe.com/w/Spira

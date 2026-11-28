@@ -35,6 +35,10 @@ co_behavior: additive_with_base_damage
 
 attack:
   # see notes: cone_half_angle_from
+  sustained_fire_rate:
+    native_consumer: automatic_zero_duration_refire
+    ContinuousFireRateAtten: [0.25, 1.0]
+    ContinuousMaxShots: 10
   spread:
     min_deg: 5.0
     max_deg: 8.0
@@ -60,11 +64,10 @@ attack:
   damage: { impact: 1.8, puncture: 7.2, slash: 9 }   # total 18
 
 unmodeled:
-  - reason: client_rate_spool
-  - reason: client_accuracy_runtime
-  - "The page gives the spool as a count, 6 shots to full fire rate, not as a starting fraction, so the spool is not entered."
-  - reason: auto_spool_ramp
-    rate: 12.5
+- The page gives the spool as a count, 6 shots to full fire rate, not as a starting fraction, so the spool is not entered.
+
+bespoke:
+  spindown_seconds: 0.5
 
 source:
   url: https://wiki.warframe.com/w/Aksomati

@@ -76,10 +76,7 @@ attack:
     damage: { slash: 20 }   # total 20
 
 unmodeled:
-  - reason: client_accuracy_runtime
-  - "The blades ricochet off surfaces (wiki); there are no walls here."
-  - reason: explosion_ignores_cover
-  - reason: self_stagger
+- The blades ricochet off surfaces (wiki); there are no walls here.
 
 source:
   url: https://wiki.warframe.com/w/Panthera_Prime

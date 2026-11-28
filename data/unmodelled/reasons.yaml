@@ -25,8 +25,6 @@
 reasons:
   client_secondary_other_behavior:
     text: "Native alternative behavior declarations are bound as evidence; their runtime availability and complete attack sequences are not simulated. Only the declared entry modes are used."
-  client_modular_secondary_assembly:
-    text: "Kitgun statistics use the published assembly tables; native secondary overrides are bound, but the runtime part-composition consumer is unverified."
   client_secondary_charge_packet:
     text: "Charge time and the selected projectile use parsed inputs. The native charge-cap multiplier consumer is unverified; damage uses the declared packet without multiplying it by that cap."
   client_secondary_clip_charge:
@@ -49,47 +47,17 @@ reasons:
     text: "The native state requests a reload after every throw; its zero-ammo forced reload is not simulated, so this entry retains its declared cycle approximation."
   client_falloff_runtime:
     text: "The parsed falloff floor exceeds the direct packet's base damage; that falloff consumer is unverified and the declared falloff convention remains in use."
-  client_projectile_collision:
-    text: "Native projectile collision dimensions are bound as evidence; unverified width and sweep consumers retain the declared collision approximation."
-  client_rate_spool:
-    text: "Fire-rate ramp endpoints use parsed values; ramp length retains the declared shot-count convention because the native counter's update cadence is unverified."
-  client_projectile_acceleration:
-    text: "Flight uses the declared constant speed; native projectile acceleration is not simulated."
   client_radial_critical:
     text: "Radial critical statistics retain the published rule; the native radial packet's critical-upgrade consumer is unverified."
-  client_modular_assembly:
-    text: "Kitgun statistics use the published assembly tables; native primary overrides are bound, but the runtime part-composition consumer is unverified."
   client_composite_attack:
     text: "This attack uses the published beacon or orb component; native launch-packet statistics do not establish the scripted damage sequence."
-  client_spool_pellets:
-    text: "This entry uses the fully spooled pellet count; the initial pellet-count ramp and reset are not simulated."
-  client_clip_burst:
-    text: "The burst uses the base magazine's round count; its length does not grow with magazine capacity."
-  client_battery_defaults:
-    text: "Some battery defaults are absent from the parsed records; the published recharge convention remains in use."
   client_special_spread:
     text: "Bound 3D projectile forms apply their declared fan or charge endpoints. Custom beam patterns and unselected firing variants use the declared approximation."
   client_projectile_callbacks:
     text: "Native projectile callbacks are bound as evidence; unverified callback timing, scaling and secondary effects are not simulated."
 
-  client_melee_timing:
-    text: "Animation and event clocks use the pinned earlier package export. Current metadata verifies action references and properties, but does not re-establish every clip duration, playback fit, collision window or accepted-input boundary."
-  client_melee_legacy:
-    text: "This legacy sequence retains its declared motion and recovery approximation; current metadata does not establish a complete replacement event timeline. A verified weapon wind-up is applied independently."
-  client_melee_geometry:
-    text: "Melee reach, sweep/thrust arcs and bone motion retain the declared arena approximation. Native collision dimensions alone do not establish the animated contact surface."
-  client_melee_slam:
-    text: "Slam damage and critical rules retain the declared component model. Radius uses the maximum-height convention; ascent, descent, ground contact and recovery are not a calibrated physical cycle. Native attenuation and clip lengths do not establish that cycle."
   client_melee_special:
     text: "Special attack components retain their declared sequence and modifier rules where the native selector, intrinsic multiplier or callback consumer is unverified. Bound raw packets do not establish the complete attack."
-  client_melee_ability:
-    text: "Ability and cast overrides retain the declared damage/status profile and measured combo rules. The raw melee weapon packet does not establish final ability damage; verified weapon clock inputs apply separately."
-  client_melee_assembly:
-    text: "Zaw statistics use the declared assembly tables. Native strike and handedness records are bound, but the complete runtime part-composition consumer is unverified; unassembled placeholders do not replace the finished weapon."
-  client_melee_counter:
-    text: "Native initial-combo, tier-step or counter-cap differences are recorded. Unsupported counter rules retain the declared model and do not apply merely because their parameters are available."
-  client_melee_companion:
-    text: "Companion melee retains its separate weapon and AI cadence model. Player melee animation parameters do not establish companion target selection, attack completion or retrieval time."
   client_scourge_primary_collision:
     text: "Primary fire uses ray collision; the native projectile's collision width is not simulated."
   client_scourge_field:
@@ -98,152 +66,26 @@ reasons:
     text: "The throw's projectile selection is unverified. Flight is straight, and multishot uses separate damage instances."
   client_scourge_primary_co:
     text: "Primary-fire Condition Overload uses the catalog's additive rule; its conflict with the weapon page's multiplicative claim is unresolved."
-  client_accuracy_runtime:
-    text: "Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady."
-  client_beam_target_ramp:
-    text: "The beam's native first-contact ramp and reacquisition timing remain uncalibrated. A source-bound 3D beam can keep separate ramp progress per target."
-  heavy_slam_cycle_assumed:
-    text: "The heavy-slam loop uses a {cycle} s recovery and the maximum-height radius; the time spent climbing is not simulated."
   blob_over_cap:
     text: "Unmeasured: a shot already over the cap (multishot over {cap}) is read as holding the pile at {cap} and waiting 1.5 s, refreshed by each later shot, so steady fire never sets it off."
   blob_crossing_cap:
     text: "Unmeasured: a shot that crosses the cap is read as setting the pile off at once for {cap} stacks, the rest lost."
-  arch_gun_deployer_cooldown:
-    text: "The Arch-Gun Deployer's five-minute cooldown is not modelled: in a mission the weapon is gone once its reserve runs dry; here it simply stops firing."
-  companion_fires_it:
-    text: "The companion fires this weapon: it picks its targets, fires when it decides, and stops while reviving or out of range. Here it fires continuously at one target, so the number is the ceiling."
-  zoom_steps:
-    text: "Lower zoom levels are not modelled: the scope always sits at its top level and its best buff."
-  # NO `damage_falloff` — IT IS MODELLED. The arena has a range
-  # now (`engine::rules::space`), the direct hit takes its published window, and the
-  # twenty-three weapons that carried this line say nothing because there is
-  # nothing left to admit. Kept as a note rather than silently deleted: this
-  # file is where a reader looks to find out whether a gap is still a gap.
   spread_not_transcribed:
     text: "This attack's spread is not in the data, so none of its shots miss. At range the number is the ceiling; at point blank it is unaffected."
-  # NO `innate_punch_through` — IT IS MODELLED. `punch_through_m`
-  # sat in all 224 entries unread for as long as the arena held one body; a
-  # formation is what gave it something to reach, and `space::struck_along`
-  # spends it at `space::BODY_MATERIAL_M` per body crossed. The 22 weapons that
-  # carried this admission carry none now.
-  heavy_charge_share_assumed:
-    text: "Assumed: the heavy attack's charge is a third of its published {published} s wind-up, the share measured on a Tonfa: {charge} s of charge, shortened only by wind-up speed, then {swing} s of swing, shortened by attack speed. This weapon's own split is unmeasured."
-  # THE OKINA PAIR'S SPECTRAL DAGGERS, on every one of their fourteen entries
-  # because a kill in any mode makes one. docs/UNMODELLED.md §"THE OKINA".
   spectral_dagger_orbit_and_target_assumed:
     text: "Unpublished: how long a spectral dagger orbits before it seeks (the Incarnon Form card uses a stand-in), and which enemy it seeks (here, the nearest within 15 m). Both decide how soon a kill pays; neither is measured."
   dual_daggers_heavy_unmeasured:
     text: "The heavy attack is 2x, from this weapon's infobox; the wiki's class table and stance module say 5x. Unmeasured."
-  sniper_combo_miss:
-    text: "A miss while scoped drops the combo counter by one. This entry cannot miss, so only its {seconds} s timer removes a stack, and the number is the ceiling."
-  # NO `radial_falloff` — IT IS MODELLED. The explosion reads the
-  # distance from its own epicentre, which is where the projectile actually
-  # landed, so a pellet that missed detonates beside the target and the target
-  # takes the rim. An entry that cannot miss (accuracy 100, or an accuracy
-  # nobody has transcribed) still sits at the epicentre, which is the weapon
-  # being accurate rather than the model being short.
-  # TWO WEAPONS ON THE DAY IT WAS WRITTEN (Kuva Seer, Kuva Chakkhurr) and a
-  # third the moment another explosive Kuva lands, which is what makes it a
-  # reason rather than a sentence.
-  explosion_ignores_cover:
-    text: "The blast needs no line of sight. There is no cover here, so the perk adds nothing."
-  # SELF-STAGGER, which every modern AoE weapon carries and none of them can
-  # suffer here — the wielder is not a body in this arena.
-  # A PROJECTILE THAT HAS TO BE LED. Every shot in this arena connects the
-  # instant it is fired, so a slow round costs nothing here and costs a real
-  # player hit rate. Four earlier entries wrote this out in prose of their own
-  # (Kuva Ogris, Tenet Ferrox, the Dual Toxocyst's Incarnon) and are worth
-  # folding in here next time one of them is touched.
-  projectile_must_be_led:
-    text: "The projectile has travel time and must be led at range (wiki). Every shot here connects instantly, so against a moving target the real hit rate is lower."
-  # NO `tome_meter` — IT IS MODELLED. The 45 second recharge, the
-  # second a landing pellet takes off it and the ten seconds an ammo pickup is
-  # worth are `meter:` on the Grimoire's alt fire, and the mode it produces is a
-  # CYCLE: fire the primary, throw an orb when the clock says so. The loudest
-  # admission the roster could carry — "everything below is the ceiling rather
-  # than the average, and by a wide margin" — is a number instead.
-  # NO `orb_shocks_over_time`, AND NO `orb_strikes_do_not_travel` — the orb is
-  # MODELLED, as an entity with a position that flies, slows
-  # on contact, strikes one body inside its reach six times and detonates where
-  # it got to. Its movement is not a gap any more; it is the model. What is left
-  # is the chain, which is a damage source this engine has no shape for.
-  # THE ARENA HAS NO WALLS, which `ricochet_terrain` has said since the Latron
-  # Incarnons landed. This is the same gap costing a great deal more: the
-  # Grimoire's orb bounces off surfaces, so in a room it stays with what it was
-  # thrown at instead of drifting away from it, which is why an in-game six
-  # strikes and this model's four disagree.
   orb_bounces_off_walls:
     text: "The orb bounces off walls and the floor, and there are neither here: it drifts on at {speed} m/s, leaves a standing target behind after about three seconds, lands {open_field} of its {total} strikes and detonates out of reach. In a room it stays near its target, worth about {worth} more damage. Every number for this form reads low."
-  self_stagger:
-    text: "In game the blast staggers the wielder; the player has no body here, so it costs nothing."
-  # THE BOMBLETS THEMSELVES ARE MODELLED (`cluster:`); their CO term is not.
-  # The catalog gives each cluster weapon's child bomb a rule of its own, and a
-  # CO CLASS is a property of the WEAPON in this engine — so the bomblets take
-  # none at all rather than take it under a class the catalog denies them.
   cluster_bomblet_co:
     text: "The bomblets take no Condition Overload: the wiki's catalog gives them a rule of their own ({row}), and the engine sets the rule per weapon. They read low by that term only."
-  # A STAGGER IS CROWD CONTROL, and this engine models no such status. The
-  # DAMAGE of the hit that carries it is modelled; the stagger is not.
-  cluster_bomblet_stagger:
-    text: "The bomblets' forced stagger on contact is not modelled; the contact hit rolls its status chance like any other."
-  auto_spool_ramp:
-    text: "The auto-spool ramp is not modelled: the rate is the spooled-up {rate}/s from the first shot, so a short burst is faster here than in game."
-  # THE RICOCHET ITSELF IS MODELLED — `ricochet:` on the three
-  # Latron Incarnon entries, five bounces each dealing the collision and the
-  # explosion in full. This is what is LEFT of it: the page says enemies *and
-  # terrain*, and this arena has no walls.
-  # TWO ASSUMPTIONS IN THE BOUNCE MODEL, both on the page rather than only in a
-  # comment, because a player deciding whether to trust this weapon's number
-  # cannot read a yaml.
   bounce_headshot_assumed:
     text: "Assumed: a bounce lands on a weak point 50% of the time. It can headshot (wiki), but where it lands depends on geometry the sim does not model, and no rate is published."
-  ricochet_terrain:
-    text: "The 3D arena reflects off posed enemies and the open floor. Wall and cover geometry remain outside this scenario."
   client_latron_rebound:
     text: "Rebounds use stationary posed surfaces in 3D. Corpse transitions, lifetime resets after impacts and wall geometry remain uncalibrated. The planar scene resolves the first contact."
-  reload_never_interrupted:
-    text: "A reload is never interrupted here: in game you can fire mid-reload and keep the shells already loaded. A listed reload is a whole reload, by design."
-  # THREE USES ON THE DAY IT WAS WRITTEN (Tenet Envoy, Tenet Diplos, Tenet
-  # Ferrox) and three different percentages, which is both halves of what earns
-  # a reason its place.
-  holstered_reload:
-    text: "It reloads {pct}% of its magazine a second while holstered or deployed; it is never holstered here, so the reload is always the full one."
-  # SILENCE. Six weapons in the roster are silent and each said so in its own
-  # words; the sentence carries no numbers at all, which is what makes it a
-  # reason rather than prose.
-  # THE BOLT FAMILY'S OWN TRICK, on five weapons and counting (both Akboltos,
-  # the Telos, both Gremlins) — the sentence carries no numbers, which is what
-  # earns it a template rather than five spellings.
-  quill_corpse_ragdoll:
-    text: "On a kill the body follows the quill, damaging anyone in its path and pinning to walls (wiki). There is no ragdoll here, so against a crowd the number reads low."
-  khora_headshot_reload:
-    text: "Wielded by Khora, a headshot has an 8% chance to reload the magazine at once (wiki). It is not modelled, so on Khora a headshot build reads low."
-  bolt_corpse_ragdoll:
-    text: "On a kill the body follows the bolt, damaging anyone in its path (wiki). There is no ragdoll here, so against a crowd the number reads low."
-  # THREE WEAPONS AND THREE DIFFERENT RELOAD TIMES (both Veloxes, the Zhuge
-  # Prime) — one sentence with one number in it, which is exactly the shape a
-  # reason exists for.
-  empty_reload_is_faster:
-    text: "It reloads 50% faster from an empty magazine (wiki); the engine has one reload time per weapon. The sim always empties the magazine, so the {seconds} s here is the slow reload and the number reads low."
-  silent_weapon:
-    text: "This weapon is silent; there is nobody to alert here, so stealth is worth nothing."
-  spool_rebuilds_after_reload:
-    text: "The spool rebuilds after every reload. Per the page, short pauses in burst fire keep it, so a player who taps keeps more of the rate than the sim. The spool itself is modelled."
-  # THE MELEE ROSTER — what a melee weapon's own page describes and the engine
-  # does not apply. docs/UNMODELLED.md §"THE MELEE ROSTER".
   melee_attack_unmodelled:
     text: "Not modelled: {attacks}. Of this weapon's attacks, only the swing, the slam and the heavy slam are."
-  glaive_heavy_is_a_throw:
-    text: "A glaive's heavy attack is the detonation of a thrown glaive, which is its own mode (a throw, detonated), so there is no standing heavy mode and a Tennokai window converts no swing."
-  # A GLAIVE'S THROW — docs/MELEE.md §10.
-  glaive_bounce_count_assumed:
-    text: "A glaive bounces off the bodies it cannot punch through: the body it was thrown into is its first bounce, and the last its count allows turns it for home. With no walls here, a glaive that passes every body flies its whole range and bounces off nothing. A quick throw is given the charged throw's count, the only one published, and the flight between bounces adds no time."
-  glaive_bounce_explosion_assumed:
-    text: "A bounce explosion (Volatile Rebound, Volatile Quick Return) takes no combo multiplier and spends no combo (wiki); whether Killing Blow or any other heavy-attack card reaches it is unpublished, and here none does. Volatile Quick Return's +3 Blast Radius is put on the bounce explosion alone."
-  glaive_detonation_ends_bounces:
-    text: "A detonated glaive goes off on its way out, no further than the first body it cannot pass, and makes no bounce after that one: the fight does not wait for the bounces it could still have made."
-  glaive_throw_animation_assumed:
-    text: "The quick ground throw has no exported release event. Its release duration uses one attack at the unmodded quick-throw rate, scaled by attack speed."
   glaive_throw_tennokai_unmodelled:
     text: "Tennokai on a throw is not modelled as the game has it: the window pauses while the glaive flies and only a detonation spends it."
   glaive_throw_animosity_unmodelled:
@@ -258,8 +100,6 @@ reasons:
     text: "Sarpa's burst uses five rounds 0.05 s apart, with the package's 3x shot multiplier and 1.25x physical modifier. The wiki's heavy totals disagree. Attack-speed scaling inside the burst is not calibrated."
   gunblade_stropha_geometry:
     text: "The shockwave applies its client two-endpoint distance falloff and wave expansion parameters; animated melee contact and terrain obstacle interactions are not calibrated in game."
-  heavy_status_detonation_unmeasured:
-    text: "Direct heavy-hit detonation includes the hit's own Slash, Heat, Toxin, Electricity and Gas procs. Its retained damage types, mitigation and headshot cap are not calibrated in game. Radial and heavy-slam detonation, the allied duration grant and Jade's Ensemble are not modelled. Heavy kills grant the wielder's ordinary weapon status procs +30% duration for 30 s."
   wolf_sledge_throw_limits:
     text: "The second target's seeking and all return-flight strikes are not modelled. Flight uses the package's 50 m/s. The 0.75 s charge and nominal 1 s animation use attack speed; exact hold, release, catch timing and the bare-stance wind-up exception are not calibrated. Nearby ragdoll effects are not modelled."
   melee_heavy_is_special:
@@ -268,14 +108,8 @@ reasons:
     text: "This weapon has a separate heavy-attack profile. Its timing, geometry and unsupported components are disclosed on that heavy mode."
   ceramic_dagger_projectile_timing:
     text: "In Incarnon Form, each standing or Tennokai heavy input emits two spectral daggers at its first physical sweep marker. Their exact release times, spread and maximum flight range are unmeasured. Projectile base-damage exclusions follow the wiki's live-bug rules and are not calibrated in game. Spectral projectiles on heavy slams are not modelled."
-  physical_mod_passive_unmeasured:
-    text: "Attack-speed/range stacking, exact physical-damage ties, negative physical rivens and progenitor Impact's wheel selection await in-game calibration."
   melee_passive_unmodelled:
     text: "Not modelled: {passive}."
-  melee_heavy_unpublished:
-    text: "The wiki publishes no heavy attack figure for this weapon, so there is no heavy mode."
-  melee_slide_unpublished:
-    text: "The wiki publishes no slide attack figure or duration for this weapon, so there is no slide mode."
   melee_own_combo_unmodelled:
     text: "The wiki gives this weapon combos of its own ({combos}), which replace the stance's and are not transcribed; the stance's (or its class's) are used instead."
   melee_heavy_total_disputed:
@@ -286,13 +120,9 @@ reasons:
     text: "A plain slam at the arming combo also activates its Incarnon Form; here only a heavy attack does, so a loop that slams without a heavy arms it later than in a mission, or never."
   steflos_projectile_lifetime:
     text: "Projectile lifetime and growth are not modelled: the base lifetime is 0.6 s, each enemy hit adds 50% lifetime up to 10 s, and the projectile grows in size. The simulation uses a fixed 2 m width and does not stop the projectile when its lifetime expires."
-  steflos_signature_speed:
-    text: "Citrine and Citrine Prime grant this weapon +40% Projectile Speed; that signature bonus is not modelled."
   corufell_projectile_timing:
     text: "Both heavy inputs use the package's GunbladeGunshot release event and animation. The package charge is 2 s, conflicting with the wiki's 1.3 s; the Prime's innate factor divides it by 1.5. Charge and motion timing are not calibrated in game."
   corufell_projectile_width:
     text: "The heavy projectile is wide, but its width and maximum flight range are unpublished. It is simulated as a ray with infinite body punch through and no maximum range."
-  corufell_signature_windup:
-    text: "Citrine and Citrine Prime grant +20% Heavy Attack Wind Up Speed; that signature bonus is not modelled. The stacking of Prime's innate 1.5x wind-up speed with wind-up mods is unmeasured; this loop multiplies their speed factors."
   corufell_light_tennokai:
     text: "The sliding heavy attack that swings the scythe is not modelled. Tennokai uses the ranged heavy's own damage and delivery."

@@ -27,15 +27,6 @@ combo_duration_seconds: 5.0
 
 co_behavior: additive_with_base_damage
 
-unmodeled:
-- reason: client_melee_timing
-- reason: client_melee_slam
-- reason: client_melee_geometry
-- 'Power Spike''s partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number
-  reads low.'
-- reason: melee_slide_unpublished
-- reason: melee_passive_unmodelled
-  passive: 'Rising Vendetta: 10 kills or assists grant +0.5 Follow Through and +100% flat Status Chance to the next 10 attacks that hit'
 attack:
   trigger: melee
   shot_type: hit_scan
@@ -68,6 +59,13 @@ attack:
   combo_script:
     tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/SwordWhipMeleeTree
     context: CC_GROUND
+bespoke:
+  vendetta:
+    kills_required: 10
+    enhanced_attacks: 10
+    follow_through_bonus: 0.5
+    flat_status_chance: 1.0
+
 source:
   url: https://wiki.warframe.com/w/Dorrclave
 

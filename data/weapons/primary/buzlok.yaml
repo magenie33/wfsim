@@ -62,10 +62,20 @@ attack:
   # see notes: no_range_row_attack
   damage: { impact: 30, puncture: 24, slash: 6 }   # total 60
 
-unmodeled:
-  - reason: client_accuracy_runtime
-  - "Landing a tracer round grants +50% absolute critical chance for 20 s, unaffected by mods (wiki). The bonus comes from the other firing mode and the engine cannot carry it across, so this entry fires at 23% where a player with a beacon on the target fires at 73%. It is most of the weapon; the number reads low."
-  - "The primary fire homes on a beaconed target for 20 s (wiki); shots here already land where aimed, so homing adds nothing."
+mode_switch_seconds: 0.0
+bespoke:
+  scoped_combo:
+    min: 5
+    duration_seconds: 3.0
+    resets_completely: true
+  beacon_crit_chance_bonus: 0.50
+modes:
+  - id: beacon_guided
+    name: "Beacon Guided"
+    about: "Fire a tracer beacon every 20 s to mark the target for homing rounds and +50% flat critical chance."
+    rules:
+      - { action: { do: switch_mode, form: alt_fire }, when: { if: beacon_needed } }
+      - { action: { do: switch_mode, form: base }, when: { if: beacon_sent } }
 
 source:
   url: https://wiki.warframe.com/w/Buzlok

@@ -44,9 +44,8 @@ attack:
   damage: { impact: 64.0, puncture: 8.0, slash: 8.0 }   # 80 each, 880 a shell
 
 unmodeled:
-  - "The Archwing version is not offered: in space it fires a single 440-damage Impact/Heat projectile at 13% status, which is a different weapon."
-  - "The 11-degree spread is not modelled; at zero distance all eleven pellets land."
-  - reason: arch_gun_deployer_cooldown
+- 'The Archwing version is not offered: in space it fires a single 440-damage Impact/Heat projectile at 13% status, which is a different weapon.'
+- The 11-degree spread is not modelled; at zero distance all eleven pellets land.
 
 source:
   url: https://wiki.warframe.com/w/Corvas

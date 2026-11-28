@@ -90,7 +90,6 @@ source:
   # see notes: attack_stats_from_wiki
 
 unmodeled:
-  - reason: client_radial_critical
-  - reason: client_accuracy_runtime
+- reason: client_radial_critical
 
 # see notes: client_primary_calibration

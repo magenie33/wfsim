@@ -8,14 +8,13 @@ form: heavy_slam
 transform_group: vitrica
 co_behavior: additive_with_base_damage
 unmodeled:
-  - reason: client_melee_slam
-  - "The climb is not timed: this loop takes the 150% radius of a slam dropped from 15 m and spends no time getting up there. A player who hops instead gets less radius, down to the 2.5 m / listed floor; this fight has no vertical axis to tell the two apart."
-  - reason: melee_attack_unmodelled
-    attacks: "Glass Explosion"
-  - reason: melee_own_combo_unmodelled
-    combos: "aerial attack"
-  - reason: melee_passive_unmodelled
-    passive: "every slam sends a ground wave, 10 Impact, that shatters glassed enemies — 40 m from a slam, 80 m and a forced Impact status from a heavy slam"
+- reason: melee_attack_unmodelled
+  attacks: Glass Explosion
+- reason: melee_own_combo_unmodelled
+  combos: aerial attack
+- reason: melee_passive_unmodelled
+  passive: every slam sends a ground wave, 10 Impact, that shatters glassed enemies — 40 m from a slam, 80 m and a forced Impact status from a heavy slam
+
 attack:
   trigger: melee
   shot_type: hit_scan

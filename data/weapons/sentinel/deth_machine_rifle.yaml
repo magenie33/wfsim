@@ -29,6 +29,10 @@ co_behavior: additive_with_base_damage
 
 attack:
   # AUTO-SPOOL, which the page states in prose though `Trigger` alone reads
+  sustained_fire_rate:
+    native_consumer: automatic_zero_duration_refire
+    ContinuousFireRateAtten: [0.2, 1.0]
+    ContinuousMaxShots: 15
   # "Auto". The rate below is the spooled-up one; the ramp is in `unmodeled:`.
   trigger: auto
   shot_type: hit_scan
@@ -50,10 +54,6 @@ attack:
       uniform: false
       hip_min_deg: 0.0
       hip_max_deg: 0.0
-unmodeled:
-  - reason: auto_spool_ramp
-    rate: 8.33
-  - reason: companion_fires_it
 
 source:
   url: https://wiki.warframe.com/w/Deth_Machine_Rifle

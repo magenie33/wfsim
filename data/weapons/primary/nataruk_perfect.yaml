@@ -43,12 +43,9 @@ attack:
   damage: { puncture: 648, slash: 252 }   # total 900
 
 unmodeled:
-  - reason: client_projectile_collision
-  - reason: client_ammo_runtime
-  - reason: client_special_spread
-  - reason: client_accuracy_runtime
-  - "This is the perfect release, not the ordinary full draw: the arsenal shows it and this entry carries its numbers. A mistimed release gets the module's second attack instead, a one-second draw for less damage, which is not carried. The engine has no way to describe a timing window, so one weapon cannot carry both."
-  - reason: silent_weapon
+- reason: client_ammo_runtime
+- reason: client_special_spread
+- 'This is the perfect release, not the ordinary full draw: the arsenal shows it and this entry carries its numbers. A mistimed release gets the module''s second attack instead, a one-second draw for less damage, which is not carried. The engine has no way to describe a timing window, so one weapon cannot carry both.'
 
 source:
   url: https://wiki.warframe.com/w/Nataruk

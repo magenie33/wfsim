@@ -201,6 +201,9 @@ pub(super) struct DebuffState {
     /// Heat armor-strip ramp-DOWN (ignite.yaml): after the entity dies at
     /// `.0` with strip `.1`, armor returns 50→40→30→15→0% in 1.5 s steps.
     pub(super) heat_decay: Option<(f64, f64)>,
+    pub(super) spore_hit: bool,
+    pub(super) spore_until: Option<f64>,
+    pub(super) spore_damage_multiplier: f64,
 }
 
 pub(super) const STAGGER_DURATION: f64 = 6.0;

@@ -68,9 +68,7 @@ attack:
       radiation: 624.0
 
 unmodeled:
-  - reason: client_radial_critical
-  - reason: explosion_ignores_cover
-  - reason: self_stagger
+- reason: client_radial_critical
 
 source:
   url: https://wiki.warframe.com/w/Battacor

@@ -518,6 +518,9 @@ pub struct AttackSpec {
     /// THE GRENADES A RELOAD THROWS — see [`ReloadGrenadeSpec`].
     #[serde(default)]
     pub reload_grenade: Option<Box<ReloadGrenadeSpec>>,
+    /// Radial burst centered on the player when reloading from an empty magazine (Quatz, Shedu).
+    #[serde(default)]
+    pub empty_reload_radial: Option<Box<RadialSpec>>,
     /// Instant Cold wave on reload start; one proc per round expended (Aksondol wiki).
     #[serde(default)]
     pub reload_cold_radius_per_round_m: Option<f64>,

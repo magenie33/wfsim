@@ -14,9 +14,7 @@ transform_group: mk1_strun
 transforms_to: mk1_strun_incarnon
 
 # see notes: bulk_intake_stats_are
-unmodeled:
-  - reason: client_accuracy_runtime
-  - reason: reload_never_interrupted
+
 accuracy: 4
 disposition: 1.2
 polarities: [naramon]

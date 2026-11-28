@@ -14,9 +14,7 @@ transform_group: strun_wraith
 transforms_to: strun_wraith_incarnon
 
 # see notes: bulk_intake_stats_are
-unmodeled:
-  - reason: client_accuracy_runtime
-  - reason: reload_never_interrupted
+
 accuracy: 6.7
 disposition: 1.2
 polarities: [naramon]

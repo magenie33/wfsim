@@ -51,8 +51,7 @@ attack:
   range_m: 20.0
   damage: { electricity: 5.0 }
 unmodeled:
-  - "Chaining is not modelled, and it is what the weapon is for: the beam jumps to up to 3 enemies within 5 m of each other. There is one target here, so against a crowd the number reads low."
-  - reason: companion_fires_it
+- 'Chaining is not modelled, and it is what the weapon is for: the beam jumps to up to 3 enemies within 5 m of each other. There is one target here, so against a crowd the number reads low.'
 
 source:
   url: https://wiki.warframe.com/w/Tazicor

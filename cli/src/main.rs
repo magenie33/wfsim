@@ -23,6 +23,8 @@ use wfsim_engine::rules::scaling;
 
 fn dual_toxocyst_baseline() -> FightParams {
     FightParams {
+        bespoke: None,
+        empty_reload_radial: None,
         power_shot_crit_per_hit: None,
         has_central_beam: false,
         spread_scaling: None,

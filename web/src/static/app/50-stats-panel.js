@@ -106,6 +106,7 @@ function renderPanel(r) {
         // ONCE EACH: a weapon's forms are listed together, and a gap both
         // forms admit is one fact.
         + [...new Set(gaps.map(trGap))].map((g) => `<div class="unmod-l">${escHtml(g)}</div>`).join("")
+        + `<div class="unmod-foot"><a href="/scope">${escHtml(tr("Modelling scope & all remaining items →"))}</a></div>`
       : "";
     // …AND THE OPPOSITE ADMISSION, in its own block. A LIVE BUG says the number
     // IS right — measured, reproduced — and that nobody can explain it, so a
@@ -632,4 +633,272 @@ const slotEl = (i) =>
   i === EXILUS ? $("exilus").firstElementChild
   : i === STANCE ? $("stance").firstElementChild
   : $("mod-slots").children[i];
+
+// ---- Unified modelling scope & remaining unmodelled register (/scope) ----
+
+let scopeFilter = "all";
+let scopeQuery = "";
+let scopeShowAll = false;
+
+const SCOPE_BOUNDARIES = [
+  ["Stealth, noise & awareness", "Targets start alert at 0 s; stealth multipliers and weapon noise ratings do not alter combat numbers."],
+  ["Self-stagger, ragdoll, cover & incoming hits", "Targets hold formation without firing back unless a target entry declares a dispel or aura; knockdowns, ragdolls, cover and blocking counters do not change uptime."],
+  ["Single active weapon & holster", "Each run scores one weapon without swapping mid-fight; holstered reload and swap buffs stay off unless driven by a weapon play mode."],
+  ["Ground Arch-Gun cooldown", "Heavy weapon redeploy cooldowns after exhausting reserves sit outside single-weapon runs; ammo pools follow the scenario's ammo rule."],
+  ["Melee, slam & modular tables", "Stance combos use calibrated cycle averages; uncalibrated slam shockwaves or modular part combinations remain disclosed on the affected items."],
+  ["Companion cadence", "Companion weapons fire continuously at the scenario target ceiling without AI target-switching, revival pauses or range breaks."],
+];
+
+function collectScopeData() {
+  const m = META || {};
+  const weapons = m.weapons || [];
+  const rows = [];
+  let wClean = 0;
+  for (const w of weapons) {
+    const gaps = [...new Set(gapsOf(w).map(trGap))];
+    if (w.passive_unmodeled) gaps.unshift(tr("this weapon's passive is not modelled yet"));
+    const bugs = (w.live_bugs || []).map(tr);
+    if (!gaps.length) wClean++;
+    if (gaps.length || bugs.length) {
+      rows.push({
+        cat: "weapons",
+        badge: tr("Weapon"),
+        name: weaponEntryName(w),
+        search: `${w.name || ""} ${w.name_en || ""} ${w.id || ""}`.toLowerCase(),
+        href: `${weaponPath(w.id)}/builder`,
+        external: false,
+        kind: gaps.length ? "todo" : "bug",
+        lines: [...gaps, ...bugs.map((b) => `⚠ ${b}`)],
+      });
+    }
+  }
+
+  const seenMods = new Map();
+  for (const pool of Object.values(m.mod_pools || {})) {
+    for (const mod of pool || []) {
+      if (!seenMods.has(mod.id)) seenMods.set(mod.id, mod);
+    }
+  }
+  let mClean = 0;
+  for (const mod of seenMods.values()) {
+    const u = (mod.unmodeled_effects || []).map(tr);
+    if (!mod.not_modeled && !u.length) { mClean++; continue; }
+    const lines = u.length ? u : [tr("this mod's combat effect is not modelled yet")];
+    rows.push({
+      cat: "mods",
+      badge: "MOD",
+      name: mod.name || mod.id,
+      search: `${mod.name || ""} ${mod.name_en || ""} ${mod.id || ""}`.toLowerCase(),
+      href: wikiUrl(mod.name_en || mod.name || mod.id),
+      external: true,
+      kind: "todo",
+      lines,
+    });
+  }
+
+  const arcanes = m.arcanes || [];
+  let aClean = 0;
+  for (const a of arcanes) {
+    const u = (a.unmodeled_effects || []).map(tr);
+    if (!a.not_modeled && !u.length) { aClean++; continue; }
+    const lines = u.length ? u : [tr("this arcane's combat effect is not modelled yet")];
+    rows.push({
+      cat: "arcanes",
+      badge: tr("Arcane"),
+      name: a.name || a.id,
+      search: `${a.name || ""} ${a.name_en || ""} ${a.id || ""}`.toLowerCase(),
+      href: wikiUrl(a.name_en || a.name || a.id),
+      external: true,
+      kind: "todo",
+      lines,
+    });
+  }
+
+  let eTotal = 0, eClean = 0;
+  for (const w of weapons) {
+    for (const tier of w.evolutions || []) {
+      for (const o of tier.options || []) {
+        eTotal++;
+        const u = (o.unmodeled || []).map(tr);
+        const oos = (o.out_of_scope || []).map((x) => tr(typeof x === "string" ? x : (x.text || x.clause || "")));
+        const bugs = (o.live_bugs || []).map(tr);
+        if (!o.fully_unmodeled && !u.length) eClean++;
+        if (o.fully_unmodeled || u.length || oos.length || bugs.length) {
+          const lines = [
+            ...u,
+            ...(o.fully_unmodeled && !u.length ? [tr("this perk is not modelled yet")] : []),
+            ...oos,
+            ...bugs.map((b) => `⚠ ${b}`),
+          ].filter(Boolean);
+          rows.push({
+            cat: "evolutions",
+            badge: tr("Incarnon"),
+            name: `${weaponEntryName(w)} · ${o.name || o.id}`,
+            search: `${w.name || ""} ${w.name_en || ""} ${o.name || ""} ${o.name_en || ""}`.toLowerCase(),
+            href: `${weaponPath(w.id)}/builder`,
+            external: false,
+            kind: (o.fully_unmodeled || u.length) ? "todo" : (bugs.length ? "bug" : "scope"),
+            lines,
+          });
+        }
+      }
+    }
+  }
+
+  for (const e of m.enemies || []) {
+    const u = (e.unmodeled || []).map(tr);
+    if (!u.length) continue;
+    rows.push({
+      cat: "targets",
+      badge: tr("Targets"),
+      name: e.name || e.id,
+      search: `${e.name || ""} ${e.name_en || ""} ${e.id || ""}`.toLowerCase(),
+      href: wikiUrl(e.name_en || e.name || e.id),
+      external: true,
+      kind: "todo",
+      lines: u,
+    });
+  }
+  for (const ab of m.abilities || []) {
+    const u = (ab.unmodeled_effects || []).map(tr);
+    const b = (ab.live_bugs || []).map(tr);
+    if (!u.length && !b.length) continue;
+    rows.push({
+      cat: "targets",
+      badge: tr("Ability"),
+      name: ab.name || ab.id,
+      search: `${ab.name || ""} ${ab.frame || ""} ${ab.id || ""}`.toLowerCase(),
+      href: ab.url || wikiUrl(ab.name || ab.id),
+      external: true,
+      kind: u.length ? "todo" : "bug",
+      lines: [...u, ...b.map((x) => `⚠ ${x}`)],
+    });
+  }
+  for (const wf of m.warframes || []) {
+    if (!wf.weapon_passive_unmodelled) continue;
+    rows.push({
+      cat: "targets",
+      badge: tr("Warframe"),
+      name: wf.name || wf.id,
+      search: `${wf.name || ""} ${wf.id || ""}`.toLowerCase(),
+      href: `/warframes/${encodeURIComponent(wf.id)}/builder`,
+      external: false,
+      kind: "todo",
+      lines: [tr(wf.weapon_passive_unmodelled)],
+    });
+  }
+
+  return {
+    stats: [
+      { label: tr("Weapons"), clean: wClean, total: weapons.length },
+      { label: "MOD", clean: mClean, total: seenMods.size },
+      { label: tr("Arcanes"), clean: aClean, total: arcanes.length },
+      { label: tr("Incarnon perks"), clean: eClean, total: eTotal },
+    ],
+    rows,
+  };
+}
+
+function renderScopeList(host, data) {
+  if (!host) return;
+  const q = scopeQuery.trim().toLowerCase();
+  const matched = data.rows.filter((r) =>
+    (scopeFilter === "all" || r.cat === scopeFilter)
+    && (!q || r.search.includes(q) || r.lines.some((l) => l.toLowerCase().includes(q)))
+  );
+  const limit = (!q && scopeFilter === "all" && !scopeShowAll) ? 120 : matched.length;
+  const shown = matched.slice(0, limit);
+  const kindLabel = {
+    todo: tr("Not modelled yet"),
+    bug: tr("Live game bug"),
+    scope: tr("Simulation boundary"),
+  };
+  host.innerHTML = matched.length
+    ? shown.map((r) => `<div class="scope-row">
+        <div class="scope-row-head">
+          <span class="scope-badge">${escHtml(r.badge)}</span>
+          <a class="scope-link" href="${escHtml(r.href)}"${r.external ? ' target="_blank" rel="noopener"' : ""}>${escHtml(r.name)}</a>
+          <span class="scope-pill ${escHtml(r.kind)}">${escHtml(kindLabel[r.kind] || "")}</span>
+        </div>
+        <div class="scope-lines">${r.lines.map((l) => `<div class="scope-line">${escHtml(l)}</div>`).join("")}</div>
+      </div>`).join("")
+      + (matched.length > limit
+        ? `<div class="scope-more"><button class="ghost-btn" id="scope-show-all">${escHtml(tr("Show all ({n})").replace("{n}", String(matched.length)))}</button></div>`
+        : "")
+    : `<div class="scope-empty">${escHtml(tr("No matching unmodelled items."))}</div>`;
+  const moreBtn = $("scope-show-all");
+  if (moreBtn) {
+    moreBtn.addEventListener("click", () => {
+      scopeShowAll = true;
+      renderScopeList(host, data);
+    });
+  }
+}
+
+function modellingScopePage(main) {
+  const data = collectScopeData();
+  const counts = { all: data.rows.length, weapons: 0, mods: 0, arcanes: 0, evolutions: 0, targets: 0 };
+  for (const r of data.rows) counts[r.cat] = (counts[r.cat] || 0) + 1;
+  const pct = (c, t) => t ? ((c * 100) / t).toFixed(1) : "100.0";
+  const tabs = [
+    ["all", tr("All")],
+    ["weapons", tr("Weapons")],
+    ["mods", "MOD"],
+    ["arcanes", tr("Arcanes")],
+    ["evolutions", tr("Incarnon perks")],
+    ["targets", tr("Targets & abilities")],
+  ];
+
+  main.innerHTML = `<div class="settings solo scope-page">
+    <div class="settings-head">
+      <h1>${escHtml(tr("Modelling scope"))}</h1>
+      <p class="auth-sub">${escHtml(tr("Completed mechanics are retired from item warnings. Remaining item-specific gaps are listed live below toward zero, while shared simulation boundaries are stated once here."))}</p>
+    </div>
+    <div class="scope-stats">
+      ${data.stats.map((s) => `<div class="scope-stat">
+        <div class="scope-stat-k">${escHtml(s.label)}</div>
+        <div class="scope-stat-v"><b>${s.clean}</b><span> / ${s.total}</span></div>
+        <div class="scope-stat-sub">${pct(s.clean, s.total)}% ${escHtml(tr("clean"))} · ${s.total - s.clean} ${escHtml(tr("with notes"))}</div>
+      </div>`).join("")}
+    </div>
+    <section class="settings-block">
+      <h2>${escHtml(tr("Shared simulation boundaries"))}</h2>
+      <div class="scope-bounds">
+        ${SCOPE_BOUNDARIES.map(([k, v]) => `<div class="scope-bound"><b>${escHtml(tr(k))}</b><span>${escHtml(tr(v))}</span></div>`).join("")}
+      </div>
+    </section>
+    <section class="settings-block">
+      <h2>${escHtml(tr("Remaining item-specific disclosures"))}</h2>
+      <div class="scope-toolbar">
+        <div class="scope-tabs" id="scope-tabs">
+          ${tabs.map(([id, label]) => `<button type="button" class="chip${scopeFilter === id ? " active" : ""}" data-scope-cat="${id}">${escHtml(label)} <span class="snote">${counts[id] || 0}</span></button>`).join("")}
+        </div>
+        <input id="scope-search" class="scope-search" type="search" value="${escHtml(scopeQuery)}" placeholder="${escHtml(tr("Search weapons, mods, arcanes or mechanics…"))}" />
+      </div>
+      <div class="scope-list" id="scope-list"></div>
+    </section>
+  </div>`;
+
+  const listEl = $("scope-list");
+  renderScopeList(listEl, data);
+  const tabsEl = $("scope-tabs");
+  if (tabsEl) {
+    tabsEl.addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-scope-cat]");
+      if (!btn) return;
+      scopeFilter = btn.dataset.scopeCat;
+      scopeShowAll = false;
+      for (const b of tabsEl.querySelectorAll("[data-scope-cat]")) b.classList.toggle("active", b.dataset.scopeCat === scopeFilter);
+      renderScopeList(listEl, data);
+    });
+  }
+  const searchEl = $("scope-search");
+  if (searchEl) {
+    searchEl.addEventListener("input", () => {
+      scopeQuery = searchEl.value || "";
+      renderScopeList(listEl, data);
+    });
+  }
+}
+
 

@@ -28,14 +28,7 @@ combo_duration_seconds: 5.0
 co_behavior: additive_with_base_damage
 
 unmodeled:
-  - reason: client_melee_slam
-  - reason: client_melee_legacy
-  - reason: client_melee_geometry
-  - "One attack input's animation length is unpublished: the wiki gives each combo's total at 1.0x attack speed, so totals are exact and inputs are split evenly. This shifts a status tick by fractions of a second and changes no total."
-  - "Power Spike's partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number reads low."
-  - reason: melee_slide_unpublished
-  - reason: corufell_light_tennokai
-  - reason: corufell_signature_windup
+- reason: corufell_light_tennokai
 
 attack:
   # see notes: swing_trigger_pull_engine
@@ -61,6 +54,11 @@ attack:
     falloff_reduction: 0.5
     forced_procs: [impact]
     takes_multishot: false
+
+bespoke:
+  signature:
+    warframes: [citrine, citrine_prime]
+    heavy_windup_speed_bonus: 0.20
 
 source:
   url: https://wiki.warframe.com/w/Corufell_Prime

@@ -58,7 +58,4 @@ attack:
 source:
   url: https://wiki.warframe.com/w/Twin_Vipers
 
-unmodeled:
-  - reason: client_accuracy_runtime
-
 # see notes: client_secondary_calibration

@@ -40,10 +40,12 @@ attack:
   damage: { puncture: 3 }   # total 3
 
 unmodeled:
-  - reason: client_projectile_callbacks
-  - reason: client_accuracy_runtime
-  - reason: client_composite_attack
-  - "The beacon exists to grant the primary fire +50% absolute critical chance and homing, which the engine cannot carry from one mode to another. On its own it is a three-damage dart."
+- reason: client_projectile_callbacks
+- reason: client_composite_attack
+
+alt_fire_toggles: true
+bespoke:
+  beacon_duration_seconds: 20.0
 
 source:
   url: https://wiki.warframe.com/w/Buzlok

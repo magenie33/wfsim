@@ -36,10 +36,6 @@ attack:
   # see notes: no_range_row_attack
   damage: { impact: 211.5, puncture: 11.75, slash: 11.75 }   # total 235
 
-unmodeled:
-  - reason: client_accuracy_runtime
-  - reason: silent_weapon
-
 source:
   url: https://wiki.warframe.com/w/Rakta_Cernos
 

@@ -8,18 +8,12 @@ form: heavy
 transform_group: pride
 co_behavior: additive_with_base_damage
 unmodeled:
-  - reason: client_melee_legacy
-  - reason: client_melee_geometry
-  - reason: melee_slide_unpublished
-  - reason: heavy_charge_share_assumed
-    published: 1.0
-    charge: 0.3333
-    swing: 0.6667
-  - reason: melee_heavy_total_disputed
-    infobox: 18
-    table: 6
-  - reason: melee_passive_unmodelled
-    passive: "Coronal Ejection: each enemy a slam hits grants +15% Status Chance, up to 10 stacks, for 10 s"
+- reason: melee_heavy_total_disputed
+  infobox: 18
+  table: 6
+- reason: melee_passive_unmodelled
+  passive: 'Coronal Ejection: each enemy a slam hits grants +15% Status Chance, up to 10 stacks, for 10 s'
+
 attack:
   trigger: melee
   shot_type: hit_scan

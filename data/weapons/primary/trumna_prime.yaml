@@ -93,10 +93,7 @@ attack:
     damage: { heat: 50 }   # total 50
 
 unmodeled:
-  - reason: client_radial_critical
-  - reason: client_accuracy_runtime
-  - reason: explosion_ignores_cover
-  - reason: self_stagger
+- reason: client_radial_critical
 
 source:
   url: https://wiki.warframe.com/w/Trumna_Prime

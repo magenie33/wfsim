@@ -58,10 +58,12 @@ attack:
     reduction: 0.96875
   damage: { puncture: 32 }   # 32 a pellet, 224 a shot
 
+innate_co_per_type: 0.60000002
+bespoke:
+  signature:
+    warframes: [lavos, lavos_prime]
+
 source:
   url: https://wiki.warframe.com/w/Cedo_Prime
-
-unmodeled:
-  - reason: client_accuracy_runtime
 
 # see notes: client_primary_calibration

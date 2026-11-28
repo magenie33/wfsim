@@ -85,12 +85,10 @@ attack:
     stacking: refresh
 
 unmodeled:
-  - reason: client_projectile_acceleration
-  - reason: client_projectile_callbacks
-  - reason: client_accuracy_runtime
-  - "The field pulls enemies within 10 m toward it for 30 s, the reason it is thrown. Grouping enemies helps every area weapon in a real room; enemies here do not move, so it changes nothing."
-  - "The throw's forced knockdown is crowd control, worth time and safety rather than damage; it changes nothing here."
-  - "The spear must be picked up or waited out; here it is thrown and firing continues."
+- reason: client_projectile_callbacks
+- The field pulls enemies within 10 m toward it for 30 s, the reason it is thrown. Grouping enemies helps every area weapon in a real room; enemies here do not move, so it changes nothing.
+- The throw's forced knockdown is crowd control, worth time and safety rather than damage; it changes nothing here.
+- The spear must be picked up or waited out; here it is thrown and firing continues.
 
 source:
   url: https://wiki.warframe.com/w/Ferrox

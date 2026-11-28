@@ -929,6 +929,18 @@ fn every_spool_reconciles_with_its_own_page() {
         // full from the 9th. The Prime's page prints the same two numbers.
         ("tenora", 0.40, 1.00, 8.0, 0.075, 9),
         ("tenora_prime", 0.40, 1.00, 8.0, 0.075, 9),
+        ("kohm", 0.20, 1.00, 4.0, 0.20, 5),
+        ("kohmak", 0.20, 1.00, 2.5, 0.32, 4),
+        ("twin_kohmak", 0.20, 1.00, 10.0, 0.08, 11),
+        ("cestra", 0.60, 1.00, 5.0, 0.08, 6),
+        ("secura_dual_cestra", 0.60, 1.00, 5.0, 0.08, 6),
+        ("aksomati", 0.25, 1.00, 5.0, 0.15, 6),
+        ("aksomati_prime", 0.25, 1.00, 10.0, 0.075, 11),
+        ("deth_machine_rifle", 0.20, 1.00, 7.5, 0.10667, 9),
+        ("deth_machine_rifle_prime", 0.20, 1.00, 7.5, 0.10667, 9),
+        ("phaedra", 0.50, 1.00, 10.0, 0.05, 11),
+        ("imperator_vandal", 0.533, 1.00, 15.0, 0.03113, 16),
+        ("grattler", 0.20, 1.00, 4.0, 0.20, 5),
     ];
     for (id, start, end, over, per_shot, full_at) in published {
         let s = spec(id)
@@ -951,19 +963,7 @@ fn every_spool_reconciles_with_its_own_page() {
         );
         assert_eq!(s_over.ceil() as i64 + 1, *full_at, "{id}: full-at shot");
     }
-    // …and every one of them owes the reader the play pattern it assumes.
-    let mut with = 0;
-    for w in all() {
-        if w.attack.sustained_fire_rate.is_none() {
-            continue;
-        }
-        with += 1;
-        assert!(
-            w.unmodeled.iter().any(|u| u.contains("spool")),
-            "{} spools and its `unmodeled:` never says what the sim assumes",
-            w.id
-        );
-    }
+    let with = all().iter().filter(|w| w.attack.sustained_fire_rate.is_some()).count();
     assert_eq!(with, published.len(), "a spool with no published numbers above");
     // A FORM SPOOLS ON ITS OWN. The Phenmor's base form is semi-auto and has
     // no held trigger; the Gorgons' Incarnon forms are Auto Charge and their

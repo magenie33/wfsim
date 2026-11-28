@@ -75,8 +75,7 @@ attack:
     status_chance: 0.50
 
 unmodeled:
-  - "This form is called a Charged Shot but has a semi-auto trigger with no charge time, so it is paced as a slow semi-auto shot."
-  - reason: arch_gun_deployer_cooldown
+- This form is called a Charged Shot but has a semi-auto trigger with no charge time, so it is paced as a slow semi-auto shot.
 
 source:
   url: https://wiki.warframe.com/w/Morgha

@@ -59,13 +59,9 @@ attack:
     damage: { toxin: 100 }   # total 100
 
 unmodeled:
-  - reason: client_projectile_acceleration
-  - reason: client_projectile_callbacks
-  - reason: client_accuracy_runtime
-  - reason: client_composite_attack
-  - "The orb hangs in place and damages what walks into it, and shooting the primary fire through it adds damage (wiki). The engine fires each mode on its own, so this interaction is not modelled."
-  - reason: explosion_ignores_cover
-  - reason: self_stagger
+- reason: client_projectile_callbacks
+- reason: client_composite_attack
+- The orb hangs in place and damages what walks into it, and shooting the primary fire through it adds damage (wiki). The engine fires each mode on its own, so this interaction is not modelled.
 
 source:
   url: https://wiki.warframe.com/w/Mutalist_Quanta

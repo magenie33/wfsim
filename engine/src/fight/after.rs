@@ -57,14 +57,15 @@ pub(super) fn after_the_landing(
     opening_closed: &mut bool,
     field_duration_boost: &mut bool,
     beam: &mut BeamRamp,
-    target_ramps: &mut Vec<TargetRamp>,) {
+    target_ramps: &mut Vec<TargetRamp>,
+    bespoke: &mut BespokeState,) {
         if !finalizes {
             if let Some((cy,charge_on))=params.cycle.as_ref().and_then(|cy|match cy.arms {
                 Arms::Gauge{charge_on,..}=>Some((cy,charge_on)),_=>None,
             }) {
                 charge_the_gauge(params,apl,flash,rec,rng,d,cy,charge_on,base_form_at_fire,
                     pellets_before,headshots_before,t,r,ammo,incarnon,double_tap,buff_stacks,rs_armed,opening_closed,
-                    beam,target_ramps);
+                    beam,target_ramps,bespoke);
             }
             return;
         }
@@ -225,7 +226,7 @@ pub(super) fn after_the_landing(
             charge_the_gauge(
                 params, apl, flash, rec, rng, d, cy, charge_on, base_form_at_fire, pellets_before, headshots_before,
                 t, r, ammo, incarnon, double_tap, buff_stacks,
-                rs_armed, opening_closed, beam, target_ramps,
+                rs_armed, opening_closed, beam, target_ramps, bespoke,
             );
         }
 
@@ -257,6 +258,31 @@ pub(super) fn after_the_landing(
 /// …AND SET THE CLOCK TO THE NEXT SHOT. Apart from the landing because a shot
 /// that flies is due again before it arrives: cadence is the TRIGGER's, read
 /// at the moment it was pulled.
+#[wfsim_gas_macro::metered]
+pub(super) fn spool_after_pause(active: &FightParams, spool: &Spool, t: f64) -> f64 {
+    if t <= spool.due + 1e-9 {
+        return spool.shots;
+    }
+    let Some(spindown) = active
+        .bespoke
+        .as_ref()
+        .map(|b| b.spindown_seconds)
+        .filter(|&s| s > 0.0 && spool.due.is_finite())
+    else {
+        return 0.0;
+    };
+    let pause = (t - spool.due).max(0.0);
+    let cap = active
+        .bespoke
+        .as_ref()
+        .and_then(|b| b.pellet_spool)
+        .map_or_else(
+            || active.sustained_fire_rate.map_or(1.0, |s| (s.display_span().2 * 2.0).max(1.0)),
+            |ps| f64::from(ps.max_pellets.saturating_sub(ps.initial_pellets).max(1)),
+        );
+    (spool.shots.min(cap) - (pause / spindown) * cap).max(0.0)
+}
+
 #[allow(clippy::too_many_arguments)]
 #[wfsim_gas_macro::metered]
 pub(super) fn next_shot_due(
@@ -277,28 +303,16 @@ pub(super) fn next_shot_due(
     windows: &CardWindows,
     arc: &mut ArcRuntime,
     rs_armed: bool,
-    last_shot_t: &mut f64,) {
+    last_shot_t: &mut f64,
+    bespoke: &mut BespokeState,) {
         // Frame actions wait for a committed melee input to finish.
         let input_continues = swing.as_ref().is_some_and(|h| h.event_timing.is_some() && !h.ends_input());
         if let Some(f) = spool.frame.as_mut().filter(|_| !input_continues) {
             *t = f.act_all(*t, r.kills);
         }
-        let raw_rate = raw_cadence_rate(params, active, *t, bar, buff_stacks, windows);
+        let raw_rate = raw_cadence_rate_with_bespoke(params, active, *t, bar, buff_stacks, windows, melee.deployed_until, bespoke);
         let rate = active.refire.weapon_rate(raw_rate, active.unmodded_fire_rate);
-        // THE TRIGGER CAME OFF, DERIVED rather than listed. Every pause in
-        // this loop — a reload, a transform, a dry magazine, a stall on a dry
-        // reserve — leaves this shot LATER than the moment the last one made it
-        // due, and that is precisely what releasing the trigger is. Asking the
-        // clock here, rather than clearing the count in each branch that
-        // pauses, is what stops the next pause anyone adds from silently
-        // keeping the spool alive — and the reload branch already proves the
-        // point: it does not `continue`, it falls through and fires in the same
-        // iteration, so a check at the top of the loop would never have seen
-        // it (the test caught this: 66 shots against the 80 a released trigger
-        // owes).
-        if *t > spool.due + 1e-9 {
-            spool.shots = 0.0;
-        }
+        spool.shots = spool_after_pause(active, spool, *t);
         *last_shot_t = *t;
         // …and then the SPOOL, which is a fraction of whatever that rate came
         // to: a fire-rate mod raises the ceiling and the floor together, so the
@@ -337,6 +351,49 @@ pub(super) fn raw_cadence_rate(params: &FightParams, active: &FightParams, t: f6
     let stacked = buff_total(active, crate::model::BuffGrant::FireRate, buff_stacks, t);
     let ability = crate::data::abilities::fire_rate_at(&params.abilities_now(), t);
     (active.fire_rate + reload + stacked + ability) * bar.total_contributions().fire_rate_multiplier
+}
+
+#[allow(clippy::too_many_arguments)]
+#[wfsim_gas_macro::metered]
+pub(super) fn raw_cadence_rate_with_bespoke(
+    params: &FightParams,
+    active: &FightParams,
+    t: f64,
+    bar: &mut BuffBar,
+    buff_stacks: &mut [LiveStacks],
+    windows: &CardWindows,
+    deployed_until: f64,
+    bespoke: &mut BespokeState,
+) -> f64 {
+    bar.expire(t);
+    if params.locks("fire_rate") { return active.fire_rate; }
+    let reload = active.fire_rate_on_reload.filter(|_| t < windows.fire_rate_after_reload).map_or(0.0, |b| b.value);
+    let stacked = buff_total(active, crate::model::BuffGrant::FireRate, buff_stacks, t);
+    let ability = crate::data::abilities::fire_rate_at(&params.abilities_now(), t);
+    let mut bespoke_add = 0.0;
+    let mut bespoke_mult = 1.0;
+    if let Some(b) = active.bespoke.as_deref() {
+        if b.deployed_fire_rate_bonus > 0.0 && t < deployed_until {
+            bespoke_add += b.deployed_fire_rate_bonus * active.unmodded_fire_rate;
+        }
+        if let Some(hk) = b.heavy_kill_speed {
+            bespoke.heavy_kill_expiries.retain(|&exp| exp > t);
+            bespoke_add += hk.fire_rate_bonus * f64::from(bespoke.heavy_kill_expiries.len() as u32) * active.unmodded_fire_rate;
+        }
+        if let Some(dr) = &b.dice_roll {
+            if matches!(bespoke.dice_face, 5 | 6) {
+                bespoke_add += dr.fire_rate_bonus * active.unmodded_fire_rate;
+            }
+        }
+        if let Some(sf) = b.status_frenzy {
+            if t < bespoke.status_frenzy_until {
+                bespoke_mult *= sf.attack_speed_multiplier;
+            }
+        }
+    }
+    (active.fire_rate + reload + stacked + ability + bespoke_add)
+        * bar.total_contributions().fire_rate_multiplier
+        * bespoke_mult
 }
 
 /// A selected charge attack finishes its own draw before it can fire.

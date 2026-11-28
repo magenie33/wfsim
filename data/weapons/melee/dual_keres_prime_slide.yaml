@@ -7,10 +7,9 @@ form: slide
 transform_group: dual_keres_prime
 co_behavior: additive_with_base_damage
 unmodeled:
-  - reason: client_melee_timing
-  - reason: client_melee_geometry
-  - reason: melee_passive_unmodelled
-    passive: "wielded by Khora, 20% Heavy Attack Efficiency"
+- reason: melee_passive_unmodelled
+  passive: wielded by Khora, 20% Heavy Attack Efficiency
+
 attack:
   trigger: melee
   shot_type: hit_scan

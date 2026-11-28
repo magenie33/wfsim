@@ -128,7 +128,6 @@ source:
   # wiki module `Attacks[].AttackName`: "Incarnon Form" and "Incarnon Form Headshot AoE"
 
 unmodeled:
-  - reason: client_projectile_callbacks
-  - reason: client_accuracy_runtime
+- reason: client_projectile_callbacks
 
 # see notes: client_primary_calibration

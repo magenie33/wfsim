@@ -7,10 +7,9 @@ form: slide
 transform_group: volnus
 co_behavior: additive_with_base_damage
 unmodeled:
-  - reason: client_melee_timing
-  - reason: client_melee_geometry
-  - reason: melee_passive_unmodelled
-    passive: "with Gara, its signature bonus: +100% slam radial damage"
+- reason: melee_passive_unmodelled
+  passive: 'with Gara, its signature bonus: +100% slam radial damage'
+
 attack:
   trigger: melee
   shot_type: hit_scan

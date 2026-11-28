@@ -6,12 +6,7 @@ inherits: dex_nikana
 form: heavy
 transform_group: dex_nikana
 co_behavior: additive_with_base_damage
-unmodeled:
-- reason: client_melee_timing
-- reason: client_melee_geometry
-- reason: client_melee_counter
-- reason: melee_passive_unmodelled
-  passive: its combo multiplier rises every 11 hits rather than 20, and stops at 11x
+
 attack:
   trigger: melee
   shot_type: hit_scan

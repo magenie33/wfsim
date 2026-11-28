@@ -94,8 +94,7 @@ attack:
     status_chance: 0.20
 
 unmodeled:
-  - "The self-stagger from its own explosion at close range is not modelled; it deals the firer no damage."
-  - reason: arch_gun_deployer_cooldown
+- The self-stagger from its own explosion at close range is not modelled; it deals the firer no damage.
 
 source:
   url: https://wiki.warframe.com/w/Kuva_Ayanga

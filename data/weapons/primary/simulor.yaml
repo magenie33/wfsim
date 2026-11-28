@@ -80,12 +80,8 @@ attack:
     damage: { magnetic: 200 }   # total 200
 
 unmodeled:
-  - reason: client_projectile_acceleration
-  - reason: client_accuracy_runtime
-  - reason: client_composite_attack
-  - "Orbs merge: a new orb joining one in the air triggers 'Orb Merging Damage' in 4 m, growing with the number merged (wiki). The engine resolves each shot on its own, so the merge is not counted and the number reads well low for a player stacking orbs."
-  - reason: explosion_ignores_cover
-  - reason: self_stagger
+- reason: client_composite_attack
+- 'Orbs merge: a new orb joining one in the air triggers ''Orb Merging Damage'' in 4 m, growing with the number merged (wiki). The engine resolves each shot on its own, so the merge is not counted and the number reads well low for a player stacking orbs.'
 
 source:
   url: https://wiki.warframe.com/w/Simulor

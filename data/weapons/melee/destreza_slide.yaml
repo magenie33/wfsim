@@ -7,9 +7,8 @@ form: slide
 transform_group: destreza
 co_behavior: additive_with_base_damage
 unmodeled:
-  - reason: client_melee_timing
-  - reason: client_melee_geometry
-  - reason: melee_incarnon_slam_arms_unmodelled
+- reason: melee_incarnon_slam_arms_unmodelled
+
 attack:
   trigger: melee
   shot_type: hit_scan

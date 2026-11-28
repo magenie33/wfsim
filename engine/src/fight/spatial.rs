@@ -229,13 +229,28 @@ pub(super) fn launch(
                 .filter(|b| b.max_life_seconds > 0.0 && !active.range_m.is_finite())
                 .and_then(|b| active.projectile_speed_mps.map(|v| v * f64::from(b.max_life_seconds)))
                 .unwrap_or(active.range_m);
+            let homing = active.homing.or_else(|| {
+                let speed = active.projectile_speed_mps? as f32;
+                (active.bespoke.as_ref().is_some_and(|b| b.beacon_crit_chance_bonus > 0.0)
+                    && l.t < me.bespoke.beacon_until)
+                    .then_some(crate::model::Homing {
+                        collision_radius: active.projectile_width_m as f32 * 0.5,
+                        initial_speed: speed,
+                        maximum_speed: speed,
+                        acceleration: 0.0,
+                        turning_seconds: 0.05,
+                        seek_distance: 200.0,
+                        seek_cone_deg: 180.0,
+                        minimum_flight_before_seek: 0.0,
+                    })
+            });
             let mut path = scene.trace(
-                head, dev, phi, active.projectile_speed_mps, active.homing, pierce,
+                head, dev, phi, active.projectile_speed_mps, homing, pierce,
                 every_body, active.projectile_reverse_query,
                 active.projectile_width_m, max_range, &eligible, fire_origin,
             );
             if let Some(lock) = active.lock_on {
-                lock_shot(&scene, active, lock, &eligible, head, me, &mut path);
+                lock_shot(&scene, active, lock, &eligible, head, l.t, bodies, me, &mut path);
             }
             let reflected = active.ricochet.filter(|r| r.reflects_from_surfaces)
                 .map_or(usize::MAX, |r| scene.reflect_path(&mut path, r.bounces,
@@ -740,14 +755,105 @@ fn redirects(
     path
 }
 
+#[allow(clippy::too_many_arguments)]
 #[wfsim_gas_macro::metered]
 fn lock_shot(
     scene: &crate::scene::Scene, active: &FightParams, lock: crate::model::LockOn,
-    eligible: &[bool], head: bool, me: &mut Combatant, path: &mut crate::scene::Flight,
+    eligible: &[bool], head: bool, now: f64, bodies: &[Body], me: &mut Combatant, path: &mut crate::scene::Flight,
 ) {
     let forward = path.aim_target.minus(path.camera).normalized()
         .or_else(|| path.aim_target.minus(path.muzzle).normalized())
         .unwrap_or(path.direction);
+    if lock.targets == 4 {
+        if now - me.bespoke.lock_polled_at >= 0.05 - 1e-9 {
+            me.bespoke.lock_polled_at = now;
+            let lose_deg = lock.lose_deg.unwrap_or_else(|| (lock.acquire_deg * 1.5).max(60.0));
+            let mut valid: Vec<(usize, u32, f64)> = Vec::new();
+            for (body_idx, is_eligible) in eligible.iter().copied().enumerate() {
+                if !is_eligible {
+                    continue;
+                }
+                let generation = bodies[body_idx].state.generation;
+                let dist = scene.distance_to_body(path.muzzle, body_idx);
+                if dist > lock.range_m {
+                    continue;
+                }
+                let held = me.bespoke.lock_slots.contains(&Some((body_idx, generation)));
+                let max_angle = if held { lose_deg } else { lock.acquire_deg };
+                let center = scene.target_anchor(body_idx, false);
+                let angle_deg = center
+                    .minus(path.camera)
+                    .normalized()
+                    .map_or(0.0, |v| {
+                        use crate::rules::math::Portable;
+                        v.dot(forward).clamp(-1.0, 1.0).acos_portable().to_degrees()
+                    });
+                if angle_deg > max_angle {
+                    continue;
+                }
+                let score = (dist / lock.range_m.max(1e-9)) * 100.0 + (angle_deg / max_angle.max(1e-9));
+                if score < 100.0 {
+                    valid.push((body_idx, generation, score));
+                }
+            }
+            if valid.is_empty() {
+                me.bespoke.lock_slots = [None; 4];
+            } else if valid.len() == 1 {
+                let only = Some((valid[0].0, valid[0].1));
+                me.bespoke.lock_slots = [only; 4];
+            } else {
+                for slot in &mut me.bespoke.lock_slots {
+                    if let Some((b, g)) = *slot {
+                        if !valid.iter().any(|&(vb, vg, _)| vb == b && vg == g) {
+                            *slot = None;
+                        }
+                    }
+                }
+                for slot_idx in 0..4 {
+                    if me.bespoke.lock_slots[slot_idx].is_none() {
+                        let best = valid.iter().copied().min_by(|a, b| {
+                            let ca = me.bespoke.lock_slots.iter().filter(|&&s| s == Some((a.0, a.1))).count();
+                            let cb = me.bespoke.lock_slots.iter().filter(|&&s| s == Some((b.0, b.1))).count();
+                            ca.cmp(&cb).then_with(|| a.2.total_cmp(&b.2))
+                        });
+                        if let Some((b, g, _)) = best {
+                            me.bespoke.lock_slots[slot_idx] = Some((b, g));
+                        }
+                    }
+                }
+            }
+        }
+        let slot_idx = (me.ammo.rounds_this_mag.saturating_sub(1) as usize) % 4;
+        let Some((actor, generation)) = me.bespoke.lock_slots[slot_idx] else {
+            return;
+        };
+        if !eligible.get(actor).copied().unwrap_or(false) || bodies[actor].state.generation != generation {
+            return;
+        }
+        let mut distinct = [None; 4];
+        let mut locked_bodies = 0u32;
+        for s in me.bespoke.lock_slots.into_iter().flatten() {
+            if !distinct[..locked_bodies as usize].contains(&Some(s)) {
+                distinct[locked_bodies as usize] = Some(s);
+                locked_bodies += 1;
+            }
+        }
+        let gap = scene.distance_to_body(path.muzzle, actor);
+        let Some((miss, head_keep)) = lock.at(gap, locked_bodies.max(1)) else { return };
+        path.steering_target = Some(actor);
+        path.impacts.clear();
+        path.stopped_at = None;
+        if me.d.aim.chance(miss) { return; }
+        let anchor = scene.target_anchor(actor, head && me.d.aim.chance(head_keep));
+        let Some(dir) = anchor.minus(path.muzzle).normalized() else { return };
+        path.direction = dir;
+        if let Some(mut hit) = scene.contact_impact(path.muzzle, dir, active.range_m, active.projectile_width_m * 0.5, eligible) {
+            hit.seconds = active.projectile_speed_mps.map_or(0., |speed| hit.travel / speed);
+            path.stopped_at = Some(hit.point);
+            path.impacts.push(hit);
+        }
+        return;
+    }
     let candidates = scene.beam_acquire(path.muzzle, path.camera, forward, lock.acquire_deg, lock.range_m, eligible);
     let choices = &candidates[..candidates.len().min(lock.targets as usize)];
     if choices.is_empty() { return; }

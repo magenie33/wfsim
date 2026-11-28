@@ -89,9 +89,7 @@ attack:
     status_chance: 0.57
 
 unmodeled:
-  - reason: explosion_ignores_cover
-  - "The projectiles arc and travel slowly, so at range they must be led; every shot here connects, so against a moving target the real hit rate is lower."
-  - reason: self_stagger
+- The projectiles arc and travel slowly, so at range they must be led; every shot here connects, so against a moving target the real hit rate is lower.
 
 source:
   url: https://wiki.warframe.com/w/Bubonico

@@ -57,8 +57,7 @@ attack:
   damage: { impact: 44.1, puncture: 26.95, slash: 26.95 }   # total 98
 
 unmodeled:
-  - reason: client_accuracy_runtime
-  - "Chamber Cascade: a hit or a damaging status has a 4% chance to grant 100% ammo efficiency for 4 s (wiki). Reserves are infinite by default, so it adds nothing here."
+- 'Chamber Cascade: a hit or a damaging status has a 4% chance to grant 100% ammo efficiency for 4 s (wiki). Reserves are infinite by default, so it adds nothing here.'
 
 source:
   url: https://wiki.warframe.com/w/Magnus_Prime

@@ -12,6 +12,11 @@ co_behavior: additive_with_base_damage
 
 attack:
   # see notes: cone_half_angle_from_2
+  ricochet:
+    bounces: 10
+    headshot_chance: 0.0
+    range_m: 20.0
+    chance: 1.0
   spread:
     min_deg: 1.0
     max_deg: 1.5
@@ -51,10 +56,8 @@ attack:
     takes_blast_radius_mods: true
     damage: { blast: 10 }   # total 10
 
-unmodeled:
-  - reason: client_accuracy_runtime
-  - reason: explosion_ignores_cover
-  - reason: self_stagger
+bespoke:
+  radial_random_nonrepeating_primary_proc: true
 
 source:
   url: https://wiki.warframe.com/w/Cedo_Prime

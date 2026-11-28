@@ -59,9 +59,8 @@ attack:
   damage: { impact: 7, puncture: 7, slash: 56 }   # 70 a pellet, 700 a shot
 
 unmodeled:
-  - reason: client_special_spread
-  - reason: client_accuracy_runtime
-  - "Shots ricochet once (wiki), which reaches enemies behind cover; there are no walls here."
+- reason: client_special_spread
+- Shots ricochet once (wiki), which reaches enemies behind cover; there are no walls here.
 
 source:
   url: https://wiki.warframe.com/w/Drakgoon

@@ -6,9 +6,7 @@ inherits: dual_zoren
 form: heavy
 transform_group: dual_zoren
 co_behavior: additive_with_base_damage
-unmodeled:
-  - reason: client_melee_timing
-  - reason: client_melee_geometry
+
 attack:
   trigger: melee
   shot_type: hit_scan

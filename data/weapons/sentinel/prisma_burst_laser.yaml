@@ -54,8 +54,6 @@ attack:
       uniform: false
       hip_min_deg: 0.0
       hip_max_deg: 0.0
-unmodeled:
-  - reason: companion_fires_it
 
 source:
   url: https://wiki.warframe.com/w/Prisma_Burst_Laser

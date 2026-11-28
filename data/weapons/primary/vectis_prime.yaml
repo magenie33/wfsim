@@ -14,10 +14,7 @@ transform_group: vectis_prime
 transforms_to: vectis_prime_incarnon
 
 # see notes: bulk_intake_stats_are
-unmodeled:
-  - reason: client_accuracy_runtime
-  - reason: sniper_combo_miss
-    seconds: 2
+
 # THE TWO SNIPER MECHANICS — see `data::weapons::SniperCombo` and `ScopeSpec`.
 #
 # "The Vectis Prime has the largest shot combo requirement of the sniper

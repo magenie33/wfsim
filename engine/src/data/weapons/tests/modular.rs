@@ -318,9 +318,13 @@ fn pax_charge_turns_the_magazine_into_a_battery() {
     assert!(plain.battery.is_none(), "an ordinary Kitgun has no battery");
     let b = charged.battery.expect("pax charge installs one");
     assert_eq!(b.regen_per_second, 50.0);
-    // THE DELAY IS THE RELOAD, shortened by the arcane's own bonus: the
-    // default assembly's Bellows loader reloads in 2.1 s, and 2.1 / 1.5 is
-    // 1.4 s — which is the worked example on the arcane's own page.
-    assert!((b.delay_empty_seconds - 1.4).abs() < 1e-6, "{}", b.delay_empty_seconds);
+    // `Battery` holds the unmodded base delay (2.1 s on Bellows), and reload
+    // scheduling divides only the delay by `1 + 0.50` -> 1.4 s while keeping
+    // `magazine / 50` constant.
+    assert!((b.delay_empty_seconds - 2.1).abs() < 1e-6, "{}", b.delay_empty_seconds);
     assert_eq!(b.delay_partial_seconds, b.delay_empty_seconds);
+    let expected_reload = 2.1 / 1.5 + panel.magazine_size / 50.0;
+    let actual_reload = b.delay_empty_seconds / (1.0 + charged.reload_bonus + charged.arcane.reload_bonus)
+        + charged.magazine_size / b.regen_per_second;
+    assert!((actual_reload - expected_reload).abs() < 1e-6, "{actual_reload} vs {expected_reload}");
 }

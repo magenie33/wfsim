@@ -51,11 +51,10 @@ combo_duration_seconds: 5.0
 co_behavior: additive_with_base_damage
 
 unmodeled:
-  - reason: client_melee_ability
-  - "A cast's length is unpublished: each cast here takes one second at 1.0x Casting Speed, which sets how often it hits and changes no single hit."
-  - "Energy is unlimited here: every cast costs 25, scaled by Efficiency, and nothing runs dry."
-  - "The combo counter gains 20 once per cast that hits; here a cast earns it per body it hits, which is the same against one target."
-  - "Mass Vitrify's barrier, which this attack explodes, and Splinter Storm's amplification are not modelled."
+- 'A cast''s length is unpublished: each cast here takes one second at 1.0x Casting Speed, which sets how often it hits and changes no single hit.'
+- 'Energy is unlimited here: every cast costs 25, scaled by Efficiency, and nothing runs dry.'
+- The combo counter gains 20 once per cast that hits; here a cast earns it per body it hits, which is the same against one target.
+- Mass Vitrify's barrier, which this attack explodes, and Splinter Storm's amplification are not modelled.
 
 attack:
   # see notes: swing_trigger_pull_engine

@@ -14,10 +14,7 @@ transform_group: gorgon
 transforms_to: gorgon_incarnon
 
 # see notes: bulk_intake_stats_are
-unmodeled:
-  - reason: client_rate_spool
-  - reason: client_accuracy_runtime
-  - reason: spool_rebuilds_after_reload
+
 accuracy: 12.5
 disposition: 1.2
 polarities: []
@@ -72,6 +69,9 @@ attack:
   damage: { impact: 18.75, slash: 2.5, puncture: 3.75 }   # total 25.0
 
 # incarnon_evolutions: definitions live in data/evolutions/gorgon_*.yaml.
+
+bespoke:
+  spindown_seconds: 0.75
 
 source:
   url: https://wiki.warframe.com/w/Gorgon

@@ -57,8 +57,7 @@ attack:
   damage: { impact: 23.4, puncture: 23.4, slash: 43.2 }   # total 90
 
 unmodeled:
-  - reason: client_accuracy_runtime
-  - "The alt-fire only changes the zoom (wiki), so this weapon has one attack and no mode to choose."
+- The alt-fire only changes the zoom (wiki), so this weapon has one attack and no mode to choose.
 
 source:
   url: https://wiki.warframe.com/w/Veldt

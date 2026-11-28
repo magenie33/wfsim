@@ -52,9 +52,7 @@ co_behavior: additive_with_base_damage
 # holster" edge (docs/UNMODELLED.md); the rest belongs to the thrown entry and
 # is declared there.
 unmodeled:
-  - reason: client_projectile_collision
-  - reason: client_scourge_primary_collision
-  - "It reloads 33% of its magazine a second while holstered or deployed; it is never holstered here."
+- reason: client_scourge_primary_collision
 
 attack:
   # see notes: cone_half_angle_from

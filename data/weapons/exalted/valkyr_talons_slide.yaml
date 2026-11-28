@@ -13,11 +13,8 @@ form: slide
 transform_group: valkyr_talons
 co_behavior: additive_with_base_damage
 unmodeled:
-  - reason: client_melee_slam
-  - reason: client_melee_legacy
-  - reason: client_melee_geometry
-  - reason: client_melee_ability
-  - "The stance page gives this slide up to 5 hits on one target or 4 on several; the module and the ability page say 6. This entry lands 6, unmeasured."
+- The stance page gives this slide up to 5 hits on one target or 4 on several; the module and the ability page say 6. This entry lands 6, unmeasured.
+
 attack:
   # see notes: swing_trigger_pull_engine
   trigger: melee

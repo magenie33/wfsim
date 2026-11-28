@@ -36,6 +36,10 @@ co_behavior: additive_with_base_damage
 
 attack:
   # see notes: cone_half_angle_from
+  sustained_fire_rate:
+    native_consumer: automatic_zero_duration_refire
+    ContinuousFireRateAtten: [0.25, 1.0]
+    ContinuousMaxShots: 20
   spread:
     min_deg: 0.0
     max_deg: 16.0
@@ -62,11 +66,10 @@ attack:
   damage: { impact: 2, puncture: 8, slash: 10 }   # total 20
 
 unmodeled:
-  - reason: client_rate_spool
-  - reason: client_accuracy_runtime
-  - reason: auto_spool_ramp
-    rate: 13.33
-  - "Accuracy also improves during the spool (wiki); this entry uses the settled spread, so an early burst is tighter here than in game."
+- Accuracy also improves during the spool (wiki); this entry uses the settled spread, so an early burst is tighter here than in game.
+
+bespoke:
+  spindown_seconds: 0.5
 
 source:
   url: https://wiki.warframe.com/w/Aksomati_Prime

@@ -75,7 +75,4 @@ attack:
 source:
   url: https://wiki.warframe.com/w/Exergis
 
-unmodeled:
-  - reason: client_accuracy_runtime
-
 # see notes: client_primary_calibration

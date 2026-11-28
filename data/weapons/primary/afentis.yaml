@@ -73,9 +73,7 @@ attack:
     damage: { blast: 800 }   # total 800
 
 unmodeled:
-  - "A direct hit forces a knockdown and the explosion a ragdoll; neither is damage, and enemies here are neither knocked down nor thrown."
-  - reason: explosion_ignores_cover
-  - reason: self_stagger
+- A direct hit forces a knockdown and the explosion a ragdoll; neither is damage, and enemies here are neither knocked down nor thrown.
 
 source:
   url: https://wiki.warframe.com/w/Afentis

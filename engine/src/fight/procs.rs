@@ -793,6 +793,11 @@ pub(super) fn settle_procs(
     // Signed until the end: a duration under the delay is floor(<0) + 1 = 0
     // ticks, and casting the floor first wrapped it to 0 + 1.
     let delayed_ticks = ((BLEED_TICKS as f64 * status_damage - BLEED_DELAY).floor() + 1.0).max(0.0) as u32;
+    let slash_mult = active
+        .bespoke
+        .as_ref()
+        .map_or(1.0, |b| if b.slash_duration_multiplier > 0.0 { b.slash_duration_multiplier } else { 1.0 });
+    let slash_delayed_ticks = ((BLEED_TICKS as f64 * status_damage * slash_mult - BLEED_DELAY).floor() + 1.0).max(0.0) as u32;
     // ONE TICK AT LEAST, until the duration is gone: past -100% status duration
     // "all duration/DoT procs are nullified" (MECHANICS §6), Tesla and Gas included.
     let immediate_ticks = if status_damage <= 0.0 {
@@ -895,7 +900,7 @@ pub(super) fn settle_procs(
                 BLEED_COEFFICIENT,
                 1.0, // Bleed: elemental mods never scale the ticks
                 BLEED_DELAY,
-                delayed_ticks,
+                slash_delayed_ticks,
                 true, // Cinematic: ignores armor
             ); }
             DamageType::Toxin => {

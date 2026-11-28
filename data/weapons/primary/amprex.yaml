@@ -79,9 +79,7 @@ attack:
   damage: { electricity: 22 }   # total 22
 
 unmodeled:
-  - reason: client_beam_target_ramp
-  - reason: client_accuracy_runtime
-  - "In game the chain can route through corpses (wiki); here a body that dies leaves the formation, so in a long fight the chain reaches fewer enemies and the number reads low."
+- In game the chain can route through corpses (wiki); here a body that dies leaves the formation, so in a long fight the chain reaches fewer enemies and the number reads low.
 
 source:
   url: https://wiki.warframe.com/w/Amprex

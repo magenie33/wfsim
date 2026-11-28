@@ -77,12 +77,8 @@ attack:
     status_chance: 0.167
 
 unmodeled:
-  - "The lingering flames the grenades leave are not modelled: the page gives 11 s of damage but no per-tick figure. The number reads low."
-  # PROSE, not a reason: this one says "a grenade" in the middle of the
-  # sentence, and a free-text parameter would carry that English word into
-  # every translation of the template.
-  - "The explosion's falloff is not modelled; the one target stands at the centre and always takes the full 2,000, never the 1,400 at the rim."
-  - reason: arch_gun_deployer_cooldown
+- 'The lingering flames the grenades leave are not modelled: the page gives 11 s of damage but no per-tick figure. The number reads low.'
+- The explosion's falloff is not modelled; the one target stands at the centre and always takes the full 2,000, never the 1,400 at the rim.
 
 source:
   url: https://wiki.warframe.com/w/Cortege

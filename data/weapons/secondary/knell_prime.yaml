@@ -63,10 +63,12 @@ attack:
   range_m: 300.0
   damage: { impact: 75.6, puncture: 82.8, slash: 21.6 }   # total 180
 
+bespoke:
+  signature:
+    warframes: [harrow, harrow_prime]
+    flat_base_magazine: 1.0
+
 source:
   url: https://wiki.warframe.com/w/Knell_Prime
-
-unmodeled:
-  - reason: client_accuracy_runtime
 
 # see notes: client_secondary_calibration

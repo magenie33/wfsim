@@ -90,8 +90,7 @@ attack:
 beam_ramp_floor: 0.2
 
 unmodeled:
-  - reason: client_beam_target_ramp
-  - "Kills leave an extra corpse, which the page notes for Nekros' Desecrate; it is a loot mechanic and changes nothing here."
+- Kills leave an extra corpse, which the page notes for Nekros' Desecrate; it is a loot mechanic and changes nothing here.
 
 source:
   url: https://wiki.warframe.com/w/Glaxion_Vandal

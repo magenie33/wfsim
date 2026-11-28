@@ -57,14 +57,13 @@ attack:
     damage: { heat: 300 }   # total 300
 
 unmodeled:
-  - reason: client_forced_reload
-  - reason: client_ammo_runtime
-  - reason: client_projectile_acceleration
-  - reason: client_projectile_callbacks
-  - reason: client_accuracy_runtime
-  - "The spear must be retrieved before the weapon can be used again (wiki); the sim throws on a cadence and never retrieves it."
-  - reason: explosion_ignores_cover
-  - reason: self_stagger
+- reason: client_forced_reload
+- reason: client_ammo_runtime
+- reason: client_projectile_callbacks
+- The spear must be retrieved before the weapon can be used again (wiki); the sim throws on a cadence and never retrieves it.
+
+bespoke:
+  clip_explosion_bonus_per_round: 0.20
 
 source:
   url: https://wiki.warframe.com/w/Javlok

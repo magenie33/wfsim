@@ -360,6 +360,7 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
             landed_this_shot: &mut landed_this_shot,
             blob_contact: &mut blob_contact,
             super_crit_armed: &mut me.super_crit_armed,
+            bespoke: &mut me.bespoke,
             round_aim: &mut round_aim,
             target_ramps: &mut me.target_ramps,
         };
@@ -437,6 +438,7 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
             }
         }
         me.melee.deployed_until = until;
+        me.bespoke.deployed_until = until;
     }
     let planting = l.spatial.as_ref().filter(|s| s.first && !s.miss && !s.impact.radial)
         .zip(active.attractor_seconds);
@@ -628,6 +630,7 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
         &mut me.field_duration_boost,
         &mut me.beam,
         &mut me.target_ramps,
+        &mut me.bespoke,
     );
     t
 }

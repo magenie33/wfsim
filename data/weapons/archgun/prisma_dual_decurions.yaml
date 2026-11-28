@@ -86,8 +86,6 @@ attack:
   range_m: 300.0
   projectile_width_m: 0.06
   damage: { impact: 99.0, puncture: 60.5, slash: 60.5 }   # 220 total
-unmodeled:
-  - reason: arch_gun_deployer_cooldown
 
 source:
   url: https://wiki.warframe.com/w/Prisma_Dual_Decurions

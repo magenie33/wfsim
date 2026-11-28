@@ -35,6 +35,10 @@ co_behavior: additive_with_base_damage
 
 attack:
   # see notes: cone_half_angle_from
+  sustained_fire_rate:
+    native_consumer: automatic_zero_duration_refire
+    ContinuousFireRateAtten: [0.60000002, 1.0]
+    ContinuousMaxShots: 10
   spread:
     min_deg: 1.0
     max_deg: 5.0
@@ -57,11 +61,10 @@ attack:
 
 # incarnon_evolutions: definitions live in data/evolutions/cestra_*.yaml.
 
+bespoke:
+  spindown_seconds: 0.5
+
 source:
   url: https://wiki.warframe.com/w/Cestra
-
-unmodeled:
-  - reason: client_rate_spool
-  - reason: client_accuracy_runtime
 
 # see notes: client_secondary_calibration

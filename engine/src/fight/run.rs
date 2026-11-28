@@ -19,9 +19,24 @@ pub(super) fn combo_at(
     last_hit: f64,
     t: f64,
 ) -> u32 {
+    combo_at_with_reset(spec, held, false, count, last_hit, t)
+}
+
+#[wfsim_gas_macro::metered]
+pub(super) fn combo_at_with_reset(
+    spec: Option<crate::model::SniperCombo>,
+    held: bool,
+    resets_completely: bool,
+    count: u32,
+    last_hit: f64,
+    t: f64,
+) -> u32 {
     let Some(c) = spec else { return 0 };
     if held || c.seconds <= 0.0 {
         return count;
+    }
+    if resets_completely {
+        return if t - last_hit >= c.seconds { 0 } else { count };
     }
     let lost = ((t - last_hit) / c.seconds).floor();
     if lost <= 0.0 {
@@ -610,7 +625,7 @@ pub fn run_once_traced(
                             charge_on, true, r.pellets, r.weakpoint_hits + r.headshots_on_others,
                             &mut now, &mut r, &mut me.ammo, &mut me.incarnon, &mut me.double_tap,
                             &mut me.buff_stacks, &mut me.rs_armed, &mut me.opening_closed,
-                            &mut me.beam, &mut me.target_ramps);
+                            &mut me.beam, &mut me.target_ramps, &mut me.bespoke);
                         if !me.incarnon.in_base_form { me.next_t = now; }
                     }
                 }
@@ -730,6 +745,9 @@ pub fn run_once_traced(
             &mut me.field_duration_boost,
             &mut me.beam,
             &mut me.target_ramps,
+            &me.spool,
+            &mut me.bespoke,
+            me.in_flight.len(),
             me.other.as_ref().map(|o| super::cycle::SwitchTo { form: o.params.form.id(), seconds: o.seconds, bucket: o.bucket }),
         ) };
         match flow {
@@ -789,7 +807,7 @@ pub fn run_once_traced(
             }
         }
         if current_melee_event(active, &me.melee).is_some_and(|h| h.event_timing.is_some()) {
-            let raw_event_rate = raw_cadence_rate(me.params, active, t, &mut me.bar, &mut me.buff_stacks, &me.windows);
+            let raw_event_rate = raw_cadence_rate_with_bespoke(me.params, active, t, &mut me.bar, &mut me.buff_stacks, &me.windows, me.melee.deployed_until, &mut me.bespoke);
             let event_rate = active.refire.weapon_rate(raw_event_rate, active.unmodded_fire_rate);
             if let Some(wait) = prepare_melee_event(active, &me.apl, t, event_rate, r.kills, &mut me.melee) {
                 if wait > 0.0 {
@@ -809,7 +827,7 @@ pub fn run_once_traced(
                 let (tennokai, converted, mark) = (i.tennokai, i.converted, i.kill_mark);
                 let initial = active.initial_combo;
                 let combo = me.melee.points_at(active, initial, t);
-                after_swing(&h, active, me.params, rec, d, combo, melee_combo_multiplier(combo), false,
+                after_swing(&h, active, me.params, rec, d, combo, melee_combo_multiplier_for(active, combo), false,
                     tennokai, mark, converted, r.pellets, t, &mut r, &mut me.melee,
                     &mut me.incarnon, &me.ammo, &mut me.arc, &mut bodies);
                 me.next_t = t + seconds_to_next_shot(active, t, event_rate, raw_event_rate, initial, Some(h),
@@ -908,6 +926,7 @@ pub fn run_once_traced(
             modded_base,
             &mut me.buff_stacks,
             &mut me.melee,
+            me.bespoke.dice_face,
             &r,
             &bodies,
         );
@@ -983,9 +1002,47 @@ pub fn run_once_traced(
             &mut bodies[0],
             &mut me.weakpoint_pile,
             &mut me.double_tap,
+            &me.spool,
+            &mut me.bespoke,
             super::melee::animosity_crit(me.params, &me.melee, active.spends_combo || tennokai_heavy)
                 + power_shot_crit_bonus,
         );
+        me.bespoke.shot_aimed_generation = bodies[0].state.generation;
+        if let Some(burst_at) = me.bespoke.empty_reload_burst_at.take() {
+            if let Some(rad) = active.empty_reload_radial.or(me.params.empty_reload_radial) {
+                let shares = TypeShares::of(&rad.damage);
+                let total = rad.damage.total();
+                let mut forced_buf = [DamageType::Impact; DamageType::ALL.len()];
+                let forced_n = rad.forced_procs.fill(&mut forced_buf);
+                let forced = &forced_buf[..forced_n];
+                for (bi, body) in bodies.iter_mut().enumerate() {
+                    let Some(spec) = me.params.body(bi) else { continue };
+                    let dist = spec.at.distance(me.params.player_at);
+                    if !crate::rules::space::caught_by_blast(dist, rad.radius_m) || body.state.phase != Phase::Physical {
+                        continue;
+                    }
+                    let falloff = rad.falloff_at(dist);
+                    let mit = body.debuffs.amps(burst_at, me.fixed.status_damage, active.armor_strip_per_puncture, me.params.squad.enemy_armor_multiplier);
+                    let col = body.state.incoming_column(spec.params);
+                    let settled = body.state.apply(total * falloff, shares, false, burst_at, spec.params, false, &mit, me.params.overguard_multiplier(), None);
+                    r.sources.radial += settled.effective;
+                    add_by_type(&mut r.sources.radial_by_type, shares, settled.effective, &col);
+                    r.note_kills(settled.killed as u32, burst_at, me.params.drop_is_in_reach(body.state.at));
+                    if !settled.killed {
+                        let procs = status::procs_for_hit(forced, rad.status_chance, &rad.damage, body.state.proc_handlers, &mut d.status);
+                        for p in procs {
+                            if spec.params.status_immunities.contains(&p) { continue; }
+                            r.procs += 1;
+                            if p == DamageType::Impact {
+                                body.debuffs.push_proc_stack(super::debuffs::ProcStackKind::Stagger, burst_at + STAGGER_DURATION, STAGGER_CAP, burst_at);
+                            } else if p == DamageType::Electricity {
+                                me.arc.bump_trigger(&me.params.arcane.buffs, ArcTrigger::ElectricityStatus, burst_at);
+                            }
+                        }
+                    }
+                }
+            }
+        }
         // AN ORB ATTACK FIRES NO PELLETS — when the TRIGGER is what deploys it.
         // The shot settles no collision and no explosion, because everything it
         // deals is delivered later by the orb from wherever the orb is.
@@ -1281,7 +1338,7 @@ pub fn run_once_traced(
             next_shot_due(
                 me.params, active, &mut t, swing, initial_now, tennokai, tennokai_heavy, &mut r,
                 &mut me.bar, &mut me.buff_stacks, &me.ammo, &me.incarnon, &mut me.melee,
-                &mut me.spool, &me.windows, &mut me.arc, me.rs_armed, &mut me.last_shot_t,
+                &mut me.spool, &me.windows, &mut me.arc, me.rs_armed, &mut me.last_shot_t, &mut me.bespoke,
             );
         } else {
             t = land_the_shot(
@@ -1315,7 +1372,7 @@ pub fn run_once_traced(
             next_shot_due(
                 me.params, active, &mut t, landing.swing, initial_now, tennokai, tennokai_heavy, &mut r,
                 &mut me.bar, &mut me.buff_stacks, &me.ammo, &me.incarnon, &mut me.melee,
-                &mut me.spool, &me.windows, &mut me.arc, me.rs_armed, &mut me.last_shot_t,
+                &mut me.spool, &me.windows, &mut me.arc, me.rs_armed, &mut me.last_shot_t, &mut me.bespoke,
             );
         }
         // AN ABILITY CAST THE FRAME MADE ON THIS TURN earns what a cast earns,

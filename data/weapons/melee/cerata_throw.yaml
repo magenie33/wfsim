@@ -8,15 +8,11 @@ form: throw
 transform_group: cerata
 co_behavior: additive_with_base_damage
 unmodeled:
-  - reason: client_melee_special
-  - reason: client_melee_legacy
-  - reason: glaive_bounce_count_assumed
-  - reason: glaive_bounce_explosion_assumed
-  - reason: glaive_detonation_ends_bounces
-  - reason: glaive_throw_animation_assumed
-  - reason: glaive_throw_tennokai_unmodelled
-  - reason: glaive_throw_animosity_unmodelled
-  - "On a throw the innate Toxin never combines with modded elements (wiki); here it combines as on a swing."
+- reason: client_melee_special
+- reason: glaive_throw_tennokai_unmodelled
+- reason: glaive_throw_animosity_unmodelled
+- On a throw the innate Toxin never combines with modded elements (wiki); here it combines as on a swing.
+
 attack:
   trigger: melee
   shot_type: projectile

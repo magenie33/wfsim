@@ -206,14 +206,19 @@ pub(crate) fn enumerate_buffs(
     // scenario shows no card AND scores no combo, rather than showing a
     // control that moves nothing.
     if tenno.state.aiming {
-        if let Some(c) = wfsim_engine::data::weapons::spec(&info.id).and_then(|w| w.sniper_combo) {
+        let combo_min = wfsim_engine::data::weapons::spec(&info.id).and_then(|w| {
+            w.sniper_combo
+                .map(|c| c.min)
+                .or_else(|| w.bespoke.as_deref().and_then(|b| b.scoped_combo.map(|sc| sc.min)))
+        });
+        if let Some(min) = combo_min {
             push(BuffMeta {
                 id: "sniper_combo".into(),
                 name: "Shot Combo Counter".into(),
                 // The count alone would not say what it buys, and the tiers
                 // are not linear — so the card states the first one and the
                 // rule that generates the rest.
-                grants: format!("Damage ×1.5 at {} hits, +0.5 every ×3", c.min),
+                grants: format!("Damage ×1.5 at {min} hits, +0.5 every ×3"),
                 max_stacks: 0,
                 kind: "stacking",
                 // NOTHING IN HAND, like every other earned buff. A sniper
@@ -227,6 +232,29 @@ pub(crate) fn enumerate_buffs(
                 uncapped: true,
                 trigger: None,
             });
+        }
+    }
+    if let Some(bespoke) = wfsim_engine::data::weapons::spec(&info.id).and_then(|w| w.bespoke.as_deref()) {
+        for sb in &bespoke.stacking_buffs {
+            if let Some(b) = sb.to_stacking_buff().filter(|b| !locked(b.grant.locked_stat())) {
+                let grants = if matches!(b.grant, wfsim_engine::model::BuffGrant::MeleeRange | wfsim_engine::model::BuffGrant::PunchThrough) {
+                    format!("{:+.1} m {}, {:.0} s", b.per_stack, b.grant.label(), b.duration)
+                } else {
+                    format!("{:+.0}% {}, {:.0} s", b.per_stack * 100.0, b.grant.label(), b.duration)
+                };
+                push(BuffMeta {
+                    id: b.id.into(),
+                    name: format!("{} ({})", info.name, b.grant.label()),
+                    grants,
+                    max_stacks: b.max_stacks,
+                    kind: if b.max_stacks > 1 { "stacking" } else { "toggle" },
+                    default_stacks: b.initial_stacks,
+                    default_locked: false,
+                    permanent: false,
+                    uncapped: false,
+                    trigger: None,
+                });
+            }
         }
     }
     // Mod-granted buffs.

@@ -74,8 +74,7 @@ attack:
   damage: { puncture: 15.6, slash: 10.4 }   # total 26
 
 unmodeled:
-  - reason: client_accuracy_runtime
-  - "Aiming raises a shield that blocks frontal projectiles, closing on a reload or a charge (wiki). Nothing shoots back here; the number is unaffected."
+- Aiming raises a shield that blocks frontal projectiles, closing on a reload or a charge (wiki). Nothing shoots back here; the number is unaffected.
 
 source:
   url: https://wiki.warframe.com/w/Higasa

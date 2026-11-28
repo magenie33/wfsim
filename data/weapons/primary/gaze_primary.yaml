@@ -90,8 +90,7 @@ attack:
   damage: { radiation: 29 }
 
 unmodeled:
-  - reason: client_modular_assembly
-  - "The sphere also forms at the beam's maximum range (3 m, page); here the range is a hard limit, so a target up to 3 m beyond it takes nothing."
+- The sphere also forms at the beam's maximum range (3 m, page); here the range is a hard limit, so a target up to 3 m beyond it takes nothing.
 
 source:
   url: https://wiki.warframe.com/w/Gaze

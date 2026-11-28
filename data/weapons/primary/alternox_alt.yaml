@@ -52,9 +52,7 @@ attack:
     damage: { electricity: 100 }   # total 100
 
 unmodeled:
-  - "The alt-fire's third attack, a burn in 6 m between the contact hit and the explosion, is not counted: the engine carries one direct hit and one explosion per attack. The number reads low."
-  - reason: explosion_ignores_cover
-  - reason: self_stagger
+- 'The alt-fire''s third attack, a burn in 6 m between the contact hit and the explosion, is not counted: the engine carries one direct hit and one explosion per attack. The number reads low.'
 
 source:
   url: https://wiki.warframe.com/w/Alternox

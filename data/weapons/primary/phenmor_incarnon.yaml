@@ -47,10 +47,7 @@ pseudo_reload:
   # scale with reload-speed bonuses
 
 unmodeled:
-  - reason: client_projectile_collision
-  - reason: client_rate_spool
-  - reason: client_accuracy_runtime
-  - "The Incarnon form's fire rate falls to 60% over 51 held shots and resets when firing stops. The sim holds the trigger until the magazine is dry, so a player who taps keeps more of the 13.33/s. The spool-down itself is modelled."
+- The Incarnon form's fire rate falls to 60% over 51 held shots and resets when firing stops. The sim holds the trigger until the magazine is dry, so a player who taps keeps more of the 13.33/s. The spool-down itself is modelled.
 
 # Same class as the base entry: no Phenmor row exists in the wiki's CO catalog,
 # and absence there means ordinary. CO boosts the DIRECT hit, which is all this
@@ -108,6 +105,9 @@ attack:
   damage: { slash: 80.0, radiation: 60.0 }
 
 # incarnon_evolutions: see data/weapons/primary/phenmor.yaml (shared group)
+
+bespoke:
+  spindown_seconds: 1.5
 
 source:
   url: https://wiki.warframe.com/w/Phenmor

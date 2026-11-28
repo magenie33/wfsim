@@ -60,11 +60,7 @@ attack:
     start_m: 400.0
     end_m: 600.0
     reduction: 0.500000006
-unmodeled:
-  - reason: client_accuracy_runtime
-  - reason: sniper_combo_miss
-    seconds: 2
-  - reason: zoom_steps
+
 source:
   url: https://wiki.warframe.com/w/Snipetron_Vandal
 

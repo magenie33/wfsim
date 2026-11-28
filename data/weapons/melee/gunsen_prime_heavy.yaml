@@ -8,18 +8,12 @@ form: heavy
 transform_group: gunsen_prime
 co_behavior: additive_with_base_damage
 unmodeled:
-  - reason: client_melee_legacy
-  - reason: client_melee_geometry
-  - reason: melee_slide_unpublished
-  - reason: heavy_charge_share_assumed
-    published: 0.5
-    charge: 0.1667
-    swing: 0.3333
-  - reason: melee_heavy_total_disputed
-    infobox: 4
-    table: 5
-  - reason: melee_passive_unmodelled
-    passive: "a Warfan's slam hits twice, the heavy slam's second hit at the normal slam's figures"
+- reason: melee_heavy_total_disputed
+  infobox: 4
+  table: 5
+- reason: melee_passive_unmodelled
+  passive: a Warfan's slam hits twice, the heavy slam's second hit at the normal slam's figures
+
 attack:
   trigger: melee
   shot_type: hit_scan

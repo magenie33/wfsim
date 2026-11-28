@@ -99,6 +99,7 @@ pub(super) struct Combatant<'a> {
     /// one, which make none — read as a delta off the run's own counter.
     pub(super) dagger_kill_mark: u32,
     pub(super) super_crit_armed: bool,
+    pub(super) bespoke: BespokeState,
     pub(super) weakpoint_next_shot_armed: bool,
     pub(super) incarnon: IncarnonState,
     pub(super) syndicate: Syndicate,
@@ -833,6 +834,7 @@ pub(super) fn open<'a>(
             strip_kills_seen,
             dagger_kill_mark,
             super_crit_armed,
+            bespoke: BespokeState::new(),
             weakpoint_next_shot_armed,
             incarnon,
             syndicate,

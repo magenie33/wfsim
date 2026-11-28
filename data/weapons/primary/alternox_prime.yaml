@@ -66,11 +66,12 @@ attack:
   # see notes: no_range_row_attack
   damage: { electricity: 75 }   # total 75
 
+bespoke:
+  signature:
+    warframes: [gyre, gyre_prime]
+    multishot_bonus: 0.20
+
 source:
   url: https://wiki.warframe.com/w/Alternox_Prime
-
-unmodeled:
-  - reason: client_projectile_collision
-  - reason: client_accuracy_runtime
 
 # see notes: client_primary_calibration

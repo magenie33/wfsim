@@ -935,6 +935,43 @@ pub fn resolve_for(
         base_damage_beyond_target_range.clear();
     }
 
+    if let Some(b) = base.bespoke.as_deref() {
+        initial_combo += b.innate_initial_combo;
+        if tenno.state.aiming {
+            wp_cc += b.aimed_headshot_crit_chance_bonus;
+        } else {
+            ammo_efficiency += b.hip_ammo_efficiency_bonus;
+        }
+        if let Some(sig) = b.signature.as_ref().filter(|s| s.matches(&tenno.id)) {
+            flat_base_magazine += sig.flat_base_magazine;
+            windup_speed += sig.heavy_windup_speed_bonus;
+            rl += sig.reload_speed_bonus;
+            multishot += sig.multishot_bonus;
+            combo_duration_add += sig.combo_duration_seconds;
+            if sig.projectile_speed_bonus != 0.0 {
+                if let Some(x) = indirect.iter_mut().find(|(s, _)| *s == IndirectStat::ProjectileSpeed) {
+                    x.1 += sig.projectile_speed_bonus;
+                } else {
+                    indirect.push((IndirectStat::ProjectileSpeed, sig.projectile_speed_bonus));
+                }
+            }
+            if sig.ammo_max_bonus != 0.0 {
+                if let Some(x) = indirect.iter_mut().find(|(s, _)| *s == IndirectStat::AmmoMax) {
+                    x.1 += sig.ammo_max_bonus;
+                } else {
+                    indirect.push((IndirectStat::AmmoMax, sig.ammo_max_bonus));
+                }
+            }
+            if sig.punch_through_m != 0.0 {
+                if let Some(x) = indirect.iter_mut().find(|(s, _)| *s == IndirectStat::PunchThrough) {
+                    x.1 += sig.punch_through_m;
+                } else {
+                    indirect.push((IndirectStat::PunchThrough, sig.punch_through_m));
+                }
+            }
+        }
+    }
+
     // Apply `disables`: a locked stat cannot be modified — zero its mod bucket
     // (and any conditional stacks feeding it); the weapon's base value stays.
     //
@@ -1402,6 +1439,7 @@ pub fn resolve_for(
     // part seen from a different swing, and a combo that ends on one should not
     // read a different Serration from the swing it ends.
     let slam = base.slam.as_ref().map(&a_resolved);
+    let empty_reload_radial = base.empty_reload_radial.as_ref().map(|r| a_resolved(r));
     // THE BOMBLETS, both halves through the same buckets: they are the weapon's
     // damage arriving in a smaller package, so a Serration the shell reads is a
     // Serration they read.
@@ -2081,7 +2119,11 @@ pub fn resolve_for(
         // alone — the weapon keeps more of its rate than the card's number
         // suggests, and only a burst weapon does that.
         burst: base.burst.map(|b| crate::model::BurstSpec {
-            count: b.count,
+            count: if base.bespoke.as_ref().is_some_and(|bs| bs.burst_empties_magazine) {
+                mag_size.round().max(1.0) as u32
+            } else {
+                b.count
+            },
             delay_seconds: b.delay_seconds / (1.0 + fr + evo_fr_bonus).max(1.0),
         }),
         // THE SCOPE'S OWN HEADSHOT BONUS joins this bracket rather than
@@ -2184,7 +2226,13 @@ pub fn resolve_for(
         // for the same reason — a fraction of a round is not a round. The
         // bonus is the Ammo Reserve bucket the panel already shows, which is
         // where Ammo Chain and a riven's Ammo Maximum land.
-        ammo_reserve: (base.ammo_reserve
+        ammo_reserve: ((base.ammo_reserve
+            + base
+                .bespoke
+                .as_ref()
+                .and_then(|b| b.signature.as_ref())
+                .filter(|s| s.matches(&tenno.id))
+                .map_or(0.0, |s| s.flat_ammo_max))
             * (1.0
                 + indirect
                     .iter()
@@ -2199,6 +2247,8 @@ pub fn resolve_for(
             .map_or(0.0, |(_, v)| *v),
         no_resupply: base.no_resupply,
         super_crit_on_status: base.super_crit_on_status,
+        bespoke: base.bespoke.clone(),
+        empty_reload_radial,
         heavy_status: base.heavy_status,
         physical_mod_bonus: base.physical_mods.as_ref().map(|_| Box::new(physical_bonus)),
         weakpoint_stacks: base.weakpoint_stacks,

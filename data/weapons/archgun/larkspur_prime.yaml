@@ -148,9 +148,11 @@ attack:
 # that the two halves of one weapon were admitting different things
 # — the Deployer cooldown, the ground range and Hildryn's
 # reserve bonus are properties of the WEAPON and were always missing here.
-unmodeled:
-  - reason: arch_gun_deployer_cooldown
-  - "Hildryn's signature bonus is not modelled: carried by her, it holds 700 reserve ammo instead of 400."
+
+bespoke:
+  signature:
+    warframes: [hildryn, hildryn_prime]
+    flat_ammo_max: 300.0
 
 source:
   url: https://wiki.warframe.com/w/Larkspur_Prime

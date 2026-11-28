@@ -69,7 +69,4 @@ source:
   url: https://wiki.warframe.com/w/Soma_Incarnon_Genesis
   # wiki module `Attacks[].AttackName`: "Incarnon Form"
 
-unmodeled:
-  - reason: client_accuracy_runtime
-
 # see notes: client_primary_calibration

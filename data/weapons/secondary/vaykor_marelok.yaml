@@ -57,8 +57,7 @@ attack:
   damage: { impact: 96, puncture: 16, slash: 48 }   # total 160
 
 unmodeled:
-  - reason: client_accuracy_runtime
-  - "The Justice syndicate effect detonates a radial blast and heals the wielder (wiki). It runs on a syndicate meter the sim does not track; the blast is not counted."
+- The Justice syndicate effect detonates a radial blast and heals the wielder (wiki). It runs on a syndicate meter the sim does not track; the blast is not counted.
 
 source:
   url: https://wiki.warframe.com/w/Vaykor_Marelok

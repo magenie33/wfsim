@@ -75,9 +75,7 @@ attack:
     damage: { gas: 100 }   # total 100
 
 unmodeled:
-  - reason: client_accuracy_runtime
-  - "The cloud arrives 1 s after the dart lands (wiki); here it resolves on impact, so nothing walks out of it."
-  - reason: explosion_ignores_cover
+- The cloud arrives 1 s after the dart lands (wiki); here it resolves on impact, so nothing walks out of it.
 
 source:
   url: https://wiki.warframe.com/w/Zakti_Prime

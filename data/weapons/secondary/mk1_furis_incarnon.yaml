@@ -95,7 +95,4 @@ source:
   # /Lotus/Weapons/MK1Series/MK1Furis — speed 12, crit 20%, 3.0x, status 8%,
   # Heat 60; falloff per the module (see furis_incarnon.yaml).
 
-unmodeled:
-  - reason: client_accuracy_runtime
-
 # see notes: client_secondary_calibration

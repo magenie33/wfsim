@@ -6,9 +6,8 @@ form: slide
 transform_group: edun
 co_behavior: additive_with_base_damage
 unmodeled:
-- reason: client_melee_timing
-- reason: client_melee_geometry
 - reason: special_heavy_profile_limits
+
 attack:
   trigger: melee
   shot_type: hit_scan

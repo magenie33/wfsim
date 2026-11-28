@@ -59,10 +59,7 @@ attack:
   damage: { impact: 4, puncture: 60, slash: 16 }   # total 80
 
 unmodeled:
-  - reason: client_accuracy_runtime
-  - "Not offered here: Spring-Loaded Broadhead and the bow-exclusive Thunderbolt. Thunderbolt turns every arrow into a grenade, a second damage source."
-  - reason: bolt_corpse_ragdoll
-  - reason: silent_weapon
+- 'Not offered here: Spring-Loaded Broadhead and the bow-exclusive Thunderbolt. Thunderbolt turns every arrow into a grenade, a second damage source.'
 
 source:
   url: https://wiki.warframe.com/w/Attica

@@ -83,13 +83,10 @@ attack:
     status_chance: 0.26
 
 unmodeled:
-  - reason: client_projectile_acceleration
-  - reason: client_projectile_callbacks
-  - reason: client_accuracy_runtime
-  - "A cube that is shot explodes for 600 Blast in 6 m, four times this blast (wiki). The sim never shoots a cube, so the number reads low."
-  - "A cube left alone detonates after 9 s, which needs a miss and a timer the sim does not run."
-  - reason: explosion_ignores_cover
-  - "This weapon does not self-stagger, unlike other explosives; the sim charges none of them for it, so this changes nothing here."
+- reason: client_projectile_callbacks
+- A cube that is shot explodes for 600 Blast in 6 m, four times this blast (wiki). The sim never shoots a cube, so the number reads low.
+- A cube left alone detonates after 9 s, which needs a miss and a timer the sim does not run.
+- This weapon does not self-stagger, unlike other explosives; the sim charges none of them for it, so this changes nothing here.
 
 source:
   url: https://wiki.warframe.com/w/Tenet_Quanta

@@ -71,8 +71,5 @@ attack:
   forced_procs: [impact]
   damage: { impact: 800.0, puncture: 800.0, slash: 800.0, magnetic: 800.0 }  # 3200
 
-unmodeled:
-  - reason: arch_gun_deployer_cooldown
-
 source:
   url: https://wiki.warframe.com/w/Velocitus

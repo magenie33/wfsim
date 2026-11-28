@@ -81,13 +81,9 @@ attack:
     damage: { impact: 11.2, puncture: 4, slash: 24.8 }   # total 40
 
 unmodeled:
-  - reason: client_accuracy_runtime
-  - reason: empty_reload_is_faster
-    seconds: 3
-  - "The explosion arrives 0.6 s after the bolt lands, which lets an enemy walk out of it (page); here it resolves on impact, so nothing escapes."
-  - reason: bolt_corpse_ragdoll
-  - reason: explosion_ignores_cover
-  - reason: self_stagger
+- The explosion arrives 0.6 s after the bolt lands, which lets an enemy walk out of it (page); here it resolves on impact, so nothing escapes.
+
+reload_from_empty_speed: 0.5
 
 source:
   url: https://wiki.warframe.com/w/Zhuge_Prime

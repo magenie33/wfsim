@@ -71,13 +71,22 @@ pub(super) fn charge_magazine_cycle(
     target_ramps: &mut Vec<TargetRamp>,
     // When the last shot left — what a battery's delay counts from.
     last_shot_t: f64,
+    bespoke: &mut BespokeState,
+    in_flight_count: usize,
     switch_to: Option<SwitchTo>,
 ) -> Flow {
         // WHAT THE LIST CALLS FOR AT THIS INSTANT. Asked once and matched
         // against, so the branches below are what the fight DOES and the list
         // is what decides — a rule inserted above `reload` stops the reload.
         let remains = ability_remains(params, *t);
-        let want = apl.pick(&incarnon.now(params, ammo, next_cost, *t, tennokai, &remains, switch_to.map(|s| s.form)));
+        let mut now_state = incarnon.now(params, ammo, next_cost, *t, tennokai, &remains, switch_to.map(|s| s.form));
+        now_state.beacon_needed = params.bespoke.as_ref().is_some_and(|b| b.beacon_crit_chance_bonus > 0.0)
+            && *t >= bespoke.beacon_until
+            && in_flight_count == 0
+            && ammo.loaded >= 2.0 - 1e-9;
+        now_state.beacon_sent = params.bespoke.as_ref().is_some_and(|b| b.beacon_duration_seconds.is_some())
+            && (*t < bespoke.beacon_until || in_flight_count > 0 || !can_fire(ammo.loaded, next_cost));
+        let want = apl.pick(&now_state);
         let active = params.cycle.as_ref().filter(|_| incarnon.in_base_form)
             .map_or(params, |cy| &cy.base_form);
         if active.uses_reserve_arrows() && want == Action::Reload {
@@ -162,8 +171,12 @@ pub(super) fn charge_magazine_cycle(
                     }
                 }
                 let rs = live_reload_speed(params, &cy.base_form, *rs_armed, buff_stacks, *t);
-                let spent = live_reload_time(&cy.base_form, params, arc, rs, *t, from_empty);
+                let spent = live_reload_time_for_capacity(&cy.base_form, params, arc, rs, *t, from_empty, cy.base_form.magazine_size);
                 schedule_reload_effects(&cy.base_form, ammo, incarnon.base_magazine, cy.base_form.magazine_size, *t, spent, from_empty);
+                bespoke.perfect_reload_heat_active = false;
+                if from_empty && cy.base_form.empty_reload_radial.is_some() {
+                    bespoke.empty_reload_burst_at = Some(*t);
+                }
                 // THE OPENING WINDOW closes when the first reload STARTS, which
                 // is here — everything dealt up to this instant is what the
                 // magazine you walked in with was worth.
@@ -212,17 +225,18 @@ pub(super) fn charge_magazine_cycle(
             // through any other pause.
             let spent = rescale_reload(sw.seconds, sw.bucket, live_reload_speed(params, params, *rs_armed, buff_stacks, *t));
             r.downtime_seconds += spent;
-            *t += spent;
+            *t += spent.max(1e-6);
             if *t >= params.duration_seconds {
                 return Flow::Break;
             }
             return Flow::Switch;
         } else if let (Action::Recharge, Some(b)) = (&want, params.battery) {
-            // THE BATTERY REFILLS FROM THE LAST SHOT, after its delay, to the
-            // brim: the top of the loop credits the gap
-            // (`before`'s battery block), so this only moves the clock.
             let from = if last_shot_t.is_finite() { last_shot_t } else { *t };
-            let full = from + b.delay_partial_seconds + (ammo.cap - ammo.loaded) / b.regen_per_second.max(1e-9);
+            let add = params.arcane.reload_bonus
+                + arc.total(&params.arcane.buffs, ArcGrant::ReloadSpeed, *t)
+                + live_reload_speed(params, params, *rs_armed, buff_stacks, *t);
+            let delay = b.delay_partial_seconds / crate::rules::sim::reload_divisor(1.0 + params.reload_bonus + add);
+            let full = from + delay + (ammo.cap - ammo.loaded) / b.regen_per_second.max(1e-9);
             let wait = (full - *t).max(0.0);
             r.downtime_seconds += wait;
             *t += wait;
@@ -230,20 +244,9 @@ pub(super) fn charge_magazine_cycle(
                 return Flow::Break;
             }
             return Flow::Continue;
-        } else if want == Action::Reload {
-            // FROM EMPTY OR NOT — the one question every "reload from empty"
-            // card asks, read before the refill. The default list reloads only
-            // when it cannot fire, so that list's reloads are all from empty;
-            // a rule inserted above it (`reload,if=magazine.pct<=N`) is not,
-            // and a card that pays on empty pays nothing for it. Fewer than one
-            // whole round is empty, the Incarnon transmute's own reading.
+        } else if matches!(want, Action::Reload | Action::PerfectReload) {
+            let perfect = want == Action::PerfectReload;
             let from_empty = !can_fire(ammo.loaded, 1.0);
-            // AN EMPTY MAGAZINE TAKES THE WHOLE PILE, before the reload that
-            // rebuilds it. Mounting Momentum is cleared the instant the count
-            // reaches zero — not by the reload, and not by a clock — so firing
-            // a magazine dry earns one magazine's worth and never more, and a
-            // magazine topped up before it empties keeps its pile.
-            // …AND A PARTIAL RELOAD TAKES THE OTHER KIND (Mauler's Magazine).
             let clears = if from_empty {
                 crate::model::ClearedBy::EmptyMagazine
             } else {
@@ -254,52 +257,46 @@ pub(super) fn charge_magazine_cycle(
                     buff_stacks[i] = LiveStacks::seed(0, b.max_stacks, b.duration);
                 }
             }
-            // Cannot fire: reload (blocking) or, with dry finite reserves,
-            // stop firing altogether (DoTs still drain below).
             if !params.infinite_reserve && ammo.reserve < 1e-9 {
                 return Flow::Break;
             }
             let rs = live_reload_speed(params, params, *rs_armed, buff_stacks, *t);
-            let spent = live_reload_time(params, params, arc, rs, *t, from_empty);
-            // THE THROW IS THE RELOAD'S: it leaves partway through and costs no
-            // time of its own — damage the reload delivers for free.
+            let full_spent = live_reload_time_for_capacity(params, params, arc, rs, *t, from_empty, ammo.cap);
+            let spent = match params.bespoke.as_ref().and_then(|b| b.perfect_reload).filter(|_| perfect) {
+                Some(pr) => full_spent * pr.window_pct,
+                None => full_spent,
+            };
             schedule_reload_effects(params, ammo, ammo.loaded, ammo.cap, *t, spent, from_empty);
-            // TWO ROWS, THE START AND THE END, and nothing in between. What is between them is not a reload event — it is
-            // whatever the fight went on doing while the weapon was down, which
-            // for a status build is most of its damage.
+            if from_empty && params.empty_reload_radial.is_some() {
+                bespoke.empty_reload_burst_at = Some(*t);
+            }
             rec.push(*t, None, crate::record::Kind::ReloadStart { seconds: spent });
             r.downtime_seconds += spent;
             *t += spent;
-            magazine_refilled(params, ammo, r, buff_stacks, rs_armed, opening_closed, true, Some(from_empty));
+            bespoke.perfect_reload_heat_active = perfect && params.bespoke.as_ref().is_some_and(|b| b.perfect_reload.is_some());
+            let is_magazine_reload = params.battery.is_none();
+            magazine_refilled(params, ammo, r, buff_stacks, rs_armed, opening_closed, is_magazine_reload, is_magazine_reload.then_some(from_empty));
             r.reloads += 1;
-            if let Some(b) = params.fire_rate_on_reload {
-                windows.fire_rate_after_reload = *t + b.duration;
+            if is_magazine_reload {
+                if let Some(b) = params.fire_rate_on_reload {
+                    windows.fire_rate_after_reload = *t + b.duration;
+                }
+                if let Some(b) = params.base_damage_on_reload {
+                    windows.base_damage_after_reload = *t + b.duration;
+                }
             }
-            if let Some(b) = params.base_damage_on_reload {
-                windows.base_damage_after_reload = *t + b.duration;
-            }
-            // Whole rounds only, and `+=` not `=` — both measured (M14). The
-            // draw covers the overdraw debt for free: the counter is in (−1, 0]
-            // here, so `floor(capacity − current)` is a full magazine, and a
-            // −0.75 counter comes back at 4.25 rather than 5.00.
             let want = reload_draw(ammo.cap, ammo.loaded);
             let loaded = draw_from(&mut ammo.reserve, params.infinite_reserve, want);
             ammo.loaded += loaded;
-            // THE ROW LANDS HERE, after the rounds are actually in. Announced
-            // one line earlier it read `0 / 6` — a reload that had just
-            // finished reporting an empty magazine, which is the one thing that
-            // row exists to deny (found by reading a Felarx record).
             record_weapon(params, rec, ammo, incarnon);
             rec.push(*t, None, crate::record::Kind::ReloadEnd);
-            // …AND THE SHELLS IT LOADED PAY THEIR STACKS. One per shell, from
-            // the count the draw actually produced — see the note at the cycle's
-            // base-form reload for why this is per-site rather than a single
-            // trigger at the top of the loop.
-            bump_shells(params, buff_stacks, loaded.round().max(0.0) as u32, *t, rng);
-            bump_on_trigger(params, buff_stacks, crate::model::BuffTrigger::ReloadComplete, *t, rng);
-            if from_empty {
-                bump_reload_from_empty(params, buff_stacks, ammo, *t, rng);
-                *field_duration_boost = true; // Renewed Horror
+            if is_magazine_reload {
+                bump_shells(params, buff_stacks, loaded.round().max(0.0) as u32, *t, rng);
+                bump_on_trigger(params, buff_stacks, crate::model::BuffTrigger::ReloadComplete, *t, rng);
+                if from_empty {
+                    bump_reload_from_empty(params, buff_stacks, ammo, *t, rng);
+                    *field_duration_boost = true;
+                }
             }
             if *t >= params.duration_seconds {
                 return Flow::Break;
@@ -335,41 +332,30 @@ pub(super) fn charge_the_gauge(
     opening_closed: &mut bool,
     beam: &mut BeamRamp,
     target_ramps: &mut Vec<TargetRamp>,
+    bespoke: &mut BespokeState,
 ) {
-        // KILLS ADVANCE THEIR MARK IN EITHER FORM, and the two halves are
-        // separate on purpose. A hit is bounded by the shot that caused it,
-        // so `_before` is exact for one; a kill is not — a status tick
-        // between two shots kills, and a delta taken at the top of the next
-        // shot has already missed it. And the mark advances even while
-        // TRANSFORMED, so a kill made with the earned form can never pay
-        // for the next one: it is kills with the PRIMARY fire that recharge
-        // the Mausolon's laser (wiki), not kills of any kind.
         let fresh_kills = r.kills - incarnon.kill_mark;
         incarnon.kill_mark = r.kills;
-        let contacts = r.pellets + r.punched_contacts;
-        let weakpoints = r.weakpoint_hits + r.headshots_on_others;
+        let overkill_pellets = std::mem::take(&mut bespoke.overkill_respawn_pellets);
+        let overkill_headshots = std::mem::take(&mut bespoke.overkill_respawn_headshots);
+        let contacts = (r.pellets + r.punched_contacts).saturating_sub(overkill_pellets);
+        let weakpoints = (r.weakpoint_hits + r.headshots_on_others).saturating_sub(overkill_headshots);
         let weighted = contacts.saturating_sub(incarnon.contact_mark)
             + weakpoints.saturating_sub(incarnon.weakpoint_mark)
             + r.blast_gauge_hits.saturating_sub(incarnon.blast_mark);
-        incarnon.contact_mark = contacts;
-        incarnon.weakpoint_mark = weakpoints;
+        incarnon.contact_mark = r.pellets + r.punched_contacts;
+        incarnon.weakpoint_mark = r.weakpoint_hits + r.headshots_on_others;
         incarnon.blast_mark = r.blast_gauge_hits;
         // Hits retain their firing form when they land after a return.
         if incarnon.in_base_form && base_hit {
-            // Per PELLET, and per the WEAPON's rule: weak-point hits for
-            // the Zariman pistols, any direct hit for the Torid, kills for
-            // the Mausolon. A field or radial instance is neither of the
-            // first two, so neither can charge those — but it CAN kill,
-            // which is the whole difference the third one makes.
             incarnon.charges += match charge_on {
-                // EVERY WEAK POINT THE SHOT LANDED, not only the aimed one:
-                // a round punching two heads charges twice (M103). The aimed
-                // one is counted as a WEAK POINT rather than as a head — see
-                // `RunResult::weakpoint_hits`.
                 crate::model::ChargeOn::WeakpointHits => {
-                    (r.weakpoint_hits + r.headshots_on_others) - headshots_before
+                    ((r.weakpoint_hits + r.headshots_on_others) - headshots_before)
+                        .saturating_sub(overkill_headshots)
                 }
-                crate::model::ChargeOn::DirectHits => r.pellets - pellets_before,
+                crate::model::ChargeOn::DirectHits => {
+                    (r.pellets - pellets_before).saturating_sub(overkill_pellets)
+                }
                 crate::model::ChargeOn::Kills => fresh_kills,
                 crate::model::ChargeOn::HitsAndWeakpoints => weighted,
             };

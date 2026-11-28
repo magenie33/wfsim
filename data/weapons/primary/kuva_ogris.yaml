@@ -102,9 +102,7 @@ attack:
     damage: { puncture: 183.0, slash: 155.0, blast: 349.0 }   # total 687
 
 unmodeled:
-  - reason: explosion_ignores_cover
-  - reason: self_stagger
-  - "The rocket flies at 60 m/s and can be shot down; nothing shoots back here, so every rocket arrives."
+- The rocket flies at 60 m/s and can be shot down; nothing shoots back here, so every rocket arrives.
 
 source:
   url: https://wiki.warframe.com/w/Kuva_Ogris

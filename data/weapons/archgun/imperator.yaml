@@ -77,8 +77,6 @@ attack:
   # see notes: wall_ramp_full_damage_6
   range_m: 300.0
   damage: { impact: 40.0, puncture: 35.0, slash: 25.0 }   # 100 total
-unmodeled:
-  - reason: arch_gun_deployer_cooldown
 
 source:
   url: https://wiki.warframe.com/w/Imperator

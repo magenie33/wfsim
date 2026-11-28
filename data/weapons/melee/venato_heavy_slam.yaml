@@ -7,12 +7,7 @@ inherits: venato
 form: heavy_slam
 transform_group: venato
 co_behavior: additive_with_base_damage
-unmodeled:
-  - reason: client_melee_slam
-  - "The climb is not timed: this loop takes the 150% radius of a slam dropped from 15 m and spends no time getting up there. A player who hops instead gets less radius, down to the 2.5 m / listed floor; this fight has no vertical axis to tell the two apart."
-  - reason: melee_slide_unpublished
-  - reason: melee_passive_unmodelled
-    passive: "wielded by Caliban, attacks have a 50% chance of an extra combo point"
+
 attack:
   trigger: melee
   shot_type: hit_scan

@@ -80,7 +80,4 @@ source:
   url: https://wiki.warframe.com/w/Kunai_Incarnon_Genesis
   # wiki module Attacks[].AttackName: "Incarnon Form"
 
-unmodeled:
-  - reason: client_accuracy_runtime
-
 # see notes: client_secondary_calibration

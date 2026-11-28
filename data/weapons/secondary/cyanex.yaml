@@ -74,10 +74,7 @@ attack:
     damage: { gas: 41 }   # total 41
 
 unmodeled:
-  - reason: client_accuracy_runtime
-  - "The projectiles home on enemies (wiki); shots here already land where aimed, so homing adds nothing."
-  - reason: explosion_ignores_cover
-  - reason: self_stagger
+- The projectiles home on enemies (wiki); shots here already land where aimed, so homing adds nothing.
 
 source:
   url: https://wiki.warframe.com/w/Cyanex

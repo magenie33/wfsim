@@ -47,10 +47,6 @@ attack:
     damage: { corrosive: 313 }   # total 313
 
   charge_seconds: 1.5
-unmodeled:
-  - reason: client_accuracy_runtime
-  - reason: explosion_ignores_cover
-  - reason: self_stagger
 
 source:
   url: https://wiki.warframe.com/w/EFV-8_Mars

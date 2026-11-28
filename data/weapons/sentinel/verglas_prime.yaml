@@ -80,8 +80,6 @@ attack:
 # halves of one weapon admitting different things — a companion
 # firing its own weapon and a beam range this arena has no distance for are
 # properties of the WEAPON and were always missing here.
-unmodeled:
-  - reason: companion_fires_it
 
 source:
   url: https://wiki.warframe.com/w/Verglas_Prime

@@ -41,13 +41,10 @@ combo_duration_seconds: 5.0
 co_behavior: additive_with_base_damage
 
 unmodeled:
-- reason: client_melee_timing
-- reason: client_melee_geometry
 - 'The 5% Movement Speed bonus while held: nobody moves here.'
-- 'Power Spike''s partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number
-  reads low.'
 - reason: spectral_dagger_orbit_and_target_assumed
 - reason: dual_daggers_heavy_unmeasured
+
 attack:
   trigger: melee
   shot_type: hit_scan

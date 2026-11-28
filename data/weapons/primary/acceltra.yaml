@@ -89,14 +89,9 @@ attack:
     damage: { puncture: 35.2, slash: 8.8 }   # total 44
 
 unmodeled:
-  - reason: client_projectile_collision
-  - reason: client_falloff_runtime
-  - reason: client_projectile_acceleration
-  - reason: client_accuracy_runtime
-  - "The rockets arm only after 7 m (wiki); closer, they hit without exploding. The sim applies the explosion at every range, so a fight set inside 7 m reads high by the whole explosion, most of the weapon."
-  - "Reloading while sprinting gives +25% reload speed (+50% on Gauss); nobody moves here, so the reload is always the standing one."
-  - reason: explosion_ignores_cover
-  - reason: self_stagger
+- reason: client_falloff_runtime
+- The rockets arm only after 7 m (wiki); closer, they hit without exploding. The sim applies the explosion at every range, so a fight set inside 7 m reads high by the whole explosion, most of the weapon.
+- Reloading while sprinting gives +25% reload speed (+50% on Gauss); nobody moves here, so the reload is always the standing one.
 
 source:
   url: https://wiki.warframe.com/w/Acceltra

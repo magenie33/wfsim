@@ -7,13 +7,11 @@ form: heavy
 transform_group: tatsu_prime
 co_behavior: additive_with_base_damage
 unmodeled:
-- reason: client_melee_timing
-- reason: client_melee_geometry
 - reason: melee_attack_unmodelled
   attacks: Soul Swarm Projectile
 - reason: melee_own_combo_unmodelled
   combos: slide attack
-- reason: melee_slide_unpublished
+
 attack:
   trigger: melee
   shot_type: hit_scan

@@ -50,11 +50,7 @@ attack:
     damage: { blast: 30 }   # total 30
 
 unmodeled:
-  - reason: client_projectile_callbacks
-  - reason: client_projectile_acceleration
-  - reason: client_accuracy_runtime
-  - reason: explosion_ignores_cover
-  - reason: self_stagger
+- reason: client_projectile_callbacks
 
 source:
   url: https://wiki.warframe.com/w/Epitaph_Prime

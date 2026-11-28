@@ -211,6 +211,157 @@ pub fn passive_lines(weapon: &str) -> Vec<String> {
         }
         out.push(format!("{line}."));
     }
+
+    if s.innate_co_per_type > 0.0 {
+        out.push(format!(
+            "Innate Condition Overload: +{:.0}% damage per unique status effect on the target, additive with base-damage mods.",
+            s.innate_co_per_type * 100.0
+        ));
+    }
+    if let Some(rs) = s.reload_from_empty_speed.filter(|&v| v > 0.0) {
+        out.push(format!(
+            "Reloading from an empty magazine grants +{:.0}% Reload Speed, additive with reload-speed mods.",
+            rs * 100.0
+        ));
+    }
+    if s.attack.empty_reload_radial.is_some() {
+        out.push("Reloading from an empty magazine emits a radial burst centered on the wielder.".to_string());
+    }
+    if let Some(b) = s.bespoke.as_deref() {
+        if let Some(ps) = b.pellet_spool {
+            out.push(format!(
+                "Consecutive shots spool pellet count from {} to {}, spending ceil(pellets / {}) ammo per pull.",
+                ps.initial_pellets, ps.max_pellets, ps.ammo_divisor
+            ));
+        }
+        if b.burst_empties_magazine {
+            out.push("Fires every remaining round in the modded magazine in one burst.".to_string());
+        }
+        if let Some(pr) = b.perfect_reload {
+            out.push(format!(
+                "Active reload at {:.0}% of reload progress finishes the reload early and loads +{:.0}% Heat rounds{} until the next reload.",
+                pr.window_pct * 100.0,
+                pr.heat_damage_bonus * 100.0,
+                if pr.forces_heat_proc { " with guaranteed Heat status" } else { "" },
+            ));
+        }
+        if b.beacon_crit_chance_bonus > 0.0 {
+            out.push(format!(
+                "Rounds home onto targets marked by the tracer beacon and gain +{:.0}% flat critical chance.",
+                b.beacon_crit_chance_bonus * 100.0
+            ));
+        }
+        if b.radial_random_nonrepeating_primary_proc {
+            out.push("Each radial blast forces one random non-repeating primary elemental status (Heat, Cold, Electricity, Toxin).".to_string());
+        }
+        if b.deployed_fire_rate_bonus > 0.0 {
+            out.push(format!(
+                "While the disc is deployed, melee swings gain +{:.0}% Attack Speed.",
+                b.deployed_fire_rate_bonus * 100.0
+            ));
+        }
+        if b.innate_initial_combo > 0.0 {
+            out.push(format!("Starts with +{:.0} Initial Combo.", b.innate_initial_combo));
+        }
+        if b.combo_max_multiplier > 0.0 || b.combo_points_per_tier > 0.0 {
+            let max_m = if b.combo_max_multiplier > 0.0 { b.combo_max_multiplier } else { 12.0 };
+            let step = if b.combo_points_per_tier > 0.0 { b.combo_points_per_tier } else { 20.0 };
+            out.push(format!("Melee combo reaches {:.0}x at {:.0} points per tier.", max_m, step));
+        }
+        if b.slash_duration_multiplier > 1.0 {
+            out.push(format!("Slash status effects inflicted by this weapon last {:.1}x as long.", b.slash_duration_multiplier));
+        }
+        if b.aimed_headshot_crit_chance_bonus > 0.0 || b.hip_ammo_efficiency_bonus > 0.0 {
+            out.push(format!(
+                "Biotic Rounds: +{:.0}% weak-point critical chance while aiming; +{:.0}% ammo efficiency from the hip.",
+                b.aimed_headshot_crit_chance_bonus * 100.0,
+                b.hip_ammo_efficiency_bonus * 100.0
+            ));
+        }
+        if let Some(ss) = b.super_status_on_crit {
+            out.push(format!(
+                "Critical hits have a {:.0}% chance to set the next hit's status chance to {:.0}%.",
+                ss.chance * 100.0, ss.status_chance * 100.0
+            ));
+        }
+        if let Some(sp) = b.spore_on_kill {
+            out.push(format!(
+                "Killing a hit enemy spreads spores to up to {} enemies within {:.0} m for {:.0} s, applying Cold status and {:.2}x weapon damage.",
+                sp.targets, sp.range_m, sp.duration_seconds, sp.damage_multiplier
+            ));
+        }
+        if let Some(sf) = b.status_frenzy {
+            out.push(format!(
+                "Inflicting a status effect grants {:.2}x Attack Speed, +{:.0}% flat Status Chance and +{:.0}% Toxin damage for {:.0} s.",
+                sf.attack_speed_multiplier, sf.flat_status_chance * 100.0, sf.toxin_damage_bonus * 100.0, sf.duration_seconds
+            ));
+        }
+        if let Some(v) = b.vendetta {
+            out.push(format!(
+                "{} kills empower the next {} hits with +{:.1} Follow Through and +{:.0}% flat Status Chance.",
+                v.kills_required, v.enhanced_attacks, v.follow_through_bonus, v.flat_status_chance * 100.0
+            ));
+        }
+        if b.flat_crit_chance_per_status_type > 0.0 {
+            out.push(format!(
+                "Gains +{:.0}% flat Critical Chance per unique status effect on the target.",
+                b.flat_crit_chance_per_status_type * 100.0
+            ));
+        }
+        if b.extra_tau_on_status_chance > 0.0 {
+            out.push(format!(
+                "Status hits have a {:.0}% chance to also inflict Tau status.",
+                b.extra_tau_on_status_chance * 100.0
+            ));
+        }
+        if let Some(hk) = b.heavy_kill_speed {
+            out.push(format!(
+                "Heavy-attack kills grant +{:.0}% Attack Speed for {:.0} s plus {:.0} s per combo tier spent.",
+                hk.fire_rate_bonus * 100.0, hk.base_duration_seconds, hk.duration_per_combo_tier_seconds
+            ));
+        }
+        if let Some(sc) = b.slam_capacitor {
+            out.push(format!(
+                "Non-slam kills store up to {} Slam Capacitor charges (+{:.0}% damage and +{:.1} m radius per charge on the next slam).",
+                sc.max_stacks, sc.damage_bonus_per_stack * 100.0, sc.radius_per_stack_m
+            ));
+        }
+        if let Some(dr) = &b.dice_roll {
+            out.push(format!(
+                "Every {} landed melee hits rolls one of six buffs (critical chance, status chance, status damage, range, attack speed, or all five).",
+                dr.hits_per_roll
+            ));
+        }
+        if let Some(sc) = b.scoped_combo {
+            out.push(format!(
+                "Scoped in, consecutive hits build a Shot Combo Counter from {} hits ({:.0} s window{}).",
+                sc.min,
+                sc.duration_seconds,
+                if sc.resets_completely { ", resetting completely on timeout or miss" } else { "" },
+            ));
+        }
+        for sb in &b.stacking_buffs {
+            if let Some(st) = sb.to_stacking_buff() {
+                if matches!(st.grant, crate::model::BuffGrant::MeleeRange | crate::model::BuffGrant::PunchThrough) {
+                    out.push(format!(
+                        "Weapon passive ({}): {:+.1} m {} per stack (up to {}, {:.0} s).",
+                        st.trigger.label(), st.per_stack, st.grant.label(), st.max_stacks, st.duration
+                    ));
+                } else {
+                    out.push(format!(
+                        "Weapon passive ({}): {:+.0}% {} per stack (up to {}, {:.0} s).",
+                        st.trigger.label(), st.per_stack * 100.0, st.grant.label(), st.max_stacks, st.duration
+                    ));
+                }
+            }
+        }
+        if let Some(sig) = &b.signature {
+            out.push(format!(
+                "Signature bonus when wielded by {}.",
+                sig.warframes.iter().map(|w| pretty_id(w)).collect::<Vec<_>>().join(" / ")
+            ));
+        }
+    }
     out
 }
 

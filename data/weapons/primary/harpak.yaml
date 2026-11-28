@@ -61,8 +61,7 @@ attack:
   damage: { impact: 5, puncture: 37.5, slash: 7.5 }   # total 50
 
 unmodeled:
-  - reason: client_accuracy_runtime
-  - "Bolts stick and fling bodies on a kill, and a flung body damages targets in its path (wiki). There is no ragdoll here, so against a crowd the number reads low."
+- Bolts stick and fling bodies on a kill, and a flung body damages targets in its path (wiki). There is no ragdoll here, so against a crowd the number reads low.
 
 source:
   url: https://wiki.warframe.com/w/Harpak

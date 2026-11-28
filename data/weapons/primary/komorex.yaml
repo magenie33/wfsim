@@ -93,11 +93,9 @@ attack:
     end_m: 600.0
     reduction: 0.546391761649
 unmodeled:
-  - reason: client_accuracy_runtime
-  - reason: sniper_combo_miss
-    seconds: 2
-  - "The second zoom level is not modelled. On this weapon it is a trade, not a buff: 3.5x gives +100% damage, +3 m explosion radius and -75% fire rate, half the sustained DPS for a much bigger single hit. This entry is the first level."
-  - "The first zoom's -50% recoil and +2 m punch through are not read here."
+- 'The second zoom level is not modelled. On this weapon it is a trade, not a buff: 3.5x gives +100% damage, +3 m explosion radius and -75% fire rate, half the sustained DPS for a much bigger single hit. This entry is the first level.'
+- The first zoom's -50% recoil and +2 m punch through are not read here.
+
 source:
   url: https://wiki.warframe.com/w/Komorex
 

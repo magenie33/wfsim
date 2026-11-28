@@ -40,8 +40,7 @@ attack:
   damage: { electricity: 11, impact: 9, puncture: 2, slash: 7 }   # total 29
 
 unmodeled:
-  - reason: client_accuracy_runtime
-  - "Each shot lands in a small square around the aim point and can miss small targets (wiki); this entry uses the module's 1-1.2 degree spread for that square."
+- Each shot lands in a small square around the aim point and can miss small targets (wiki); this entry uses the module's 1-1.2 degree spread for that square.
 
 source:
   url: https://wiki.warframe.com/w/Quatz

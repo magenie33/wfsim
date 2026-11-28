@@ -7,13 +7,9 @@ form: heavy
 transform_group: ack_and_brunt
 co_behavior: additive_with_base_damage
 unmodeled:
-- reason: client_melee_timing
-- reason: client_melee_geometry
 - reason: melee_attack_unmodelled
   attacks: Spectral Axe and Spectral Axe Explosion
-- reason: melee_slide_unpublished
-- reason: melee_passive_unmodelled
-  passive: blocking an elemental attack stores a charge adding 17.5% of that element to the next attack, up to 4
+
 attack:
   trigger: melee
   shot_type: hit_scan

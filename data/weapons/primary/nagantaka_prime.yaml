@@ -64,12 +64,16 @@ attack:
     puncture: 15.57
     slash: 155.7
 
-unmodeled:
-  - reason: client_accuracy_runtime
-  - "Headshot kills from the bolt boost reload speed by 50% (wiki); a kill-triggered buff the engine does not model."
-  - "Used by Garuda it gains 1 m of innate punch through (wiki), a Warframe-specific bonus not modelled here."
-  - reason: bolt_corpse_ragdoll
-  - reason: silent_weapon
+bespoke:
+  signature:
+    warframes: [garuda, garuda_prime]
+    punch_through_m: 1.0
+  stacking_buffs:
+    - trigger: headshot_kill
+      grant: reload_speed
+      per_stack: 0.50
+      max_stacks: 1
+      duration_seconds: 6.0
 
 source:
   url: https://wiki.warframe.com/w/Nagantaka_Prime

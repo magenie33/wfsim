@@ -112,10 +112,8 @@ attack:
   damage: { impact: 369, puncture: 20.5, slash: 20.5 }   # total 410
 
 unmodeled:
-  - reason: client_accuracy_runtime
-  - "The wiki's Condition Overload catalog gives this weapon's lingering cloud its own row, 4100% of its base; that row is not entered here yet, so the cloud takes 100% and a status-stacking build reads low on it."
-  - "The cloud confuses enemies in it, turning them on each other (wiki); crowd control, and enemies here neither turn nor stop."
-  - reason: silent_weapon
+- The wiki's Condition Overload catalog gives this weapon's lingering cloud its own row, 4100% of its base; that row is not entered here yet, so the cloud takes 100% and a status-stacking build reads low on it.
+- The cloud confuses enemies in it, turning them on each other (wiki); crowd control, and enemies here neither turn nor stop.
 
 source:
   url: https://wiki.warframe.com/w/Mutalist_Cernos

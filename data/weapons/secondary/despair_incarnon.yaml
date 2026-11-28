@@ -72,7 +72,4 @@ source:
   url: https://wiki.warframe.com/w/Despair_Incarnon_Genesis
   # wiki module Attacks[].AttackName: "Incarnon Form" and "Incarnon Form Radial Attack"
 
-unmodeled:
-  - reason: client_accuracy_runtime
-
 # see notes: client_secondary_calibration

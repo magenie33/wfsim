@@ -81,7 +81,4 @@ source:
   url: https://wiki.warframe.com/w/Miter_Incarnon_Genesis
   # wiki module (private/scripts/wiki_weapons.py) `Attacks[].AttackName`: "Incarnon Form" and "Incarnon Form Radial Attack"
 
-unmodeled:
-  - reason: client_accuracy_runtime
-
 # see notes: client_primary_calibration

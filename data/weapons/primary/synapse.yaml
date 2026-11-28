@@ -84,7 +84,4 @@ source:
   url: https://wiki.warframe.com/w/Synapse
 beam_ramp_floor: 0.2
 
-unmodeled:
-  - reason: client_beam_target_ramp
-
 # see notes: client_primary_calibration

@@ -127,8 +127,7 @@ attack:
   damage: { radiation: 21 }   # total 21
 
 unmodeled:
-  - reason: client_beam_target_ramp
-  - "Microwave also enlarges the body part it hit, an aiming aid the sim does not use. Its status count is modelled."
+- Microwave also enlarges the body part it hit, an aiming aid the sim does not use. Its status count is modelled.
 
 source:
   url: https://wiki.warframe.com/w/Kuva_Nukor

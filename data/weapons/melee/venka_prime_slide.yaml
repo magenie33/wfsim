@@ -6,12 +6,7 @@ inherits: venka_prime
 form: slide
 transform_group: venka_prime
 co_behavior: additive_with_base_damage
-unmodeled:
-  - reason: client_melee_timing
-  - reason: client_melee_geometry
-  - reason: client_melee_counter
-  - reason: melee_passive_unmodelled
-    passive: "its combo multiplier reaches 13.0x at 240 hits rather than 12.0x at 220"
+
 attack:
   trigger: melee
   shot_type: hit_scan

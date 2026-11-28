@@ -28,16 +28,6 @@ combo_duration_seconds: 5.0
 
 co_behavior: additive_with_base_damage
 
-unmodeled:
-- reason: client_melee_timing
-- reason: client_melee_slam
-- reason: client_melee_geometry
-- reason: client_melee_counter
-- 'Power Spike''s partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number
-  reads low.'
-- reason: melee_slide_unpublished
-- reason: melee_passive_unmodelled
-  passive: its combo counter starts at 20
 attack:
   trigger: melee
   shot_type: hit_scan
@@ -72,6 +62,9 @@ attack:
   combo_script:
     tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/FistMeleeTree
     context: CC_GROUND
+bespoke:
+  innate_initial_combo: 20.0
+
 source:
   url: https://wiki.warframe.com/w/Furax_Wraith
 

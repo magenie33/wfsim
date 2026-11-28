@@ -87,9 +87,8 @@ attack:
   damage: { impact: 5, puncture: 6, slash: 10, toxin: 12 }
 
 unmodeled:
-  - reason: client_modular_assembly
-  - "The tendrils fan out from the final direct contact and skip directly struck enemies in 3D. The planar scene uses a sequential chain."
-  - "The tendril auto-targets, with a noticeable delay between firing and dealing damage while ammo is spent (page); the delay is not modelled."
+- The tendrils fan out from the final direct contact and skip directly struck enemies in 3D. The planar scene uses a sequential chain.
+- The tendril auto-targets, with a noticeable delay between firing and dealing damage while ammo is spent (page); the delay is not modelled.
 
 source:
   url: https://wiki.warframe.com/w/Vermisplicer

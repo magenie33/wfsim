@@ -9,6 +9,7 @@
 //! layer that has one. `scripts/check_engine_layers.mjs` holds the line.
 
 mod arcane;
+mod bespoke;
 mod buff;
 mod damage_data;
 mod native_upgrade;
@@ -24,6 +25,7 @@ mod weapon;
 mod scene;
 
 pub use arcane::*;
+pub use bespoke::*;
 pub use crate::rules::geometry::ballistics::{BallisticsRuntime, BounceSeek, WaveResize};
 pub use buff::*;
 pub use damage_data::*;
